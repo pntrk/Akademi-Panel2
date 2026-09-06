@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-brand-bg: #F8F7F4;
+  --color-brand-sidebar-bg: #151618;
+  --color-brand-ink: #1A1B1F;
+  --color-brand-accent: #B08D57;
+  --color-brand-border: rgba(26, 27, 31, 0.08);
+  --color-brand-card-bg: #FFFFFF;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #seating-plan-printable, #seating-plan-printable *,
+  #print-area-takvim, #print-area-takvim * {
+    visibility: visible;
+  }
+  #seating-plan-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  #print-area-takvim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white;
+    box-sizing: border-box;
+  }
+}
+
+
+.dark-mode-main {
+  filter: invert(0.92) hue-rotate(180deg) brightness(1.15) contrast(0.9) saturate(1.1);
+}
+
+.dark-mode-main img, .dark-mode-main svg.lucide {
+  /* Do not invert icons/images back if we want them to stay in original hue/brightness, or maybe we do? 
+     Actually, if we invert the main area, an orange icon becomes blue-ish if we don't hue-rotate. With hue-rotate, orange stays orange. 
+     The only problem is brightness. A light orange becomes dark orange. 
+  */
+}
+
+@utility pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@utility pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+/* Touch and scroll improvements for mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
