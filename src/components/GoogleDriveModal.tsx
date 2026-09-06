@@ -32,7 +32,10 @@ import {
   listDriveBackups, 
   getDriveBackupContent, 
   deleteDriveBackup,
-  getDeviceType
+  getDeviceType,
+  getAutoSyncEnabled,
+  setAutoSyncEnabled,
+  getLastSyncTime
 } from '../lib/googleDrive';
 import { DriveBackupFile, FullBackupData } from '../types';
 import { User } from 'firebase/auth';
@@ -454,6 +457,20 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
                   </p>
                 </div>
               )}
+
+              {/* Quick Re-auth Button if permission/scope error */}
+              {feedback.type === 'error' && feedback.message?.includes('yetki') && (
+                <div className="mt-1 pt-2 border-t border-red-200 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleSignIn(false)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Drive İzinlerini Onayla & Tekrar Giriş Yap</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -583,45 +600,86 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {user?.photoURL ? (
-                      <img src={user.photoURL} alt={user.displayName || 'Google'} className="w-10 h-10 rounded-full border border-blue-200" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-base">
-                        {(user?.displayName || user?.email || 'G').charAt(0).toUpperCase()}
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {user?.photoURL ? (
+                        <img src={user.photoURL} alt={user.displayName || 'Google'} className="w-10 h-10 rounded-full border border-blue-200" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-base">
+                          {(user?.displayName || user?.email || 'G').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-sm text-gray-900">{user?.displayName || 'Google Hesabı'}</span>
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full border border-emerald-200">Bağlı</span>
+                        </div>
+                        <p className="text-xs text-gray-600">{user?.email}</p>
                       </div>
-                    )}
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-sm text-gray-900">{user?.displayName || 'Google Hesabı'}</span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full border border-emerald-200">Bağlı</span>
-                      </div>
-                      <p className="text-xs text-gray-600">{user?.email}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        onClick={handleSaveToDrive}
+                        disabled={isSavingToDrive}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        {isSavingToDrive ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <CloudUpload className="w-4 h-4" />
+                        )}
+                        <span>{device === 'Telefon' ? "Telefondan Drive'a Yedekle" : "PC'den Drive'a Yedekle"}</span>
+                      </button>
+
+                      <button
+                        onClick={handleSignOut}
+                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                        title="Google Oturumunu Kapat"
+                      >
+                        <LogOut className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                    <button
-                      onClick={handleSaveToDrive}
-                      disabled={isSavingToDrive}
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-                    >
-                      {isSavingToDrive ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <CloudUpload className="w-4 h-4" />
-                      )}
-                      <span>{device === 'Telefon' ? "Telefondan Drive'a Yedekle" : "PC'den Drive'a Yedekle"}</span>
-                    </button>
+                  {/* Automatic Cloud Sync Card */}
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-emerald-950">Otomatik Arka Plan Senkronizasyonu</span>
+                          <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-bold">Önerilen</span>
+                        </div>
+                        <p className="text-[11px] text-emerald-800">
+                          Öğrenci veya sınav kaydı yaptığınızda Drive'a otomatik olarak sessizce yedeklenir.
+                        </p>
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={handleSignOut}
-                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                      title="Google Oturumunu Kapat"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0 self-end sm:self-center">
+                      <input 
+                        type="checkbox" 
+                        checked={getAutoSyncEnabled()} 
+                        onChange={(e) => {
+                          setAutoSyncEnabled(e.target.checked);
+                          setFeedback({
+                            type: 'success',
+                            message: e.target.checked 
+                              ? 'Otomatik Drive senkronizasyonu açıldı! Yapılan değişiklikler Google Drive\'a arka planda kaydedilecek.' 
+                              : 'Otomatik senkronizasyon kapatıldı. Manuel yedekleme yapabilirsiniz.'
+                          });
+                        }} 
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      <span className="ml-2 text-xs font-bold text-emerald-900">
+                        {getAutoSyncEnabled() ? 'Açık' : 'Kapalı'}
+                      </span>
+                    </label>
                   </div>
                 </div>
               )}

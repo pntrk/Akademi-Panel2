@@ -13,18 +13,34 @@ import firebaseConfig from '../../firebase-applet-config.json';
 import { DriveBackupFile } from '../types';
 
 // Scopes required for Google Drive Backup integration
-export const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+export const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/drive.appdata'
+];
 
 // Initialize Firebase App safely
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-const provider = new GoogleAuthProvider();
-provider.addScope('https://www.googleapis.com/auth/drive.file');
-// Prompt user to select account or consent if needed
-provider.setCustomParameters({
-  prompt: 'select_account'
-});
+export const createGoogleProvider = (forceConsent: boolean = false) => {
+  const provider = new GoogleAuthProvider();
+  provider.addScope('https://www.googleapis.com/auth/drive.file');
+  provider.addScope('https://www.googleapis.com/auth/drive.appdata');
+  
+  if (forceConsent) {
+    // Only force prompt if user explicitly needs to re-authorize or granted permissions were missing
+    provider.setCustomParameters({
+      prompt: 'consent select_account',
+      access_type: 'offline'
+    });
+  } else {
+    // Normal / Silent login without re-prompting consent every time
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+  }
+  return provider;
+};
 
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;
@@ -118,9 +134,13 @@ export const initAuth = (
 };
 
 // Sign in with Google (Popup with fallback or Redirect)
-export const googleSignIn = async (useRedirect: boolean = false): Promise<{ user: User; accessToken: string } | null> => {
+export const googleSignIn = async (
+  useRedirect: boolean = false, 
+  forceConsent: boolean = false
+): Promise<{ user: User; accessToken: string } | null> => {
   try {
     isSigningIn = true;
+    const provider = createGoogleProvider(forceConsent);
     
     if (useRedirect) {
       await signInWithRedirect(auth, provider);
@@ -158,7 +178,56 @@ export const googleSignOut = async (): Promise<void> => {
   clearStoredAccessToken();
 };
 
-// --- Google Drive REST API Operations ---
+// Auto-sync preference management
+export const getAutoSyncEnabled = (): boolean => {
+  try {
+    const saved = localStorage.getItem('gdrive_auto_sync_enabled');
+    // Default to true (auto-sync enabled) unless user explicitly turned it off ('false')
+    return saved !== 'false';
+  } catch (e) {
+    return true;
+  }
+};
+
+export const setAutoSyncEnabled = (enabled: boolean) => {
+  try {
+    localStorage.setItem('gdrive_auto_sync_enabled', enabled ? 'true' : 'false');
+  } catch (e) {}
+};
+
+export const getLastSyncTime = (): string | null => {
+  try {
+    return localStorage.getItem('gdrive_last_sync_timestamp');
+  } catch (e) {
+    return null;
+  }
+};
+
+export const setLastSyncTime = (timestampStr: string) => {
+  try {
+    localStorage.setItem('gdrive_last_sync_timestamp', timestampStr);
+  } catch (e) {}
+};
+
+export const autoSyncToDrive = async (backupData: any): Promise<boolean> => {
+  try {
+    const token = await getAccessToken();
+    if (!token) return false;
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('tr-TR').replace(/\./g, '-');
+    const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }).replace(':', '-');
+    const deviceTag = getDeviceType() === 'Telefon' ? 'Telefon' : getDeviceType() === 'Tablet' ? 'Tablet' : 'PC';
+    const filename = `AkademiPanel_OtoYedek_${dateStr}_${timeStr}_(${deviceTag}).json`;
+
+    await saveBackupToDrive(backupData, filename);
+    setLastSyncTime(now.toISOString());
+    return true;
+  } catch (err) {
+    console.warn('Otomatik Drive senkronizasyonu atlandı:', err);
+    return false;
+  }
+};
 
 /**
  * Upload a backup file to Google Drive using multipart upload
@@ -206,6 +275,10 @@ export const saveBackupToDrive = async (
 
   if (!response.ok) {
     const errText = await response.text();
+    if (response.status === 401 || response.status === 403) {
+      clearStoredAccessToken();
+      throw new Error(`Google Drive izin hatası (${response.status}): Erişim izniniz yetersiz veya süresi dolmuş. Lütfen "Google ile Yeniden Bağlan" butonuna tıklayıp Drive izinlerini onaylayın.`);
+    }
     throw new Error(`Google Drive yükleme hatası (${response.status}): ${errText}`);
   }
 
@@ -222,9 +295,9 @@ export const listDriveBackups = async (): Promise<DriveBackupFile[]> => {
     throw new Error('Google Drive bağlantısı bulunamadı. Lütfen önce Google ile giriş yapın.');
   }
 
-  // Search for JSON files or files containing 'AkademiPanel'
+  // Search for JSON files or files containing 'Akademi'
   const query = encodeURIComponent("trashed = false and (name contains 'Akademi' or mimeType = 'application/json')");
-  const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,createdTime,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=20`;
+  const url = `https://www.googleapis.com/drive/v3/files?spaces=drive&q=${query}&fields=files(id,name,createdTime,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=30`;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -236,6 +309,10 @@ export const listDriveBackups = async (): Promise<DriveBackupFile[]> => {
 
   if (!response.ok) {
     const errText = await response.text();
+    if (response.status === 401 || response.status === 403 || errText.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT')) {
+      clearStoredAccessToken();
+      throw new Error(`Google Drive erişim izni yetersiz (403). Google hesabınızla ilk giriş yaparken Drive izni onaylanmamış olabilir. Lütfen "Google ile Tekrar Giriş Yap" butonuna tıklayıp açılan onay ekranında Drive iznine izin verin.`);
+    }
     throw new Error(`Google Drive dosyaları listelenirken hata oluştu (${response.status}): ${errText}`);
   }
 
@@ -263,6 +340,10 @@ export const getDriveBackupContent = async (fileId: string): Promise<any> => {
 
   if (!response.ok) {
     const errText = await response.text();
+    if (response.status === 401 || response.status === 403) {
+      clearStoredAccessToken();
+      throw new Error(`Google Drive erişim izni yetersiz (${response.status}). Lütfen tekrar giriş yapın.`);
+    }
     throw new Error(`Google Drive dosyası indirilemedi (${response.status}): ${errText}`);
   }
 
@@ -288,6 +369,10 @@ export const deleteDriveBackup = async (fileId: string): Promise<void> => {
 
   if (!response.ok && response.status !== 204) {
     const errText = await response.text();
+    if (response.status === 401 || response.status === 403) {
+      clearStoredAccessToken();
+      throw new Error(`Google Drive erişim izni yetersiz (${response.status}). Lütfen tekrar giriş yapın.`);
+    }
     throw new Error(`Google Drive dosyası silinemedi (${response.status}): ${errText}`);
   }
 };

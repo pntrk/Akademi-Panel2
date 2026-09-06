@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem } from '../types';
+import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem, FullBackupData } from '../types';
 import { generateId, recalculateLeagueForStudents } from '../lib/utils';
+import { autoSyncToDrive, getAutoSyncEnabled, getAccessToken } from '../lib/googleDrive';
 
 export interface AppUser {
   name: string;
@@ -224,6 +225,68 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setSyncStatus('synced');
     }, 150);
   };
+
+  // Background Auto-sync to Google Drive if connected and enabled
+  const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+
+    autoSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const isAutoSync = getAutoSyncEnabled();
+        const token = await getAccessToken();
+        if (isAutoSync && token && state.students?.length > 0) {
+          const backupObj: FullBackupData = {
+            appName: "AkademiPanel",
+            version: "2.0",
+            backupDate: new Date().toISOString(),
+            school: "Kırklareli Atatürk Ortaokulu",
+            modules: [
+              "Öğrenci Kayıtları",
+              "Deneme Sınavları",
+              "Sınav Sonuçları",
+              "Akademi Arena",
+              "Sınav Salonları",
+              "Bütçe Takibi"
+            ],
+            summary: {
+              studentCount: state.students?.length || 0,
+              examCount: state.exams?.length || 0,
+              resultCount: state.results?.length || 0,
+              hallCount: state.examHalls?.length || 0,
+              budgetIncomesCount: state.budget?.incomes?.length || 0,
+              budgetExpensesCount: state.budget?.expenses?.length || 0,
+              budgetDebtsCount: state.budget?.debts?.length || 0,
+              arenaMentorsCount: Object.keys(state.leagueMentors || {}).length,
+              arenaBonusCount: Object.keys(state.leagueTeamPoints || {}).length,
+              approvedTransferCount: state.approvedTransfers?.length || 0
+            },
+            students: state.students || [],
+            exams: state.exams || [],
+            results: state.results || [],
+            examHalls: state.examHalls || [],
+            budget: {
+              incomes: state.budget?.incomes || [],
+              expenses: state.budget?.expenses || [],
+              debts: state.budget?.debts || []
+            },
+            leagueMentors: state.leagueMentors || {},
+            leagueTeamPoints: state.leagueTeamPoints || {},
+            approvedTransfers: state.approvedTransfers || [],
+            admins: state.admins || ['kirklareliataturkortaokulu@gmail.com'],
+            teachers: state.teachers || []
+          };
+          await autoSyncToDrive(backupObj);
+        }
+      } catch (err) {
+        console.warn('Auto sync check failed:', err);
+      }
+    }, 4000); // 4-second debounce to prevent spamming drive
+
+    return () => {
+      if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+    };
+  }, [state]);
 
   const saveNow = async () => {
     try {
