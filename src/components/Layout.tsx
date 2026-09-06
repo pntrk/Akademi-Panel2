@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, Shield, CheckCircle2 } from 'lucide-react';
+import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, Shield, CheckCircle2, Cloud } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { SettingsModal } from './SettingsModal';
+import { GoogleDriveModal } from './GoogleDriveModal';
 import { FullBackupData } from '../types';
 
 interface LayoutProps {
@@ -23,6 +24,7 @@ const navItems = [
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
   const { userRole, setUserRole, currentUser, state, restoreBackup, syncStatus, saveNow } = useAppContext();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
@@ -222,6 +224,26 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                 </button>
               </div>
 
+              {/* Google Drive Bulut Senkronizasyonu */}
+              <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/30 rounded-2xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Cloud className="w-4 h-4 text-blue-400" />
+                    <p className="text-[11px] font-bold text-white">Google Drive Bulut</p>
+                  </div>
+                  <span className="text-[9px] bg-blue-500/20 text-blue-300 font-bold px-2 py-0.5 rounded-full border border-blue-400/30">
+                    Senkronize
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setIsDriveModalOpen(true); closeMobileMenu(); }}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-sm cursor-pointer"
+                >
+                  <Cloud className="w-4 h-4" />
+                  <span>Google Drive'a Yedekle / Yükle</span>
+                </button>
+              </div>
+
               {/* Yerel Çevrimdışı İndirme / Yükleme */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -341,10 +363,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             </button>
           </div>
 
+          {/* Google Drive Cloud Sync Button Desktop */}
+          <button 
+            onClick={() => setIsDriveModalOpen(true)} 
+            className="flex items-center justify-between w-full bg-gradient-to-r from-blue-900/40 to-indigo-900/40 hover:from-blue-900/60 hover:to-indigo-900/60 active:scale-[0.98] text-white text-[0.75rem] font-bold py-2 px-3 rounded-xl border border-blue-400/30 shadow-xs transition-all cursor-pointer group"
+          >
+            <span className="flex items-center gap-2 truncate">
+              <Cloud className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+              <span>Google Drive Yedek</span>
+            </span>
+            <span className="text-[9px] bg-blue-400/20 text-blue-300 font-semibold px-1.5 py-0.5 rounded-full border border-blue-400/30">
+              Bulut
+            </span>
+          </button>
+
           {/* JSON Backup & Restore Pair Buttons */}
           <div className="space-y-1">
             <div className="flex items-center justify-between px-0.5">
-              <span className="text-[10px] text-white/50 font-medium">Tam Sistem Yedeği</span>
+              <span className="text-[10px] text-white/50 font-medium">Yerel JSON Yedeği</span>
               <span className="text-[9px] text-emerald-400/80 font-mono">6 Modül</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -409,6 +445,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       </aside>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <GoogleDriveModal isOpen={isDriveModalOpen} onClose={() => setIsDriveModalOpen(false)} />
       
       {/* Main Content */}
       <main className={cn("flex-1 flex flex-col overflow-auto bg-brand-bg transition-all duration-300 w-full pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0", isDarkMode ? "dark-mode-main" : "")}>
