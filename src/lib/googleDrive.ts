@@ -1,15 +1,3 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInWithPopup, 
-  signInWithRedirect,
-  getRedirectResult,
-  GoogleAuthProvider, 
-  onAuthStateChanged, 
-  signOut,
-  User 
-} from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
 import { DriveBackupFile } from '../types';
 
 // Scopes required for Google Drive Backup integration
@@ -18,31 +6,6 @@ export const SCOPES = [
   'https://www.googleapis.com/auth/drive.appdata'
 ];
 
-// Initialize Firebase App safely
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-
-export const createGoogleProvider = (forceConsent: boolean = false) => {
-  const provider = new GoogleAuthProvider();
-  provider.addScope('https://www.googleapis.com/auth/drive.file');
-  provider.addScope('https://www.googleapis.com/auth/drive.appdata');
-  
-  if (forceConsent) {
-    // Only force prompt if user explicitly needs to re-authorize or granted permissions were missing
-    provider.setCustomParameters({
-      prompt: 'consent select_account',
-      access_type: 'offline'
-    });
-  } else {
-    // Normal / Silent login without re-prompting consent every time
-    provider.setCustomParameters({
-      prompt: 'select_account'
-    });
-  }
-  return provider;
-};
-
-let isSigningIn = false;
 let cachedAccessToken: string | null = null;
 
 export const getDeviceType = (): 'Bilgisayar' | 'Telefon' | 'Tablet' => {
@@ -95,87 +58,21 @@ export const clearStoredAccessToken = () => {
   } catch (e) {}
 };
 
-// Initialize auth state listener and check for redirect result on return
-export const initAuth = (
-  onAuthSuccess?: (user: User, token: string) => void,
-  onAuthFailure?: () => void
-) => {
-  // Check if returning from redirect sign-in (especially on mobile)
-  getRedirectResult(auth)
-    .then((result) => {
-      if (result) {
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential?.accessToken) {
-          setStoredAccessToken(credential.accessToken);
-          if (onAuthSuccess) {
-            onAuthSuccess(result.user, credential.accessToken);
-          }
-        }
-      }
-    })
-    .catch((err) => {
-      console.warn('Redirect result check:', err);
-    });
-
-  return onAuthStateChanged(auth, async (user: User | null) => {
-    if (user) {
-      const token = await getAccessToken();
-      if (token) {
-        if (onAuthSuccess) onAuthSuccess(user, token);
-      } else {
-        // Logged in via Firebase Auth, but token expired or not stored
-        if (onAuthFailure) onAuthFailure();
-      }
-    } else {
-      clearStoredAccessToken();
-      if (onAuthFailure) onAuthFailure();
-    }
-  });
-};
-
-// Sign in with Google (Popup with fallback or Redirect)
-export const googleSignIn = async (
-  useRedirect: boolean = false, 
-  forceConsent: boolean = false
-): Promise<{ user: User; accessToken: string } | null> => {
-  try {
-    isSigningIn = true;
-    const provider = createGoogleProvider(forceConsent);
-    
-    if (useRedirect) {
-      await signInWithRedirect(auth, provider);
-      return null;
-    }
-
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (!credential?.accessToken) {
-        throw new Error('Google Drive erişim belirteci (Access Token) alınamadı. Lütfen tekrar deneyin.');
-      }
-
-      setStoredAccessToken(credential.accessToken);
-      return { user: result.user, accessToken: credential.accessToken };
-    } catch (popupErr: any) {
-      // If popup was blocked (common on mobile), automatically try redirect
-      if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
-        console.log('Popup engellendi, yönlendirme (redirect) ile deneniyor...');
-        await signInWithRedirect(auth, provider);
-        return null;
-      }
-      throw popupErr;
-    }
-  } catch (error: any) {
-    console.error('Google Sign In Hatası:', error);
-    throw error;
-  } finally {
-    isSigningIn = false;
-  }
-};
-
 export const googleSignOut = async (): Promise<void> => {
-  await signOut(auth);
   clearStoredAccessToken();
+};
+
+export const fetchGoogleUserInfo = async (token: string): Promise<{ email: string; name: string; picture: string } | null> => {
+  try {
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (err) {
+    console.error('Failed to fetch user info', err);
+    return null;
+  }
 };
 
 // Auto-sync preference management

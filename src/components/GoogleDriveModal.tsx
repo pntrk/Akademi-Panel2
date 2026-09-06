@@ -24,9 +24,6 @@ import {
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { 
-  initAuth, 
-  googleSignIn, 
-  googleSignOut, 
   getAccessToken,
   saveBackupToDrive, 
   listDriveBackups, 
@@ -35,10 +32,14 @@ import {
   getDeviceType,
   getAutoSyncEnabled,
   setAutoSyncEnabled,
-  getLastSyncTime
+  getLastSyncTime,
+  setStoredAccessToken,
+  clearStoredAccessToken,
+  fetchGoogleUserInfo,
+  googleSignOut
 } from '../lib/googleDrive';
 import { DriveBackupFile, FullBackupData } from '../types';
-import { User } from 'firebase/auth';
+import { useGoogleLogin } from '@react-oauth/google';
 
 interface GoogleDriveModalProps {
   isOpen: boolean;
@@ -49,7 +50,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
   const { state, restoreBackup } = useAppContext();
   
   const [activeTab, setActiveTab] = useState<'drive' | 'share' | 'guide'>('drive');
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{ email: string; name: string; picture: string } | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -59,45 +60,71 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
   const [isSavingToDrive, setIsSavingToDrive] = useState(false);
   const [activeFileActionId, setActiveFileActionId] = useState<string | null>(null);
   
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string; copyDomain?: boolean } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [deleteConfirmFile, setDeleteConfirmFile] = useState<DriveBackupFile | null>(null);
   const [restoreConfirmFile, setRestoreConfirmFile] = useState<DriveBackupFile | null>(null);
-  const [copiedDomain, setCopiedDomain] = useState(false);
 
   const device = getDeviceType();
+
+  const handleGoogleLoginSuccess = async (tokenResponse: any) => {
+    setIsSigningIn(true);
+    setFeedback(null);
+    try {
+      const accessToken = tokenResponse.access_token;
+      setStoredAccessToken(accessToken);
+      
+      const userInfo = await fetchGoogleUserInfo(accessToken);
+      if (userInfo) {
+        setUser(userInfo);
+        setIsAuthenticated(true);
+        setFeedback({ type: 'success', message: `Google hesabı (${userInfo.email}) ile başarıyla bağlandı.` });
+        await loadFiles();
+      } else {
+        throw new Error("Kullanıcı bilgileri alınamadı.");
+      }
+    } catch (err: any) {
+      console.error('Sign in process error:', err);
+      setFeedback({ type: 'error', message: 'Giriş yapılamadı: ' + (err.message || 'Bilinmeyen hata') });
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const login = useGoogleLogin({
+    onSuccess: handleGoogleLoginSuccess,
+    onError: (error) => {
+      console.error('Google Sign In Error:', error);
+      setFeedback({ type: 'error', message: 'Giriş yapılamadı.' });
+    },
+    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata'
+  });
 
   // Initialize Auth state listener
   useEffect(() => {
     if (!isOpen) return;
 
     setIsLoadingAuth(true);
-    const unsubscribe = initAuth(
-      (authUser) => {
-        setUser(authUser);
-        setIsAuthenticated(true);
-        setIsLoadingAuth(false);
-        loadFiles();
-      },
-      () => {
-        setUser(null);
-        setIsAuthenticated(false);
-        setIsLoadingAuth(false);
-        setDriveFiles([]);
-      }
-    );
 
     // Initial check for in-memory / stored token
-    getAccessToken().then(token => {
+    getAccessToken().then(async token => {
       if (token) {
-        setIsAuthenticated(true);
-        loadFiles();
+        const userInfo = await fetchGoogleUserInfo(token);
+        if (userInfo) {
+          setUser(userInfo);
+          setIsAuthenticated(true);
+          loadFiles();
+        } else {
+          clearStoredAccessToken();
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
       setIsLoadingAuth(false);
     });
 
-    return () => {
-      unsubscribe();
-    };
   }, [isOpen]);
 
   const loadFiles = async () => {
@@ -118,38 +145,9 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
 
   const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'akademi-panel2-nop7.vercel.app';
 
-  const handleSignIn = async (useRedirect: boolean = false) => {
-    setIsSigningIn(true);
+  const handleSignIn = () => {
     setFeedback(null);
-    try {
-      const result = await googleSignIn(useRedirect);
-      if (result) {
-        setUser(result.user);
-        setIsAuthenticated(true);
-        setFeedback({ type: 'success', message: `Google hesabı (${result.user.email}) ile başarıyla bağlandı.` });
-        await loadFiles();
-      }
-    } catch (err: any) {
-      console.error('Sign in error:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setFeedback({ type: 'info', message: 'Giriş penceresi kapatıldı.' });
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setFeedback({ 
-          type: 'error', 
-          message: `Bu alan adı (${currentHost}) Firebase yetkili alan adları listesinde henüz kayıtlı değil. Aşağıdaki "Alan Adını Kopyala" ve "Firebase Konsolu Aç" butonlarını kullanarak 5 saniyede ekleyebilirsiniz.`,
-          copyDomain: true
-        });
-      } else if (err.code === 'auth/popup-blocked') {
-        setFeedback({ 
-          type: 'info', 
-          message: 'Açılır pencere engellendi. "Mobil Yönlendirme ile Giriş" butonunu deneyebilirsiniz.' 
-        });
-      } else {
-        setFeedback({ type: 'error', message: 'Giriş yapılamadı: ' + (err.message || 'Bilinmeyen hata') });
-      }
-    } finally {
-      setIsSigningIn(false);
-    }
+    login();
   };
 
   const handleSignOut = async () => {
@@ -309,14 +307,6 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
     setFeedback({ type: 'success', message: 'Yedek JSON dosyası cihaza indirildi.' });
   };
 
-  const copyHostToClipboard = () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(currentHost);
-      setCopiedDomain(true);
-      setTimeout(() => setCopiedDomain(false), 3000);
-    }
-  };
-
   const formatDate = (isoString?: string) => {
     if (!isoString) return '-';
     try {
@@ -423,47 +413,12 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
                 </button>
               </div>
 
-              {feedback.copyDomain && (
-                <div className="p-3 bg-white/90 rounded-xl border border-red-300 space-y-2.5 mt-1 text-xs">
-                  <div className="text-gray-800 leading-relaxed">
-                    <strong>1 Adımda Çözüm:</strong> Firebase konsolunda bu alan adını onaylı listeye ekleyin:
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
-                    <div className="font-mono text-xs text-blue-700 select-all break-all px-1">
-                      {currentHost}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={copyHostToClipboard}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 bg-gray-800 hover:bg-gray-900 text-white rounded-md text-xs font-bold transition-all cursor-pointer"
-                      >
-                        <Copy className="w-3 h-3" />
-                        <span>{copiedDomain ? 'Kopyalandı!' : 'Alan Adını Kopyala'}</span>
-                      </button>
-                      <a
-                        href="https://console.firebase.google.com/project/gen-lang-client-0721174346/authentication/settings"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-bold transition-all cursor-pointer"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        <span>Firebase Konsolu Aç</span>
-                      </a>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-gray-500">
-                    Açılan sayfada <strong>"Yetkili alan adları (Authorized domains)"</strong> kısmına bu adresi yapıştırıp <strong>Ekle</strong> butonuna tıklayın. Ardından Google ile giriş derhal çalışacaktır.
-                  </p>
-                </div>
-              )}
-
               {/* Quick Re-auth Button if permission/scope error */}
               {feedback.type === 'error' && feedback.message?.includes('yetki') && (
                 <div className="mt-1 pt-2 border-t border-red-200 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => handleSignIn(false)}
+                    onClick={() => handleSignIn()}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -557,7 +512,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
                   <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full justify-center max-w-md">
                     <button 
                       type="button"
-                      onClick={() => handleSignIn(false)}
+                      onClick={() => handleSignIn()}
                       disabled={isSigningIn}
                       className="w-full sm:flex-1 flex items-center justify-center gap-3 px-5 py-3 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-semibold text-sm rounded-xl border border-gray-300 shadow-sm transition-all cursor-pointer disabled:opacity-50"
                     >
@@ -578,18 +533,6 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
                         </>
                       )}
                     </button>
-
-                    {/* Mobile / Popup Blocked Fallback */}
-                    <button
-                      type="button"
-                      onClick={() => handleSignIn(true)}
-                      disabled={isSigningIn}
-                      className="w-full sm:w-auto px-3.5 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-                      title="Mobil cihazlar için sayfa yönlendirmeli güvenli giriş"
-                    >
-                      <Smartphone className="w-3.5 h-3.5" />
-                      <span>Mobil Giriş</span>
-                    </button>
                   </div>
 
                   <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] text-gray-500">
@@ -603,16 +546,16 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
                 <div className="space-y-3">
                   <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      {user?.photoURL ? (
-                        <img src={user.photoURL} alt={user.displayName || 'Google'} className="w-10 h-10 rounded-full border border-blue-200" referrerPolicy="no-referrer" />
+                      {user?.picture ? (
+                        <img src={user.picture} alt={user.name || 'Google'} className="w-10 h-10 rounded-full border border-blue-200" referrerPolicy="no-referrer" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-base">
-                          {(user?.displayName || user?.email || 'G').charAt(0).toUpperCase()}
+                          {(user?.name || user?.email || 'G').charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-sm text-gray-900">{user?.displayName || 'Google Hesabı'}</span>
+                          <span className="font-bold text-sm text-gray-900">{user?.name || 'Google Hesabı'}</span>
                           <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full border border-emerald-200">Bağlı</span>
                         </div>
                         <p className="text-xs text-gray-600">{user?.email}</p>
@@ -888,52 +831,6 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({ isOpen, onCl
                   <li><strong>Listeden Yükleyin:</strong> Listede beliren en son <em>(PC)</em> yedeğinin yanındaki <strong>"Bu Cihaza Yükle"</strong> butonuna dokunun. Tüm veriler telefonunuza aktarılır!</li>
                   <li><strong>Telefonda Değişiklik Yaparsanız:</strong> Tekrar <strong>"Telefondan Drive'a Yedekle"</strong> butonuna basıp bilgisayarınızdan aynı şekilde yükleyebilirsiniz.</li>
                 </ol>
-              </div>
-
-              {/* Authorized Domains Help Box for Vercel */}
-              <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
-                    <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                    Vercel & Telefon Giriş İzni (auth/unauthorized-domain):
-                  </span>
-                  <button
-                    type="button"
-                    onClick={copyHostToClipboard}
-                    className="flex items-center gap-1 text-[11px] font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 px-2 py-0.5 rounded cursor-pointer transition-colors"
-                  >
-                    <Copy className="w-3 h-3" />
-                    {copiedDomain ? 'Kopyalandı!' : 'Alan Adını Kopyala'}
-                  </button>
-                </div>
-
-                <p className="text-[11px] text-amber-900 leading-relaxed">
-                  Google güvenlik standartları gereği, uygulamanın yayınlandığı Vercel alan adının Firebase yetkili listesine <strong>bir kez</strong> eklenmesi gerekir:
-                </p>
-
-                <div className="p-2.5 bg-white rounded-xl border border-amber-300 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                  <span className="font-mono text-xs text-blue-700 px-1 break-all">
-                    {currentHost}
-                  </span>
-                  <a
-                    href="https://console.firebase.google.com/project/gen-lang-client-0721174346/authentication/settings"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-1 px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    <span>Firebase Yetkili Alan Adı Ayarlarına Git</span>
-                  </a>
-                </div>
-
-                <div className="text-[11px] text-amber-900 space-y-1 bg-amber-100/60 p-2.5 rounded-lg">
-                  <p className="font-bold">Hızlı Adımlar:</p>
-                  <ol className="list-decimal list-inside space-y-0.5">
-                    <li>Yukarıdaki butona tıklayarak Firebase konsolunu açın.</li>
-                    <li><strong>"Yetkili alan adları" (Authorized domains)</strong> altında <strong>"Alan adı ekle"</strong> butonuna basın.</li>
-                    <li><code>{currentHost}</code> ve isteğe bağlı <code>vercel.app</code> yazıp kaydedin.</li>
-                  </ol>
-                </div>
               </div>
             </div>
           )}
