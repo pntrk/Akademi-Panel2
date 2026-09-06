@@ -2,6 +2,8 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   onAuthStateChanged, 
   signOut,
@@ -19,46 +21,130 @@ export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.file');
+// Prompt user to select account or consent if needed
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;
 
-// Initialize auth state listener
+export const getDeviceType = (): 'Bilgisayar' | 'Telefon' | 'Tablet' => {
+  if (typeof window === 'undefined') return 'Bilgisayar';
+  const ua = navigator.userAgent.toLowerCase();
+  if (/(ipad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk|(puffin(?!.*(IP|AP|WP))))/.test(ua)) {
+    return 'Tablet';
+  }
+  if (/mobi|android|touch|mini|windows\sce|palm/i.test(ua) || (window.innerWidth < 768)) {
+    return 'Telefon';
+  }
+  return 'Bilgisayar';
+};
+
+export const getAccessToken = async (): Promise<string | null> => {
+  if (cachedAccessToken) return cachedAccessToken;
+  
+  try {
+    const savedToken = localStorage.getItem('gdrive_access_token');
+    const savedTime = localStorage.getItem('gdrive_token_timestamp');
+    if (savedToken && savedTime) {
+      const elapsed = Date.now() - parseInt(savedTime, 10);
+      // Google access tokens are valid for 1 hour. We use 55 mins window.
+      if (elapsed < 55 * 60 * 1000) {
+        cachedAccessToken = savedToken;
+        return cachedAccessToken;
+      } else {
+        localStorage.removeItem('gdrive_access_token');
+        localStorage.removeItem('gdrive_token_timestamp');
+      }
+    }
+  } catch (e) {}
+
+  return null;
+};
+
+export const setStoredAccessToken = (token: string) => {
+  cachedAccessToken = token;
+  try {
+    localStorage.setItem('gdrive_access_token', token);
+    localStorage.setItem('gdrive_token_timestamp', Date.now().toString());
+  } catch (e) {}
+};
+
+export const clearStoredAccessToken = () => {
+  cachedAccessToken = null;
+  try {
+    localStorage.removeItem('gdrive_access_token');
+    localStorage.removeItem('gdrive_token_timestamp');
+  } catch (e) {}
+};
+
+// Initialize auth state listener and check for redirect result on return
 export const initAuth = (
   onAuthSuccess?: (user: User, token: string) => void,
   onAuthFailure?: () => void
 ) => {
+  // Check if returning from redirect sign-in (especially on mobile)
+  getRedirectResult(auth)
+    .then((result) => {
+      if (result) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          setStoredAccessToken(credential.accessToken);
+          if (onAuthSuccess) {
+            onAuthSuccess(result.user, credential.accessToken);
+          }
+        }
+      }
+    })
+    .catch((err) => {
+      console.warn('Redirect result check:', err);
+    });
+
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
-      if (cachedAccessToken) {
-        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        // If user is logged into Firebase but we don't have OAuth token in memory yet
+      const token = await getAccessToken();
+      if (token) {
+        if (onAuthSuccess) onAuthSuccess(user, token);
+      } else {
+        // Logged in via Firebase Auth, but token expired or not stored
         if (onAuthFailure) onAuthFailure();
       }
     } else {
-      cachedAccessToken = null;
+      clearStoredAccessToken();
       if (onAuthFailure) onAuthFailure();
     }
   });
 };
 
-export const getAccessToken = async (): Promise<string | null> => {
-  return cachedAccessToken;
-};
-
-// Sign in with Google Popup
-export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
+// Sign in with Google (Popup with fallback or Redirect)
+export const googleSignIn = async (useRedirect: boolean = false): Promise<{ user: User; accessToken: string } | null> => {
   try {
     isSigningIn = true;
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error('Google Drive erişim belirteci (Access Token) alınamadı.');
+    
+    if (useRedirect) {
+      await signInWithRedirect(auth, provider);
+      return null;
     }
 
-    cachedAccessToken = credential.accessToken;
-    return { user: result.user, accessToken: cachedAccessToken };
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (!credential?.accessToken) {
+        throw new Error('Google Drive erişim belirteci (Access Token) alınamadı. Lütfen tekrar deneyin.');
+      }
+
+      setStoredAccessToken(credential.accessToken);
+      return { user: result.user, accessToken: credential.accessToken };
+    } catch (popupErr: any) {
+      // If popup was blocked (common on mobile), automatically try redirect
+      if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+        console.log('Popup engellendi, yönlendirme (redirect) ile deneniyor...');
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
+      throw popupErr;
+    }
   } catch (error: any) {
     console.error('Google Sign In Hatası:', error);
     throw error;
@@ -69,7 +155,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 
 export const googleSignOut = async (): Promise<void> => {
   await signOut(auth);
-  cachedAccessToken = null;
+  clearStoredAccessToken();
 };
 
 // --- Google Drive REST API Operations ---

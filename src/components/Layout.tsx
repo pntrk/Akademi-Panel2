@@ -471,6 +471,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           
           <div className="flex items-center gap-1.5">
             <button 
+              onClick={() => setIsDriveModalOpen(true)} 
+              aria-label="Google Drive Bulut Yedekleme"
+              title="Bulut Yedekleme & Cihaz Eşitleme"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-blue-500/10 hover:bg-blue-500/20 active:scale-95 text-blue-400 border border-blue-400/30 transition-all cursor-pointer"
+            >
+              <Cloud className="w-4 h-4 text-blue-400" />
+            </button>
+            <button 
               onClick={() => setIsDarkMode(!isDarkMode)} 
               aria-label="Temayı Değiştir"
               className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-white/80 border border-white/10 transition-all cursor-pointer"
