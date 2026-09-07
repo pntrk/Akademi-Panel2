@@ -493,6 +493,7 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
   };
 
   const saveNow = async () => {
+    if (userRole !== 'admin') return;
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -505,6 +506,7 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
   };
 
   const retrySync = async () => {
+    if (userRole !== 'admin') return;
     clearQuotaExceeded();
     isQuotaExceededRef.current = false;
     await enableNetwork(db).catch(() => {});
@@ -632,6 +634,7 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
   };
 
   const updateUsers = async (admins: string[], teachers: string[]) => {
+    if (userRole !== 'admin') return;
     const cleanAdmins = Array.from(new Set(
       admins.map(a => (a || '').trim().toLowerCase()).filter(Boolean)
     ));

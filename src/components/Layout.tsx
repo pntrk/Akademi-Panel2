@@ -55,6 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   }, [isDarkMode]);
 
   const handleBackup = () => {
+    if (userRole !== 'admin') return;
     const backupData: FullBackupData = {
       appName: "AkademiPanel",
       version: "2.0",
@@ -112,6 +113,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   };
 
   const handleRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (userRole !== 'admin') return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -139,6 +141,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   };
 
   const handleManualSave = async () => {
+    if (userRole !== 'admin') return;
     try {
       await saveNow();
       setSaveFeedback("✓ Veriler buluta kaydedildi");
@@ -199,120 +202,118 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             </div>
             
             {/* Management Actions */}
-            <input type="file" accept=".json" className="hidden" id="restore-input-mobile" onChange={handleRestore} />
+            {userRole === 'admin' && (
+              <input type="file" accept=".json" className="hidden" id="restore-input-mobile" onChange={handleRestore} />
+            )}
             
             <div className="space-y-3">
-              {/* Firebase Live Cloud Sync Status Badge */}
-              <div 
-                onClick={() => setIsFirebaseStatusOpen(true)}
-                className={cn(
-                  "rounded-2xl p-3 flex items-center justify-between border transition-all cursor-pointer hover:opacity-90 active:scale-[0.99]",
-                  syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30",
-                  syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30",
-                  syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30",
-                  (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30"
-                )}
-                title="Firebase ve Senkronizasyon Durumunu İncele"
-              >
-                <div className="flex items-center gap-2 min-w-0 mr-2">
-                  {syncStatus === 'synced' && (
-                    <span className="relative flex h-2.5 w-2.5 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
+              {/* Firebase Live Cloud Sync Status Badge - Admin Only */}
+              {userRole === 'admin' && (
+                <div 
+                  onClick={() => setIsFirebaseStatusOpen(true)}
+                  className={cn(
+                    "rounded-2xl p-3 flex items-center justify-between border transition-all cursor-pointer hover:opacity-90 active:scale-[0.99]",
+                    syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30",
+                    syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30",
+                    syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30",
+                    (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30"
                   )}
-                  {syncStatus === 'saving' && (
-                    <span className="animate-spin rounded-full h-3 w-3 border-2 border-sky-400 border-t-transparent shrink-0"></span>
-                  )}
-                  {syncStatus === 'quota_exceeded' && (
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400 shrink-0"></span>
-                  )}
-                  {(syncStatus === 'offline' || syncStatus === 'error') && (
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-400 shrink-0"></span>
-                  )}
-                  <div className="min-w-0">
-                    <p className={cn(
-                      "text-xs font-bold truncate",
-                      syncStatus === 'synced' && "text-emerald-300",
-                      syncStatus === 'saving' && "text-sky-300",
-                      syncStatus === 'quota_exceeded' && "text-amber-300",
-                      (syncStatus === 'offline' || syncStatus === 'error') && "text-rose-300"
-                    )}>
-                      {syncStatus === 'synced' && "Canlı Bulut Senkronizasyonu"}
-                      {syncStatus === 'saving' && "Buluta Kaydediliyor..."}
-                      {syncStatus === 'quota_exceeded' && "Yerel Koruma (Bulut Kotası)"}
-                      {syncStatus === 'offline' && "Çevrimdışı / Yerel Koruma"}
-                      {syncStatus === 'error' && "Yerel Hafıza Koruması"}
-                    </p>
-                    <p className="text-[10px] text-white/60 truncate">
-                      {saveFeedback || (syncStatus === 'quota_exceeded' ? "Veriler cihazınızda güvende" : "Tüm veriler anlık güvende")}
-                    </p>
+                  title="Firebase ve Senkronizasyon Durumunu İncele"
+                >
+                  <div className="flex items-center gap-2 min-w-0 mr-2">
+                    {syncStatus === 'synced' && (
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      </span>
+                    )}
+                    {syncStatus === 'saving' && (
+                      <span className="animate-spin rounded-full h-3 w-3 border-2 border-sky-400 border-t-transparent shrink-0"></span>
+                    )}
+                    {syncStatus === 'quota_exceeded' && (
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400 shrink-0"></span>
+                    )}
+                    {(syncStatus === 'offline' || syncStatus === 'error') && (
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-400 shrink-0"></span>
+                    )}
+                    <div className="min-w-0">
+                      <p className={cn(
+                        "text-xs font-bold truncate",
+                        syncStatus === 'synced' && "text-emerald-300",
+                        syncStatus === 'saving' && "text-sky-300",
+                        syncStatus === 'quota_exceeded' && "text-amber-300",
+                        (syncStatus === 'offline' || syncStatus === 'error') && "text-rose-300"
+                      )}>
+                        {syncStatus === 'synced' && "Canlı Bulut Senkronizasyonu"}
+                        {syncStatus === 'saving' && "Buluta Kaydediliyor..."}
+                        {syncStatus === 'quota_exceeded' && "Yerel Koruma (Bulut Kotası)"}
+                        {syncStatus === 'offline' && "Çevrimdışı / Yerel Koruma"}
+                        {syncStatus === 'error' && "Yerel Hafıza Koruması"}
+                      </p>
+                      <p className="text-[10px] text-white/60 truncate">
+                        {saveFeedback || (syncStatus === 'quota_exceeded' ? "Veriler cihazınızda güvende" : "Tüm veriler anlık güvende")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleManualSave();
+                    }}
+                    className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold border border-white/20 transition-colors cursor-pointer shrink-0"
+                    title="Manuel Kaydet"
+                  >
+                    Şimdi Kaydet
+                  </button>
+                </div>
+              )}
+
+              {/* Yerel Çevrimdışı İndirme / Yükleme - Admin Only */}
+              {userRole === 'admin' && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-white/80">Tam Sistem Yedeği</p>
+                    <span className="text-[9px] text-white/50">6 Modül Kapsamlı</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={handleBackup} 
+                      className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium p-2.5 rounded-xl border border-white/10 transition-all active:scale-[0.99] text-center cursor-pointer"
+                      title="Tüm Sistem Yedeğini İndir (Öğrenciler, Sınavlar, Sonuçlar, Arena, Salonlar, Bütçe)"
+                    >
+                      <DownloadCloud className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="truncate">Yedek İndir</span>
+                    </button>
+
+                    <button 
+                      onClick={() => document.getElementById('restore-input-mobile')?.click()} 
+                      className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium p-2.5 rounded-xl border border-white/10 transition-all active:scale-[0.99] text-center cursor-pointer"
+                      title="Tam Sistem Yedeği Yükle (JSON formatındaki tüm okul verilerini geri yükler)"
+                    >
+                      <UploadCloud className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <span className="truncate">Yedek Yükle</span>
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleManualSave();
-                  }}
-                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold border border-white/20 transition-colors cursor-pointer shrink-0"
-                  title="Manuel Kaydet"
-                >
-                  Şimdi Kaydet
-                </button>
-              </div>
-
-              {/* Yerel Çevrimdışı İndirme / Yükleme */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-semibold text-white/80">Tam Sistem Yedeği</p>
-                  <span className="text-[9px] text-white/50">6 Modül Kapsamlı</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    onClick={handleBackup} 
-                    className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium p-2.5 rounded-xl border border-white/10 transition-all active:scale-[0.99] text-center cursor-pointer"
-                    title="Tüm Sistem Yedeğini İndir (Öğrenciler, Sınavlar, Sonuçlar, Arena, Salonlar, Bütçe)"
-                  >
-                    <DownloadCloud className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span className="truncate">Yedek İndir</span>
-                  </button>
-
-                  <button 
-                    onClick={() => document.getElementById('restore-input-mobile')?.click()} 
-                    className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium p-2.5 rounded-xl border border-white/10 transition-all active:scale-[0.99] text-center cursor-pointer"
-                    title="Tam Sistem Yedeği Yükle (JSON formatındaki tüm okul verilerini geri yükler)"
-                  >
-                    <UploadCloud className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span className="truncate">Yedek Yükle</span>
-                  </button>
-                </div>
-              </div>
+              )}
 
               {/* Quick Actions Grid */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className={cn("grid gap-2", userRole === 'admin' ? "grid-cols-2" : "grid-cols-1")}>
                 <button 
                   onClick={() => setIsDarkMode(!isDarkMode)} 
-                  className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center"
+                  className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center cursor-pointer"
                 >
                   {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 shrink-0" /> : <Moon className="w-4 h-4 text-indigo-300 shrink-0" />}
                   <span className="text-xs font-semibold">{isDarkMode ? 'Aydınlık Tema' : 'Karanlık Tema'}</span>
                 </button>
 
-                {userRole === 'admin' ? (
+                {userRole === 'admin' && (
                   <button 
                     onClick={() => { setIsSettingsOpen(true); closeMobileMenu(); }} 
                     className="flex items-center justify-center p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/20 transition-all active:scale-[0.99] gap-2 cursor-pointer"
                   >
                     <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Kullanıcı Yönetimi</span>
-                  </button>
-                ) : (
-                  <button 
-                    onClick={handleManualSave} 
-                    className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center"
-                  >
-                    <Save className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span className="text-xs font-semibold">Bulut Eşitlendi</span>
                   </button>
                 )}
               </div>
@@ -377,81 +378,87 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         
         {/* Sidebar Footer - Optimized and Restructured */}
         <div className="sidebar-footer mt-auto flex flex-col gap-2.5 w-full pt-4 border-t border-white/10">
-          <input type="file" accept=".json" className="hidden" id="restore-input" onChange={handleRestore} />
+          {userRole === 'admin' && (
+            <input type="file" accept=".json" className="hidden" id="restore-input" onChange={handleRestore} />
+          )}
           
-          {/* Firebase Live Cloud Sync Indicator */}
-          <div 
-            onClick={() => setIsFirebaseStatusOpen(true)}
-            className={cn(
-              "flex items-center justify-between px-3 py-2 border rounded-xl text-[0.72rem] font-semibold transition-all cursor-pointer hover:opacity-90 active:scale-[0.99]",
-              syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30 text-emerald-300",
-              syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30 text-sky-300",
-              syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30 text-amber-300",
-              (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30 text-rose-300"
-            )}
-            title="Firebase ve Senkronizasyon Durumunu İncele"
-          >
-            <span className="flex items-center gap-2 truncate mr-1">
-              {syncStatus === 'synced' && (
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
+          {/* Firebase Live Cloud Sync Indicator - Admin Only */}
+          {userRole === 'admin' && (
+            <div 
+              onClick={() => setIsFirebaseStatusOpen(true)}
+              className={cn(
+                "flex items-center justify-between px-3 py-2 border rounded-xl text-[0.72rem] font-semibold transition-all cursor-pointer hover:opacity-90 active:scale-[0.99]",
+                syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30 text-emerald-300",
+                syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30 text-sky-300",
+                syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30 text-amber-300",
+                (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30 text-rose-300"
               )}
-              {syncStatus === 'saving' && (
-                <span className="animate-spin rounded-full h-2.5 w-2.5 border-2 border-sky-400 border-t-transparent shrink-0"></span>
-              )}
-              {syncStatus === 'quota_exceeded' && (
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shrink-0"></span>
-              )}
-              {(syncStatus === 'offline' || syncStatus === 'error') && (
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400 shrink-0"></span>
-              )}
-              <span className="truncate">
-                {syncStatus === 'synced' && "Bulut Senkronize"}
-                {syncStatus === 'saving' && "Kaydediliyor..."}
-                {syncStatus === 'quota_exceeded' && "Yerel Koruma"}
-                {syncStatus === 'offline' && "Çevrimdışı Mod"}
-                {syncStatus === 'error' && "Yerel Koruma"}
-              </span>
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleManualSave();
-              }}
-              className="text-[0.65rem] text-white/80 hover:text-white hover:underline cursor-pointer font-bold shrink-0 ml-1"
-              title="Manuel Kaydet"
+              title="Firebase ve Senkronizasyon Durumunu İncele"
             >
-              Kaydet
-            </button>
-          </div>
+              <span className="flex items-center gap-2 truncate mr-1">
+                {syncStatus === 'synced' && (
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                )}
+                {syncStatus === 'saving' && (
+                  <span className="animate-spin rounded-full h-2.5 w-2.5 border-2 border-sky-400 border-t-transparent shrink-0"></span>
+                )}
+                {syncStatus === 'quota_exceeded' && (
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shrink-0"></span>
+                )}
+                {(syncStatus === 'offline' || syncStatus === 'error') && (
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400 shrink-0"></span>
+                )}
+                <span className="truncate">
+                  {syncStatus === 'synced' && "Bulut Senkronize"}
+                  {syncStatus === 'saving' && "Kaydediliyor..."}
+                  {syncStatus === 'quota_exceeded' && "Yerel Koruma"}
+                  {syncStatus === 'offline' && "Çevrimdışı Mod"}
+                  {syncStatus === 'error' && "Yerel Koruma"}
+                </span>
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleManualSave();
+                }}
+                className="text-[0.65rem] text-white/80 hover:text-white hover:underline cursor-pointer font-bold shrink-0 ml-1"
+                title="Manuel Kaydet"
+              >
+                Kaydet
+              </button>
+            </div>
+          )}
 
-          {/* JSON Backup & Restore Pair Buttons */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between px-0.5">
-              <span className="text-[10px] text-white/50 font-medium">Tam Sistem Yedeği</span>
-              <span className="text-[9px] text-emerald-400/80 font-mono">6 Modül</span>
+          {/* JSON Backup & Restore Pair Buttons - Admin Only */}
+          {userRole === 'admin' && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between px-0.5">
+                <span className="text-[10px] text-white/50 font-medium">Tam Sistem Yedeği</span>
+                <span className="text-[9px] text-emerald-400/80 font-mono">6 Modül</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={handleBackup} 
+                  className="flex items-center justify-center bg-white/5 hover:bg-white/10 active:scale-[0.98] text-white/80 hover:text-white text-[0.72rem] font-medium py-2 px-2.5 rounded-xl border border-white/10 transition-all cursor-pointer gap-1.5 truncate"
+                  title="Tüm Sistem Yedeğini İndir (Öğrenciler, Sınavlar, Sonuçlar, Akademi Arena, Salonlar, Bütçe)"
+                >
+                  <DownloadCloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate">Yedek İndir</span>
+                </button>
+                <button 
+                  onClick={() => document.getElementById('restore-input')?.click()} 
+                  className="flex items-center justify-center bg-white/5 hover:bg-white/10 active:scale-[0.98] text-white/80 hover:text-white text-[0.72rem] font-medium py-2 px-2.5 rounded-xl border border-white/10 transition-all cursor-pointer gap-1.5 truncate"
+                  title="Tam Sistem Yedeği Yükle (Öğrenci, sınav, sonuç, arena, salon ve bütçe verilerini geri yükler)"
+                >
+                  <UploadCloud className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="truncate">Yedek Yükle</span>
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button 
-                onClick={handleBackup} 
-                className="flex items-center justify-center bg-white/5 hover:bg-white/10 active:scale-[0.98] text-white/80 hover:text-white text-[0.72rem] font-medium py-2 px-2.5 rounded-xl border border-white/10 transition-all cursor-pointer gap-1.5 truncate"
-                title="Tüm Sistem Yedeğini İndir (Öğrenciler, Sınavlar, Sonuçlar, Akademi Arena, Salonlar, Bütçe)"
-              >
-                <DownloadCloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="truncate">Yedek İndir</span>
-              </button>
-              <button 
-                onClick={() => document.getElementById('restore-input')?.click()} 
-                className="flex items-center justify-center bg-white/5 hover:bg-white/10 active:scale-[0.98] text-white/80 hover:text-white text-[0.72rem] font-medium py-2 px-2.5 rounded-xl border border-white/10 transition-all cursor-pointer gap-1.5 truncate"
-                title="Tam Sistem Yedeği Yükle (Öğrenci, sınav, sonuç, arena, salon ve bütçe verilerini geri yükler)"
-              >
-                <UploadCloud className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="truncate">Yedek Yükle</span>
-              </button>
-            </div>
-          </div>
+          )}
           
           {/* Admin User Management Button */}
           {userRole === 'admin' && (

@@ -9,7 +9,7 @@ interface FirebaseStatusModalProps {
 }
 
 export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen, onClose }) => {
-  const { state, syncStatus, syncErrorMessage, retrySync, saveNow } = useAppContext();
+  const { state, syncStatus, syncErrorMessage, retrySync, saveNow, userRole } = useAppContext();
   const [copied, setCopied] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -17,7 +17,7 @@ export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen
 
   // When modal opens, if it was in error or quota state, automatically attempt a reconnection check
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && userRole === 'admin') {
       setFeedback(null);
       if (syncStatus !== 'synced') {
         setShowRulesGuide(true);
@@ -26,9 +26,9 @@ export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen
         setShowRulesGuide(false);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, userRole]);
 
-  if (!isOpen) return null;
+  if (!isOpen || userRole !== 'admin') return null;
 
   const currentEmail = auth.currentUser?.email || 'bahadirkumcu@gmail.com';
 
