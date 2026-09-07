@@ -1,30 +1,31 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, setLogLevel } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+// Direct production configuration for Akademi Panel 2
+export const firebaseConfig = {
+  projectId: "gen-lang-client-0721174346",
+  appId: "1:255785106721:web:b6d6f8ede6ea17b5989260",
+  apiKey: "AIzaSyDvcV8VKNtKgRNs9rfHjXPt7it6pduoiX8",
+  authDomain: "gen-lang-client-0721174346.firebaseapp.com",
+  firestoreDatabaseId: "(default)",
+  storageBucket: "gen-lang-client-0721174346.firebasestorage.app",
+  messagingSenderId: "255785106721"
+};
 
 // Silence verbose internal Firestore retry/backoff logs
 try {
   setLogLevel('silent');
 } catch (e) {}
 
-export const app = initializeApp(firebaseConfig);
-const dbId = (firebaseConfig as any).firestoreDatabaseId;
+export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 // Initialize Firestore with robust local caching
-export const db = (dbId && dbId !== '(default)')
-  ? initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      })
-    }, dbId)
-  : initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      })
-    });
-
-export { firebaseConfig };
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
 
 export const auth = getAuth(app);
 
