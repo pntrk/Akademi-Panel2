@@ -823,7 +823,7 @@ export const ResultsView = () => {
         
         {/* Action Buttons: Touch-Friendly 2x2 Grid on Mobile, Flex on Desktop */}
         <div className="grid grid-cols-2 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto py-0.5">
-          {selectedResultIds.length > 0 && (
+          {selectedResultIds.length > 0 && userRole === 'admin' && (
             <button 
               onClick={handleBulkDelete}
               className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-rose-600 text-white rounded-xl text-[11px] sm:text-xs font-bold shadow-xs hover:bg-rose-700 active:scale-95 transition-all min-w-0 w-full sm:w-auto"
@@ -1068,20 +1068,22 @@ export const ResultsView = () => {
             <table className="w-full text-left min-w-[800px]">
               <thead>
                 <tr className="text-xs text-[#8e8d82] uppercase border-b border-[#f5f5f0]">
-                  <th className="py-3 font-bold pl-4 w-10">
-                    <input
-                      type="checkbox"
-                      checked={selectedResultIds.length === filteredResults.length && filteredResults.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedResultIds(filteredResults.map(r => r.id));
-                        } else {
-                          setSelectedResultIds([]);
-                        }
-                      }}
-                      className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40]"
-                    />
-                  </th>
+                  {userRole === 'admin' && (
+                    <th className="py-3 font-bold pl-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedResultIds.length === filteredResults.length && filteredResults.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedResultIds(filteredResults.map(r => r.id));
+                          } else {
+                            setSelectedResultIds([]);
+                          }
+                        }}
+                        className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40]"
+                      />
+                    </th>
+                  )}
                   <th className="py-3 font-bold w-20">NO</th>
                   <th className="py-3 font-bold min-w-[200px]">ADI SOYADI</th>
                   <th className="py-3 font-bold w-24">SINIFI</th>
@@ -1090,7 +1092,7 @@ export const ResultsView = () => {
                   ))}
                   <th className="py-3 font-bold text-center">ORTALAMA</th>
                   <th className="py-3 font-bold text-left min-w-[200px]">ROZETLER</th>
-                  <th className="py-3 font-bold w-16 text-center">Sil</th>
+                  {userRole === 'admin' && <th className="py-3 font-bold w-16 text-center">Sil</th>}
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -1101,47 +1103,55 @@ export const ResultsView = () => {
                   const displayClass = isMatched ? matchedStudent.className : result.studentClass;
                   return (
                     <tr key={result.id} className={`border-b ${!isMatched ? 'border-red-200 bg-red-50/40 hover:bg-red-50/70' : 'border-[#f5f5f0] hover:bg-[#fcfbf7]'}`}>
-                      <td className="py-2 pl-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedResultIds.includes(result.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedResultIds([...selectedResultIds, result.id]);
-                            } else {
-                              setSelectedResultIds(selectedResultIds.filter(id => id !== result.id));
-                            }
-                          }}
-                          className={`rounded border-[#e6e2d3] focus:ring-[#5a5a40] ${!isMatched ? 'text-red-600' : 'text-[#5a5a40]'}`}
-                        />
-                      </td>
+                      {userRole === 'admin' && (
+                        <td className="py-2 pl-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedResultIds.includes(result.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedResultIds([...selectedResultIds, result.id]);
+                              } else {
+                                setSelectedResultIds(selectedResultIds.filter(id => id !== result.id));
+                              }
+                            }}
+                            className={`rounded border-[#e6e2d3] focus:ring-[#5a5a40] ${!isMatched ? 'text-red-600' : 'text-[#5a5a40]'}`}
+                          />
+                        </td>
+                      )}
                       <td className="py-2">
-                        <input
-                          type="number"
-                          value={result.studentNo || ''}
-                          onChange={(e) => updateResultField(result.id, 'studentNo', parseInt(e.target.value)||0)}
-                          className={`w-full bg-transparent border-none focus:ring-0 font-bold ${!isMatched ? 'text-red-600 outline outline-1 outline-red-300 rounded' : 'text-[#5a5a40]'}`}
-                          title={!isMatched ? "Eşleşmeyen Öğrenci No! Düzeltmek için tıklayın." : ""}
-                        />
+                        {userRole === 'admin' ? (
+                          <input
+                            type="number"
+                            value={result.studentNo || ''}
+                            onChange={(e) => updateResultField(result.id, 'studentNo', parseInt(e.target.value)||0)}
+                            className={`w-full bg-transparent border-none focus:ring-0 font-bold ${!isMatched ? 'text-red-600 outline outline-1 outline-red-300 rounded' : 'text-[#5a5a40]'}`}
+                            title={!isMatched ? "Eşleşmeyen Öğrenci No! Düzeltmek için tıklayın." : ""}
+                          />
+                        ) : (
+                          <span className={`font-bold ${!isMatched ? 'text-red-600' : 'text-[#5a5a40]'}`}>
+                            {result.studentNo || '-'}
+                          </span>
+                        )}
                       </td>
                       <td className="py-2">
                         <div className="flex items-center space-x-2">
                           <button
                             type="button"
                             onClick={() => setSelectedStudentProfileId(result.id)}
-                            className="p-1 hover:bg-[#e6e2d3]/50 rounded text-amber-700 hover:text-amber-900 transition-colors shrink-0"
+                            className="p-1 hover:bg-[#e6e2d3]/50 rounded text-amber-700 hover:text-amber-900 transition-colors shrink-0 cursor-pointer"
                             title="Öğrenci Profili ve Gelişim Raporunu Görmek İçin Tıklayın"
                           >
                             <FileText className="w-4 h-4" />
                           </button>
-                          {isMatched ? (
+                          {isMatched || userRole !== 'admin' ? (
                             <button
                               type="button"
                               onClick={() => setSelectedStudentProfileId(result.id)}
-                              className="text-left w-full hover:text-amber-700 hover:underline transition-colors focus:outline-none font-semibold text-[#5a5a40]"
+                              className="text-left w-full hover:text-amber-700 hover:underline transition-colors focus:outline-none font-semibold text-[#5a5a40] cursor-pointer"
                               title="Öğrenci Profili ve Gelişim Raporunu Görmek İçin Tıklayın"
                             >
-                              {displayName}
+                              {displayName || '(İsimsiz)'}
                             </button>
                           ) : (
                             <input
@@ -1155,24 +1165,33 @@ export const ResultsView = () => {
                         </div>
                       </td>
                       <td className="py-2">
-                        <input
-                          type="text"
-                          value={displayClass}
-                          disabled={isMatched}
-                          onChange={(e) => updateResultField(result.id, 'studentClass', e.target.value)}
-                          className={`w-full bg-transparent border-none focus:ring-0 ${isMatched ? 'text-[#5a5a40] opacity-80 cursor-not-allowed' : 'text-red-600 outline outline-1 outline-red-300 rounded'}`}
-                          title={isMatched ? "Öğrenci Kaydına Göre Kilitli (Öğrenci Kayıtları menüsünden düzenlenir)" : "Eşleşmeyen Kayıt (Düzenlenebilir)"}
-                        />
+                        {userRole === 'admin' && !isMatched ? (
+                          <input
+                            type="text"
+                            value={displayClass}
+                            onChange={(e) => updateResultField(result.id, 'studentClass', e.target.value)}
+                            className="w-full bg-transparent border-none focus:ring-0 text-red-600 outline outline-1 outline-red-300 rounded"
+                            title="Eşleşmeyen Kayıt (Düzenlenebilir)"
+                          />
+                        ) : (
+                          <span className="text-[#5a5a40] font-medium">{displayClass || '-'}</span>
+                        )}
                       </td>
                     {examKeys.map(key => (
                       <td key={key} className="py-2 text-center">
-                         <input
-                           type="number"
-                           step="0.01"
-                           value={result.scores[key] !== undefined ? result.scores[key] : ''}
-                           onChange={(e) => updateResultScore(result.id, key, e.target.value)}
-                           className="w-16 text-center mx-auto bg-[#d4d19d]/20 rounded-md border-none focus:ring-0 text-[#5a5a40] p-1 font-semibold"
-                         />
+                         {userRole === 'admin' ? (
+                           <input
+                             type="number"
+                             step="0.01"
+                             value={result.scores[key] !== undefined ? result.scores[key] : ''}
+                             onChange={(e) => updateResultScore(result.id, key, e.target.value)}
+                             className="w-16 text-center mx-auto bg-[#d4d19d]/20 rounded-md border-none focus:ring-0 text-[#5a5a40] p-1 font-semibold"
+                           />
+                         ) : (
+                           <span className="inline-block w-16 text-center font-semibold text-[#5a5a40]">
+                             {result.scores[key] !== undefined ? result.scores[key] : '-'}
+                           </span>
+                         )}
                       </td>
                     ))}
                     <td className="py-2 text-center font-bold text-[#5a5a40]">
@@ -1185,18 +1204,22 @@ export const ResultsView = () => {
                     <td className="py-2 px-2">
                       {renderBadges(matchedStudent?.badges, matchedStudent?.leagueTeam)}
                     </td>
-                    <td className="py-2 text-center">
-                      <button onClick={() => removeResult(result.id)} className="text-[#8e8d82] hover:text-red-500 transition-colors p-1">
-                        <Trash2 className="h-4 w-4 mx-auto" />
-                      </button>
-                    </td>
+                    {userRole === 'admin' && (
+                      <td className="py-2 text-center">
+                        <button onClick={() => removeResult(result.id)} className="text-[#8e8d82] hover:text-red-500 transition-colors p-1 cursor-pointer">
+                          <Trash2 className="h-4 w-4 mx-auto" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                   );
                 })}
                 {filteredResults.length === 0 && (
                   <tr>
-                    <td colSpan={6 + examKeys.length} className="py-12 text-center text-[#8e8d82]">
-                      Kayıtlı sınav sonucu bulunmuyor. Kurum Net Listesi (Excel/XML) formatında dosya yükleyebilirsiniz.
+                    <td colSpan={(userRole === 'admin' ? 6 : 4) + examKeys.length} className="py-12 text-center text-[#8e8d82]">
+                      {userRole === 'admin' 
+                        ? 'Kayıtlı sınav sonucu bulunmuyor. Kurum Net Listesi (Excel/XML) formatında dosya yükleyebilirsiniz.' 
+                        : 'Kayıtlı sınav sonucu bulunmuyor. İdareci tarafından sınav sonuçları yüklendiğinde burada görüntülenecektir.'}
                     </td>
                   </tr>
                 )}
@@ -1229,18 +1252,20 @@ export const ResultsView = () => {
                   {/* Card Top: Selection Checkbox + Student No + Class Badge + Actions */}
                   <div className="flex items-center justify-between gap-2 border-b border-brand-border/40 pb-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={selectedResultIds.includes(result.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedResultIds([...selectedResultIds, result.id]);
-                          } else {
-                            setSelectedResultIds(selectedResultIds.filter(id => id !== result.id));
-                          }
-                        }}
-                        className="rounded border-brand-border text-[#5a5a40] focus:ring-[#5a5a40] shrink-0"
-                      />
+                      {userRole === 'admin' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedResultIds.includes(result.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedResultIds([...selectedResultIds, result.id]);
+                            } else {
+                              setSelectedResultIds(selectedResultIds.filter(id => id !== result.id));
+                            }
+                          }}
+                          className="rounded border-brand-border text-[#5a5a40] focus:ring-[#5a5a40] shrink-0"
+                        />
+                      )}
 
                       <div className="bg-amber-100/90 text-amber-950 border border-amber-200/80 px-2.5 py-0.5 rounded-md text-xs font-mono font-bold shrink-0 flex items-center gap-1 shadow-2xs">
                         <span className="text-[10px] text-amber-800/70 font-sans uppercase">No:</span>
@@ -1253,13 +1278,15 @@ export const ResultsView = () => {
                       {!isMatched && <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0">Eşleşmedi</span>}
                     </div>
 
-                    <button 
-                      onClick={() => removeResult(result.id)}
-                      className="w-8 h-8 rounded-xl bg-gray-50 border border-brand-border/70 flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer"
-                      title="Sonucu Sil"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {userRole === 'admin' && (
+                      <button 
+                        onClick={() => removeResult(result.id)}
+                        className="w-8 h-8 rounded-xl bg-gray-50 border border-brand-border/70 flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shrink-0 cursor-pointer"
+                        title="Sonucu Sil"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Card Student Name Section (Super legible, high hierarchy) */}
@@ -1593,7 +1620,7 @@ export const ResultsView = () => {
       )}
 
       {/* Import Modal */}
-      {isImportModalOpen && (
+      {isImportModalOpen && userRole === 'admin' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-[32px] border border-[#e6e2d3] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-slide-up max-h-[90vh]">
             <div className="p-6 bg-[#fcfbf7] border-b border-[#e6e2d3]">
