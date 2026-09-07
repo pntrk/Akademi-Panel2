@@ -23,7 +23,7 @@ interface AppContextType {
   userRole: 'admin' | 'teacher' | 'guest';
   syncStatus: 'synced' | 'saving' | 'quota_exceeded' | 'offline' | 'error';
   syncErrorMessage?: string | null;
-  updateUsers: (admins: string[], teachers: string[]) => void;
+  updateUsers: (admins: string[], teachers: string[]) => Promise<void>;
   setStudents: (students: Student[]) => void;
   setExams: (exams: Exam[]) => void;
   setResults: (results: ExamResult[]) => void;
@@ -36,6 +36,7 @@ interface AppContextType {
   restoreBackup: (backupData: any) => Promise<{ success: boolean; message: string; summary?: any }>;
   saveNow: () => Promise<void>;
   retrySync: () => Promise<void>;
+  checkAndRefreshRole: () => Promise<'admin' | 'teacher' | 'guest'>;
 }
 
 const defaultState: AppState = {
@@ -194,6 +195,24 @@ const clearQuotaExceeded = () => {
   } catch (e) {}
 };
 
+export const evaluateUserRole = (
+  userEmail: string,
+  adminsList: string[] = [],
+  teachersList: string[] = []
+): 'admin' | 'teacher' | 'guest' => {
+  const cleanEmail = (userEmail || '').trim().toLowerCase();
+  if (!cleanEmail) return 'guest';
+  if (cleanEmail === 'kirklareliataturkortaokulu@gmail.com' || cleanEmail === 'bahadirkumcu@gmail.com') return 'admin';
+  
+  const normAdmins = (adminsList || []).map(a => (a || '').trim().toLowerCase());
+  if (normAdmins.includes(cleanEmail)) return 'admin';
+  
+  const normTeachers = (teachersList || []).map(t => (t || '').trim().toLowerCase());
+  if (normTeachers.includes(cleanEmail)) return 'teacher';
+  
+  return 'guest';
+};
+
 export const AppProvider = ({ children, user }: { children: ReactNode, user: User }) => {
   const isInitialQuotaExceeded = checkIsQuotaExceededToday();
   const [state, setState] = useState<AppState>(loadInitialState);
@@ -210,13 +229,7 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
     }
   }, []);
 
-  const initialRole = (() => {
-    const email = user?.email || '';
-    if (email === 'kirklareliataturkortaokulu@gmail.com' || email === 'bahadirkumcu@gmail.com') return 'admin';
-    if (state.admins?.includes(email)) return 'admin';
-    if (state.teachers?.includes(email)) return 'teacher';
-    return 'guest';
-  })();
+  const initialRole = evaluateUserRole(user?.email || '', state.admins, state.teachers);
 
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState<'admin' | 'teacher' | 'guest'>(initialRole);
@@ -227,14 +240,22 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
     isInitialQuotaExceeded ? 'Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz ve güvenle saklanmaktadır.' : null
   );
 
-  // Firestore Real-time Listener with Quota & Offline Handling
-  useEffect(() => {
-    const docRef = doc(db, 'schools', 'main');
-    
-    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+  const checkAndRefreshRole = async (): Promise<'admin' | 'teacher' | 'guest'> => {
+    try {
+      const cleanEmail = (user?.email || '').trim().toLowerCase();
+      await enableNetwork(db).catch(() => {});
+      const docRef = doc(db, 'schools', 'main');
+      const snapshot = await getDoc(docRef);
+      
       if (snapshot.exists()) {
         const data = snapshot.data() as AppState;
-        
+        const cleanAdmins = Array.from(new Set(
+          (data.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com']).map(a => (a || '').trim().toLowerCase())
+        ));
+        const cleanTeachers = Array.from(new Set(
+          (data.teachers || []).map(t => (t || '').trim().toLowerCase())
+        ));
+
         const safeData: AppState = {
           students: data.students || [],
           exams: data.exams || [],
@@ -244,8 +265,57 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
           leagueMentors: data.leagueMentors || {},
           leagueTeamPoints: data.leagueTeamPoints || {},
           approvedTransfers: data.approvedTransfers || [],
-          admins: data.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
-          teachers: data.teachers || []
+          admins: cleanAdmins,
+          teachers: cleanTeachers
+        };
+
+        safeData.budget = syncFinancials(safeData.students, safeData.exams, safeData.budget);
+        setState(safeData);
+        stateRef.current = safeData;
+
+        try {
+          localStorage.setItem('okulYonetimState', JSON.stringify(safeData));
+        } catch (e) {}
+
+        const newRole = evaluateUserRole(cleanEmail, cleanAdmins, cleanTeachers);
+        setUserRole(newRole);
+        return newRole;
+      }
+    } catch (e) {
+      console.warn('Error refreshing role from Firestore:', e);
+    }
+
+    const currentRole = evaluateUserRole(user?.email || '', stateRef.current.admins, stateRef.current.teachers);
+    setUserRole(currentRole);
+    return currentRole;
+  };
+
+  // Firestore Real-time Listener with Quota & Offline Handling
+  useEffect(() => {
+    const docRef = doc(db, 'schools', 'main');
+    
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as AppState;
+        
+        const cleanAdmins = Array.from(new Set(
+          (data.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com']).map(a => (a || '').trim().toLowerCase())
+        ));
+        const cleanTeachers = Array.from(new Set(
+          (data.teachers || []).map(t => (t || '').trim().toLowerCase())
+        ));
+
+        const safeData: AppState = {
+          students: data.students || [],
+          exams: data.exams || [],
+          results: data.results || [],
+          budget: data.budget || { incomes: [], expenses: [], debts: [] },
+          examHalls: data.examHalls || [],
+          leagueMentors: data.leagueMentors || {},
+          leagueTeamPoints: data.leagueTeamPoints || {},
+          approvedTransfers: data.approvedTransfers || [],
+          admins: cleanAdmins,
+          teachers: cleanTeachers
         };
         
         safeData.budget = syncFinancials(safeData.students, safeData.exams, safeData.budget);
@@ -261,29 +331,28 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
           console.warn('LocalStorage save error:', e);
         }
         
-        const userEmail = user.email || '';
-        if (userEmail === 'kirklareliataturkortaokulu@gmail.com' || userEmail === 'bahadirkumcu@gmail.com' || safeData.admins.includes(userEmail)) {
-          setUserRole('admin');
-        } else if (safeData.teachers.includes(userEmail)) {
-          setUserRole('teacher');
-        } else {
-          setUserRole('guest');
-          if (userEmail && !hasSentGuestRequestRef.current && !isQuotaExceededRef.current) {
+        const cleanUserEmail = (user.email || '').trim().toLowerCase();
+        const computedRole = evaluateUserRole(cleanUserEmail, safeData.admins, safeData.teachers);
+        setUserRole(computedRole);
+
+        if (computedRole === 'guest') {
+          if (cleanUserEmail && !hasSentGuestRequestRef.current && !isQuotaExceededRef.current) {
             hasSentGuestRequestRef.current = true;
-            setDoc(doc(db, 'access_requests', userEmail), {
-              email: userEmail,
-              name: user.displayName || userEmail.split('@')[0],
+            setDoc(doc(db, 'access_requests', cleanUserEmail), {
+              email: cleanUserEmail,
+              name: user.displayName || cleanUserEmail.split('@')[0],
               timestamp: new Date().toISOString()
             }).catch(() => {});
           }
         }
+
         if (!isQuotaExceededRef.current) {
           setSyncStatus('synced');
           setSyncErrorMessage(null);
         }
       } else {
         // Doc doesn't exist yet, if user is super admin initialize it (only if quota not exceeded)
-        const userEmail = user.email || '';
+        const userEmail = (user.email || '').trim().toLowerCase();
         if (userEmail === 'kirklareliataturkortaokulu@gmail.com' || userEmail === 'bahadirkumcu@gmail.com') {
           setUserRole('admin');
           if (!isQuotaExceededRef.current) {
@@ -319,12 +388,9 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
         setSyncErrorMessage(error?.message || 'Bulut bağlantısı bekleniyor. Verileriniz yerel hafızada korunmaktadır.');
       }
 
-      const userEmail = user.email || '';
-      if (userEmail === 'kirklareliataturkortaokulu@gmail.com' || userEmail === 'bahadirkumcu@gmail.com' || stateRef.current.admins?.includes(userEmail)) {
-        setUserRole('admin');
-      } else if (stateRef.current.teachers?.includes(userEmail)) {
-        setUserRole('teacher');
-      }
+      const cleanUserEmail = (user.email || '').trim().toLowerCase();
+      const fallbackRole = evaluateUserRole(cleanUserEmail, stateRef.current.admins, stateRef.current.teachers);
+      setUserRole(fallbackRole);
 
       setLoading(false);
     });
@@ -565,9 +631,39 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
     updateFirebase({ ...s, leagueMentors: mentors, leagueTeamPoints: teamPoints });
   };
 
-  const updateUsers = (admins: string[], teachers: string[]) => {
-    const s = stateRef.current;
-    updateFirebase({ ...s, admins, teachers });
+  const updateUsers = async (admins: string[], teachers: string[]) => {
+    const cleanAdmins = Array.from(new Set(
+      admins.map(a => (a || '').trim().toLowerCase()).filter(Boolean)
+    ));
+    if (!cleanAdmins.includes('kirklareliataturkortaokulu@gmail.com')) cleanAdmins.push('kirklareliataturkortaokulu@gmail.com');
+    if (!cleanAdmins.includes('bahadirkumcu@gmail.com')) cleanAdmins.push('bahadirkumcu@gmail.com');
+
+    const cleanTeachers = Array.from(new Set(
+      teachers.map(t => (t || '').trim().toLowerCase()).filter(Boolean)
+    )).filter(t => !cleanAdmins.includes(t));
+
+    const s: AppState = {
+      ...stateRef.current,
+      admins: cleanAdmins,
+      teachers: cleanTeachers
+    };
+
+    stateRef.current = s;
+    setState(s);
+
+    try {
+      localStorage.setItem('okulYonetimState', JSON.stringify(s));
+    } catch (e) {}
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    try {
+      await executeFirestoreWrite(s, true);
+    } catch (e) {
+      console.warn('Error syncing updated users to Firestore:', e);
+    }
   };
 
   const approveTransfer = (studentNo: number, examName: string, toTeam: string) => { if (userRole !== 'admin') return; _approveTransfer(studentNo, examName, toTeam); };
@@ -757,7 +853,8 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       overwriteState,
       restoreBackup,
       saveNow,
-      retrySync
+      retrySync,
+      checkAndRefreshRole
     }}>
       {children}
     </AppContext.Provider>

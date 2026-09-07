@@ -18,11 +18,22 @@ import { LogIn, Lock } from 'lucide-react';
 import { useAppContext } from './context/AppContext';
 
 function AppContent({ user }: { user: User }) {
-  const { userRole, retrySync } = useAppContext();
+  const { userRole, checkAndRefreshRole } = useAppContext();
   const [activeTab, setActiveTab] = useState<'students' | 'exams' | 'results' | 'league' | 'budget' | 'halls'>(
     userRole === 'admin' ? 'students' : 'results'
   );
   const [isCheckingRole, setIsCheckingRole] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Auto-refresh role every 4 seconds if in guest mode
+  useEffect(() => {
+    if (userRole === 'guest') {
+      const interval = setInterval(() => {
+        checkAndRefreshRole().catch(() => {});
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [userRole, checkAndRefreshRole]);
 
   // Enforce role restrictions: If teacher tries to view unauthorized tabs, redirect to 'results'
   useEffect(() => {
@@ -34,10 +45,17 @@ function AppContent({ user }: { user: User }) {
   if (userRole === 'guest') {
     const handleCheckStatus = async () => {
       setIsCheckingRole(true);
+      setStatusMessage(null);
       try {
-        await retrySync();
-      } catch (e) {}
-      setTimeout(() => setIsCheckingRole(false), 1000);
+        const newRole = await checkAndRefreshRole();
+        if (newRole === 'guest') {
+          setStatusMessage('Yönetici tarafından henüz yetki tanımlanmadı. Lütfen yöneticinizin onaylamasını bekleyiniz.');
+        }
+      } catch (e) {
+        setStatusMessage('Yetki kontrolü sırasında bağlantı hatası oluştu. Lütfen tekrar deneyiniz.');
+      } finally {
+        setTimeout(() => setIsCheckingRole(false), 600);
+      }
     };
 
     return (
@@ -63,9 +81,15 @@ function AppContent({ user }: { user: User }) {
             <p className="text-xs font-medium text-[#8e8d82] truncate font-mono">{user.email}</p>
           </div>
 
-          <p className="text-[#8e8d82] text-xs leading-relaxed mb-6">
+          <p className="text-[#8e8d82] text-xs leading-relaxed mb-4">
             E-posta adresiniz sisteme başarıyla kaydedildi. Okul yöneticiniz <strong className="text-[#5a5a40]">Kullanıcı Yetki Yönetimi</strong> panelinden hesabınıza <strong className="text-blue-700">Öğretmen</strong> veya <strong className="text-emerald-700">İdareci</strong> yetkisi tanımladığında, bu sayfa otomatik olarak açılacaktır.
           </p>
+
+          {statusMessage && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 font-medium animate-fade-in">
+              {statusMessage}
+            </div>
+          )}
 
           <div className="space-y-2.5">
             <button
@@ -85,7 +109,7 @@ function AppContent({ user }: { user: User }) {
 
             <button
               onClick={logout}
-              className="w-full bg-transparent hover:bg-gray-100 text-[#8e8d82] hover:text-[#5a5a40] py-2.5 px-4 rounded-xl font-semibold text-xs transition-colors"
+              className="w-full bg-transparent hover:bg-gray-100 text-[#8e8d82] hover:text-[#5a5a40] py-2.5 px-4 rounded-xl font-semibold text-xs transition-colors cursor-pointer"
             >
               Farklı Bir Hesapla Giriş Yap / Çıkış
             </button>
