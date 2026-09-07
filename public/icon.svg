@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <g filter="url(#shadow)" transform="translate(64, 64)">
+    <path d="M192 32 L352 112 L192 192 L32 112 Z" fill="url(#iconGrad)"/>
+    <path d="M96 160 V240 C96 280 140 320 192 320 C244 320 288 280 288 240 V160" fill="none" stroke="url(#iconGrad)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M352 112 V256" fill="none" stroke="#38bdf8" stroke-width="20" stroke-linecap="round"/>
+    <circle cx="352" cy="272" r="16" fill="#38bdf8"/>
+  </g>
+</svg>

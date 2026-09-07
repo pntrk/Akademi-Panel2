@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, LogOut, Shield } from 'lucide-react';
+import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, LogOut, Shield, Download, Globe, HardDriveDownload } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { SettingsModal } from './SettingsModal';
 import { FirebaseStatusModal } from './FirebaseStatusModal';
+import { VercelModal } from './VercelModal';
+import { PWAInstallModal } from './PWAInstallModal';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { FullBackupData } from '../types';
@@ -28,6 +30,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   const { userRole, state, restoreBackup, syncStatus, syncErrorMessage, saveNow } = useAppContext();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFirebaseStatusOpen, setIsFirebaseStatusOpen] = useState(false);
+  const [isVercelOpen, setIsVercelOpen] = useState(false);
+  const [isPWAOpen, setIsPWAOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
@@ -298,7 +302,25 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               )}
 
               {/* Quick Actions Grid */}
-              <div className={cn("grid gap-2", userRole === 'admin' ? "grid-cols-2" : "grid-cols-1")}>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => { setIsPWAOpen(true); closeMobileMenu(); }} 
+                  className="flex items-center justify-center p-3 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 active:scale-[0.98] border border-sky-500/30 text-sky-300 transition-all gap-2 text-center cursor-pointer font-bold text-xs"
+                >
+                  <HardDriveDownload className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span>Cihaza Yükle (PWA)</span>
+                </button>
+
+                <button 
+                  onClick={() => { setIsVercelOpen(true); closeMobileMenu(); }} 
+                  className="flex items-center justify-center p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-[0.98] border border-slate-700 text-white transition-all gap-2 text-center cursor-pointer font-bold text-xs"
+                >
+                  <svg className="w-3.5 h-3.5 text-white fill-current shrink-0" viewBox="0 0 76 65">
+                    <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+                  </svg>
+                  <span>Vercel Canlı Link</span>
+                </button>
+
                 <button 
                   onClick={() => setIsDarkMode(!isDarkMode)} 
                   className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center cursor-pointer"
@@ -460,6 +482,29 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             </div>
           )}
           
+          {/* PWA Install & Vercel Live Buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={() => setIsPWAOpen(true)} 
+              className="flex items-center justify-center bg-sky-500/10 hover:bg-sky-500/20 active:scale-[0.98] text-sky-300 text-[0.72rem] font-bold py-2 px-2 rounded-xl border border-sky-500/20 transition-all cursor-pointer gap-1.5 truncate"
+              title="Masaüstü veya Mobil Cihazınıza Yükleyin (PWA)"
+            >
+              <HardDriveDownload className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className="truncate">Cihaza Yükle</span>
+            </button>
+
+            <button 
+              onClick={() => setIsVercelOpen(true)} 
+              className="flex items-center justify-center bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-white text-[0.72rem] font-bold py-2 px-2 rounded-xl border border-slate-700 transition-all cursor-pointer gap-1.5 truncate"
+              title="Vercel Canlı Yayın Bağlantısını Aç"
+            >
+              <svg className="w-3 h-3 text-white fill-current shrink-0" viewBox="0 0 76 65">
+                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+              </svg>
+              <span className="truncate">Vercel Link</span>
+            </button>
+          </div>
+
           {/* Admin User Management Button */}
           {userRole === 'admin' && (
             <button 
@@ -507,6 +552,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <FirebaseStatusModal isOpen={isFirebaseStatusOpen} onClose={() => setIsFirebaseStatusOpen(false)} />
+      <VercelModal isOpen={isVercelOpen} onClose={() => setIsVercelOpen(false)} />
+      <PWAInstallModal isOpen={isPWAOpen} onClose={() => setIsPWAOpen(false)} />
       
       {/* Main Content */}
       <main className={cn("flex-1 flex flex-col overflow-auto bg-brand-bg transition-all duration-300 w-full pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0", isDarkMode ? "dark-mode-main" : "")}>
@@ -532,9 +579,27 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           
           <div className="flex items-center gap-1.5">
             <button 
+              onClick={() => setIsPWAOpen(true)} 
+              aria-label="Cihaza Yükle"
+              title="Masaüstü/Mobil Cihaza Yükle"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-sky-500/10 hover:bg-sky-500/20 active:scale-95 text-sky-400 border border-sky-500/20 transition-all cursor-pointer"
+            >
+              <HardDriveDownload className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={() => setIsVercelOpen(true)} 
+              aria-label="Vercel Canlı Link"
+              title="Vercel Canlı Yayın Linki"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white border border-slate-700 transition-all cursor-pointer"
+            >
+              <svg className="w-3 h-3 text-white fill-current" viewBox="0 0 76 65">
+                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+              </svg>
+            </button>
+            <button 
               onClick={() => setIsDarkMode(!isDarkMode)} 
               aria-label="Temayı Değiştir"
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 text-white/80 border border-white/10 transition-all"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 text-white/80 border border-white/10 transition-all cursor-pointer"
             >
               {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-300" />}
             </button>
