@@ -359,7 +359,14 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       }
 
       setSyncStatus('saving');
-      await setDoc(doc(db, 'schools', 'main'), cleanState);
+      
+      // Protect against hanging Firestore requests with a 6-second timeout
+      const writePromise = setDoc(doc(db, 'schools', 'main'), cleanState);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Bulut bağlantısı zaman aşımına uğradı (6s). Firebase Firestore Database oluşturulduğundan ve Güvenlik Kurallarının (Rules) kaydedildiğinden emin olun.')), 6000)
+      );
+
+      await Promise.race([writePromise, timeoutPromise]);
       
       lastSavedPayloadRef.current = payloadString;
       clearQuotaExceeded();
