@@ -4,8 +4,7 @@ import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { SettingsModal } from './SettingsModal';
 import { FirebaseStatusModal } from './FirebaseStatusModal';
-import { VercelModal } from './VercelModal';
-import { PWAInstallModal } from './PWAInstallModal';
+import { AppHubModal } from './AppHubModal';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { FullBackupData } from '../types';
@@ -30,8 +29,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   const { userRole, state, restoreBackup, syncStatus, syncErrorMessage, saveNow } = useAppContext();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFirebaseStatusOpen, setIsFirebaseStatusOpen] = useState(false);
-  const [isVercelOpen, setIsVercelOpen] = useState(false);
-  const [isPWAOpen, setIsPWAOpen] = useState(false);
+  const [isAppHubOpen, setIsAppHubOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
@@ -302,23 +300,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               )}
 
               {/* Quick Actions Grid */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button 
-                  onClick={() => { setIsPWAOpen(true); closeMobileMenu(); }} 
-                  className="flex items-center justify-center p-3 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 active:scale-[0.98] border border-sky-500/30 text-sky-300 transition-all gap-2 text-center cursor-pointer font-bold text-xs"
+                  onClick={() => { setIsAppHubOpen(true); closeMobileMenu(); }} 
+                  className="flex items-center justify-center p-3.5 rounded-2xl bg-gradient-to-r from-sky-500/20 via-indigo-500/20 to-emerald-500/20 hover:from-sky-500/30 hover:to-emerald-500/30 active:scale-[0.98] border border-sky-500/30 text-white transition-all gap-2 text-center cursor-pointer font-bold text-xs shadow-sm"
                 >
                   <HardDriveDownload className="w-4 h-4 text-sky-400 shrink-0" />
-                  <span>Cihaza Yükle (PWA)</span>
-                </button>
-
-                <button 
-                  onClick={() => { setIsVercelOpen(true); closeMobileMenu(); }} 
-                  className="flex items-center justify-center p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-[0.98] border border-slate-700 text-white transition-all gap-2 text-center cursor-pointer font-bold text-xs"
-                >
-                  <svg className="w-3.5 h-3.5 text-white fill-current shrink-0" viewBox="0 0 76 65">
+                  <span>Uygulamayı Kur & Vercel Canlı</span>
+                  <svg className="w-3.5 h-3.5 text-slate-200 fill-current shrink-0 ml-1" viewBox="0 0 76 65">
                     <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
                   </svg>
-                  <span>Vercel Canlı Link</span>
                 </button>
 
                 <button 
@@ -482,28 +473,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             </div>
           )}
           
-          {/* PWA Install & Vercel Live Buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <button 
-              onClick={() => setIsPWAOpen(true)} 
-              className="flex items-center justify-center bg-sky-500/10 hover:bg-sky-500/20 active:scale-[0.98] text-sky-300 text-[0.72rem] font-bold py-2 px-2 rounded-xl border border-sky-500/20 transition-all cursor-pointer gap-1.5 truncate"
-              title="Masaüstü veya Mobil Cihazınıza Yükleyin (PWA)"
-            >
-              <HardDriveDownload className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-              <span className="truncate">Cihaza Yükle</span>
-            </button>
-
-            <button 
-              onClick={() => setIsVercelOpen(true)} 
-              className="flex items-center justify-center bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-white text-[0.72rem] font-bold py-2 px-2 rounded-xl border border-slate-700 transition-all cursor-pointer gap-1.5 truncate"
-              title="Vercel Canlı Yayın Bağlantısını Aç"
-            >
-              <svg className="w-3 h-3 text-white fill-current shrink-0" viewBox="0 0 76 65">
-                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
-              </svg>
-              <span className="truncate">Vercel Link</span>
-            </button>
-          </div>
+          {/* Unified PWA Install & Vercel Live Button */}
+          <button 
+            onClick={() => setIsAppHubOpen(true)} 
+            className="flex items-center justify-between w-full bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-emerald-500/15 hover:from-sky-500/25 hover:to-emerald-500/25 active:scale-[0.98] text-white text-[0.75rem] font-bold py-2.5 px-3 rounded-xl border border-sky-500/25 transition-all cursor-pointer shadow-sm group"
+            title="Otomatik Cihaz Algılama, Cihaza Yükleme & Vercel Canlı Arayüzü"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <HardDriveDownload className="w-4 h-4 text-sky-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="truncate">Cihaza Yükle & Vercel</span>
+            </div>
+            <svg className="w-3 h-3 text-slate-300 fill-current shrink-0" viewBox="0 0 76 65">
+              <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+            </svg>
+          </button>
 
           {/* Admin User Management Button */}
           {userRole === 'admin' && (
@@ -552,8 +535,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <FirebaseStatusModal isOpen={isFirebaseStatusOpen} onClose={() => setIsFirebaseStatusOpen(false)} />
-      <VercelModal isOpen={isVercelOpen} onClose={() => setIsVercelOpen(false)} />
-      <PWAInstallModal isOpen={isPWAOpen} onClose={() => setIsPWAOpen(false)} />
+      <AppHubModal isOpen={isAppHubOpen} onClose={() => setIsAppHubOpen(false)} />
       
       {/* Main Content */}
       <main className={cn("flex-1 flex flex-col overflow-auto bg-brand-bg transition-all duration-300 w-full pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0", isDarkMode ? "dark-mode-main" : "")}>
@@ -579,20 +561,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           
           <div className="flex items-center gap-1.5">
             <button 
-              onClick={() => setIsPWAOpen(true)} 
-              aria-label="Cihaza Yükle"
-              title="Masaüstü/Mobil Cihaza Yükle"
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-sky-500/10 hover:bg-sky-500/20 active:scale-95 text-sky-400 border border-sky-500/20 transition-all cursor-pointer"
+              onClick={() => setIsAppHubOpen(true)} 
+              aria-label="Cihaza Yükle & Vercel"
+              title="Cihaza Yükle ve Vercel Canlı Link"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 active:scale-95 text-sky-400 border border-sky-500/20 transition-all cursor-pointer font-bold text-[11px]"
             >
               <HardDriveDownload className="w-3.5 h-3.5" />
-            </button>
-            <button 
-              onClick={() => setIsVercelOpen(true)} 
-              aria-label="Vercel Canlı Link"
-              title="Vercel Canlı Yayın Linki"
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white border border-slate-700 transition-all cursor-pointer"
-            >
-              <svg className="w-3 h-3 text-white fill-current" viewBox="0 0 76 65">
+              <svg className="w-2.5 h-2.5 text-white fill-current" viewBox="0 0 76 65">
                 <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
               </svg>
             </button>

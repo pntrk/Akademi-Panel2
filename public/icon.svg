@@ -1,23 +1,83 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="50%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#0284c7"/>
+    <!-- Background Gradient -->
+    <linearGradient id="appBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19" />
+      <stop offset="50%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
     </linearGradient>
-    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#34d399"/>
-      <stop offset="100%" stop-color="#38bdf8"/>
+
+    <!-- Glowing Accent Orbs -->
+    <radialGradient id="glowEmerald" cx="30%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowSky" cx="80%" cy="80%" r="60%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Emblem Gradients -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4"/>
+
+    <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.9" />
+    </linearGradient>
+
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.5" />
+    </linearGradient>
+
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6" />
     </filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
-  <g filter="url(#shadow)" transform="translate(64, 64)">
-    <path d="M192 32 L352 112 L192 192 L32 112 Z" fill="url(#iconGrad)"/>
-    <path d="M96 160 V240 C96 280 140 320 192 320 C244 320 288 280 288 240 V160" fill="none" stroke="url(#iconGrad)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M352 112 V256" fill="none" stroke="#38bdf8" stroke-width="20" stroke-linecap="round"/>
-    <circle cx="352" cy="272" r="16" fill="#38bdf8"/>
+
+  <!-- App Icon Base -->
+  <rect width="512" height="512" rx="112" fill="url(#appBg)" />
+  <rect width="512" height="512" rx="112" fill="url(#glowEmerald)" />
+  <rect width="512" height="512" rx="112" fill="url(#glowSky)" />
+  
+  <!-- Outer Subtle Glass Border -->
+  <rect x="6" y="6" width="500" height="500" rx="106" fill="none" stroke="url(#borderGrad)" stroke-width="4" />
+
+  <!-- Main Emblem Group -->
+  <g filter="url(#dropShadow)">
+    <!-- Background Crest / Shield -->
+    <path d="M256 96 C336 96 384 120 384 120 V256 C384 348 316 408 256 432 C196 408 128 348 128 256 V120 C128 120 176 96 256 96 Z" 
+          fill="url(#shieldGrad)" 
+          stroke="url(#capGrad)" 
+          stroke-width="8" />
+
+    <!-- Graduation Cap Top (Diamond Top) -->
+    <polygon points="256,140 376,192 256,244 136,192" fill="url(#capGrad)" />
+
+    <!-- Graduation Cap Cap Base -->
+    <path d="M184 216 V264 C184 288 216 308 256 308 C296 308 328 288 328 264 V216" 
+          fill="none" 
+          stroke="url(#capGrad)" 
+          stroke-width="12" 
+          stroke-linecap="round" />
+
+    <!-- Golden Tassel & Bead -->
+    <path d="M376 192 V272" fill="none" stroke="url(#goldGrad)" stroke-width="8" stroke-linecap="round" />
+    <circle cx="376" cy="284" r="14" fill="url(#goldGrad)" />
+
+    <!-- Center Academic Star Badge -->
+    <path d="M256 320 L265.5 339.3 L286.8 342.4 L271.4 357.4 L275 378.6 L256 368.6 L237 378.6 L240.6 357.4 L225.2 342.4 L246.5 339.3 Z" 
+          fill="url(#goldGrad)" />
   </g>
 </svg>
