@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem } from '../types';
 import { generateId, recalculateLeagueForStudents } from '../lib/utils';
-import { db } from '../lib/firebase';
+import { db, firebaseConfig } from '../lib/firebase';
 import { doc, getDoc, setDoc, onSnapshot, disableNetwork, enableNetwork } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 
@@ -35,6 +35,7 @@ interface AppContextType {
   overwriteState: (newState: AppState) => void;
   restoreBackup: (backupData: any) => Promise<{ success: boolean; message: string; summary?: any }>;
   saveNow: () => Promise<void>;
+  retrySync: () => Promise<void>;
 }
 
 const defaultState: AppState = {
@@ -171,8 +172,9 @@ const getTodayDateStr = () => new Date().toISOString().slice(0, 10);
 
 const checkIsQuotaExceededToday = () => {
   try {
-    const saved = localStorage.getItem('firestore_quota_exceeded_date');
-    return saved === getTodayDateStr();
+    const savedDate = localStorage.getItem('firestore_quota_exceeded_date');
+    const savedProject = localStorage.getItem('firestore_quota_exceeded_project');
+    return savedDate === getTodayDateStr() && savedProject === firebaseConfig.projectId;
   } catch (e) {
     return false;
   }
@@ -181,12 +183,14 @@ const checkIsQuotaExceededToday = () => {
 const markQuotaExceededToday = () => {
   try {
     localStorage.setItem('firestore_quota_exceeded_date', getTodayDateStr());
+    localStorage.setItem('firestore_quota_exceeded_project', firebaseConfig.projectId);
   } catch (e) {}
 };
 
 const clearQuotaExceeded = () => {
   try {
     localStorage.removeItem('firestore_quota_exceeded_date');
+    localStorage.removeItem('firestore_quota_exceeded_project');
   } catch (e) {}
 };
 
@@ -296,6 +300,7 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       }
       setLoading(false);
     }, (error: any) => {
+      console.warn('Firestore snapshot error:', error);
       const isQuota = error?.code === 'resource-exhausted' || error?.message?.includes('Quota') || error?.message?.includes('quota');
       if (isQuota) {
         markQuotaExceededToday();
@@ -303,9 +308,15 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
         setSyncStatus('quota_exceeded');
         setSyncErrorMessage('Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz ve güvenle saklanmaktadır.');
         disableNetwork(db).catch(() => {});
+      } else if (error?.code === 'permission-denied') {
+        setSyncStatus('error');
+        setSyncErrorMessage('Firebase Güvenlik Kuralları Engeli (permission-denied): Firebase Console -> Firestore Database -> Rules sekmesinde yetki verilmesi gerekmektedir.');
+      } else if (error?.code === 'not-found' || error?.message?.includes('database')) {
+        setSyncStatus('error');
+        setSyncErrorMessage('Firestore Veritabanı Bulunamadı: Firebase Console üzerinde "Firestore Database" oluşturulduğundan emin olun.');
       } else {
         setSyncStatus('offline');
-        setSyncErrorMessage('Bulut bağlantısı çevrimdışı. Verileriniz yerel hafızada korunmaktadır.');
+        setSyncErrorMessage(error?.message || 'Bulut bağlantısı bekleniyor. Verileriniz yerel hafızada korunmaktadır.');
       }
 
       const userEmail = user.email || '';
@@ -356,6 +367,7 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       setSyncStatus('synced');
       setSyncErrorMessage(null);
     } catch (error: any) {
+      console.warn('Firestore write error:', error);
       const isQuota = error?.code === 'resource-exhausted' || error?.message?.includes('Quota') || error?.message?.includes('quota');
       
       if (isQuota) {
@@ -364,9 +376,18 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
         setSyncStatus('quota_exceeded');
         setSyncErrorMessage('Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz olarak korunmaktadır.');
         disableNetwork(db).catch(() => {});
+      } else if (error?.code === 'permission-denied') {
+        setSyncStatus('error');
+        setSyncErrorMessage('Firebase Güvenlik Kuralı Engeli (permission-denied): Firebase Console -> Firestore -> Rules sekmesinde yetki verilmesi gerekiyor.');
+        throw error;
+      } else if (error?.code === 'not-found' || error?.message?.includes('database')) {
+        setSyncStatus('error');
+        setSyncErrorMessage('Firestore Veritabanı Bulunamadı: Firebase Console üzerinde Firestore Database oluşturulmalıdır.');
+        throw error;
       } else {
         setSyncStatus('error');
         setSyncErrorMessage(error?.message || 'Buluta kaydedilemedi. Verileriniz yerel olarak güvendedir.');
+        throw error;
       }
     }
   };
@@ -407,6 +428,13 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       localStorage.setItem('okulYonetimState', JSON.stringify(stateRef.current));
     } catch (e) {}
 
+    await executeFirestoreWrite(stateRef.current, true);
+  };
+
+  const retrySync = async () => {
+    clearQuotaExceeded();
+    isQuotaExceededRef.current = false;
+    await enableNetwork(db).catch(() => {});
     await executeFirestoreWrite(stateRef.current, true);
   };
 
@@ -721,7 +749,8 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       updateUsers, 
       overwriteState,
       restoreBackup,
-      saveNow
+      saveNow,
+      retrySync
     }}>
       {children}
     </AppContext.Provider>

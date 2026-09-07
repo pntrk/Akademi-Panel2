@@ -1,32 +1,41 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Default deny all undefined paths
     match /{document=**} {
       allow read, write: if false;
     }
-    
-    match /schools/main {
-      allow create: if request.auth != null && (
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
         request.auth.token.email == 'kirklareliataturkortaokulu@gmail.com' ||
         request.auth.token.email == 'bahadirkumcu@gmail.com'
       );
-      
-      allow read: if request.auth != null && (
-        request.auth.token.email == 'kirklareliataturkortaokulu@gmail.com' ||
-        request.auth.token.email == 'bahadirkumcu@gmail.com' ||
-        (resource.data.admins != null && request.auth.token.email in resource.data.admins) ||
-        (resource.data.teachers != null && request.auth.token.email in resource.data.teachers)
-      );
-      
-      allow update: if request.auth != null && (
-        request.auth.token.email == 'kirklareliataturkortaokulu@gmail.com' ||
-        request.auth.token.email == 'bahadirkumcu@gmail.com' ||
-        (resource.data.admins != null && request.auth.token.email in resource.data.admins)
+    }
+
+    function isSchoolAdmin() {
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        (resource != null && 'admins' in resource.data && resource.data.admins != null && request.auth.token.email in resource.data.admins)
       );
     }
 
-    match /access_requests/{document=**} {
-      allow read, write, delete: if request.auth != null;
+    // Central school database: students, exams, results, academy arena, halls, budget
+    match /schools/{schoolId} {
+      allow read: if isSignedIn();
+      allow create: if isSuperAdmin();
+      allow update: if isSchoolAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Access authorization requests
+    match /access_requests/{requestId} {
+      allow read, write, delete: if isSignedIn();
     }
   }
 }

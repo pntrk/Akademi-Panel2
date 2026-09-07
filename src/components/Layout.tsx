@@ -3,6 +3,7 @@ import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadC
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { SettingsModal } from './SettingsModal';
+import { FirebaseStatusModal } from './FirebaseStatusModal';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { FullBackupData } from '../types';
@@ -26,6 +27,7 @@ const navItems = [
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout }) => {
   const { userRole, state, restoreBackup, syncStatus, syncErrorMessage, saveNow } = useAppContext();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isFirebaseStatusOpen, setIsFirebaseStatusOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
@@ -90,7 +92,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       leagueMentors: state.leagueMentors || {},
       leagueTeamPoints: state.leagueTeamPoints || {},
       approvedTransfers: state.approvedTransfers || [],
-      admins: state.admins || ['kirklareliataturkortaokulu@gmail.com'],
+      admins: state.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
       teachers: state.teachers || []
     };
 
@@ -139,11 +141,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   const handleManualSave = async () => {
     try {
       await saveNow();
-      setSaveFeedback("Tüm sistem verileri buluta kaydedildi.");
+      setSaveFeedback("✓ Veriler buluta kaydedildi");
       setTimeout(() => setSaveFeedback(null), 3000);
-    } catch (e) {
-      setSaveFeedback("Yerel hafızaya kaydedildi.");
-      setTimeout(() => setSaveFeedback(null), 3000);
+    } catch (e: any) {
+      const msg = e?.message || '';
+      if (msg.includes('permission-denied') || msg.includes('Güvenlik')) {
+        setSaveFeedback("⚠️ Bulut kural engeli!");
+      } else {
+        setSaveFeedback("✓ Yerel hafızaya kaydedildi");
+      }
+      setTimeout(() => setSaveFeedback(null), 4000);
     }
   };
 
@@ -196,13 +203,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             
             <div className="space-y-3">
               {/* Firebase Live Cloud Sync Status Badge */}
-              <div className={cn(
-                "rounded-2xl p-3 flex items-center justify-between border transition-all",
-                syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30",
-                syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30",
-                syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30",
-                (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30"
-              )}>
+              <div 
+                onClick={() => setIsFirebaseStatusOpen(true)}
+                className={cn(
+                  "rounded-2xl p-3 flex items-center justify-between border transition-all cursor-pointer hover:opacity-90 active:scale-[0.99]",
+                  syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30",
+                  syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30",
+                  syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30",
+                  (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30"
+                )}
+                title="Firebase ve Senkronizasyon Durumunu İncele"
+              >
                 <div className="flex items-center gap-2 min-w-0 mr-2">
                   {syncStatus === 'synced' && (
                     <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -239,7 +250,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                   </div>
                 </div>
                 <button
-                  onClick={handleManualSave}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleManualSave();
+                  }}
                   className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold border border-white/20 transition-colors cursor-pointer shrink-0"
                   title="Manuel Kaydet"
                 >
@@ -366,13 +380,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           <input type="file" accept=".json" className="hidden" id="restore-input" onChange={handleRestore} />
           
           {/* Firebase Live Cloud Sync Indicator */}
-          <div className={cn(
-            "flex items-center justify-between px-3 py-2 border rounded-xl text-[0.72rem] font-semibold transition-all",
-            syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30 text-emerald-300",
-            syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30 text-sky-300",
-            syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30 text-amber-300",
-            (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30 text-rose-300"
-          )}>
+          <div 
+            onClick={() => setIsFirebaseStatusOpen(true)}
+            className={cn(
+              "flex items-center justify-between px-3 py-2 border rounded-xl text-[0.72rem] font-semibold transition-all cursor-pointer hover:opacity-90 active:scale-[0.99]",
+              syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30 text-emerald-300",
+              syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30 text-sky-300",
+              syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30 text-amber-300",
+              (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30 text-rose-300"
+            )}
+            title="Firebase ve Senkronizasyon Durumunu İncele"
+          >
             <span className="flex items-center gap-2 truncate mr-1">
               {syncStatus === 'synced' && (
                 <span className="relative flex h-2 w-2 shrink-0">
@@ -398,7 +416,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               </span>
             </span>
             <button
-              onClick={handleManualSave}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleManualSave();
+              }}
               className="text-[0.65rem] text-white/80 hover:text-white hover:underline cursor-pointer font-bold shrink-0 ml-1"
               title="Manuel Kaydet"
             >
@@ -478,6 +499,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       </aside>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <FirebaseStatusModal isOpen={isFirebaseStatusOpen} onClose={() => setIsFirebaseStatusOpen(false)} />
       
       {/* Main Content */}
       <main className={cn("flex-1 flex flex-col overflow-auto bg-brand-bg transition-all duration-300 w-full pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0", isDarkMode ? "dark-mode-main" : "")}>

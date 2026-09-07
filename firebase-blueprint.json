@@ -2,24 +2,41 @@
   "entities": {
     "AppState": {
       "title": "AppState",
-      "description": "The complete application state",
+      "description": "Centralized school management state including students, exams, results, academy arena/league, halls, and budget",
       "type": "object",
       "properties": {
-        "students": { "type": "array" },
-        "exams": { "type": "array" },
-        "results": { "type": "array" },
-        "budget": { "type": "object" },
-        "examHalls": { "type": "array" },
-        "leagueMentors": { "type": "object" },
-        "leagueTeamPoints": { "type": "object" },
-        "approvedTransfers": { "type": "array" }
+        "students": { "type": "array", "description": "Student roster with classes, exam registrations, and league status" },
+        "exams": { "type": "array", "description": "Mock exams, dates, publisher fees, and assigned halls" },
+        "results": { "type": "array", "description": "Exam results, subject net scores, and overall standings" },
+        "budget": { "type": "object", "description": "Financial records: student dues, incomes, expenses, debts" },
+        "examHalls": { "type": "array", "description": "Exam halls with desk seating plans and configurations" },
+        "leagueMentors": { "type": "object", "description": "Academy arena team mentor assignments" },
+        "leagueTeamPoints": { "type": "object", "description": "Arena bonus/penalty team points" },
+        "approvedTransfers": { "type": "array", "description": "League team transfer records" },
+        "admins": { "type": "array", "description": "Authorized administrator email addresses" },
+        "teachers": { "type": "array", "description": "Authorized teacher email addresses" }
       }
+    },
+    "AccessRequest": {
+      "title": "AccessRequest",
+      "description": "Pending user authorization request for teacher or admin access",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["email"]
     }
   },
   "firestore": {
-    "users/{userId}": {
+    "/schools/{schoolId}": {
       "schema": "AppState",
-      "description": "User's application state"
+      "description": "Central school document storing synchronized school database"
+    },
+    "/access_requests/{requestId}": {
+      "schema": "AccessRequest",
+      "description": "User access requests awaiting administrator review"
     }
   }
 }

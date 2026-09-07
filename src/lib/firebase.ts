@@ -12,11 +12,17 @@ export const app = initializeApp(firebaseConfig);
 const dbId = (firebaseConfig as any).firestoreDatabaseId;
 
 // Initialize Firestore with robust local caching
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-}, (dbId && dbId !== '(default)') ? dbId : undefined);
+export const db = (dbId && dbId !== '(default)')
+  ? initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    }, dbId)
+  : initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
 
 export { firebaseConfig };
 
