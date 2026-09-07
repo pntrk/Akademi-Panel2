@@ -557,17 +557,22 @@ export const StudentsView = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 md:space-y-8 flex flex-col h-full relative font-sans text-brand-ink">
-      {/* Header bar - Compact on Mobile, Rich on Desktop */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-brand-accent/15 text-brand-accent flex items-center justify-center sm:hidden shrink-0 font-bold">
-              <Users className="w-4 h-4" />
+    <div className="space-y-2.5 sm:space-y-6 md:space-y-8 flex flex-col h-full relative font-sans text-brand-ink">
+      {/* Header bar - Ultra-Compact on Mobile, Rich on Desktop */}
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+        <div className="w-full sm:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-brand-accent/15 text-brand-accent flex items-center justify-center sm:hidden shrink-0 font-bold">
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+              <h2 className="text-lg sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Öğrenci Kayıtları</h2>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Öğrenci Kayıtları</h2>
+            <span className="sm:hidden text-[11px] font-medium text-brand-ink/50 bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-brand-border/60">
+              {stats.totalStudents} Öğrenci
+            </span>
           </div>
-          <p className="text-brand-ink/60 text-xs sm:text-sm mt-0.5">Sisteme kayıtlı öğrenciler, salon yerleşimleri ve sınav ücreti yönetimi</p>
+          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-0.5">Sisteme kayıtlı öğrenciler, salon yerleşimleri ve sınav ücreti yönetimi</p>
         </div>
         
         {/* Action Buttons: Ultra-Compact & Grid-Optimized on Mobile */}
@@ -577,27 +582,27 @@ export const StudentsView = () => {
               <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleImport} />
               <button 
                 onClick={() => fileInputRef.current?.click()} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'den İçe Aktar"
               >
-                <Upload className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
+                <Upload className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">İçe Aktar</span>
               </button>
 
               <button 
                 onClick={handleExport} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'e Dışa Aktar"
               >
-                <Download className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
+                <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">Dışa Aktar</span>
               </button>
 
               <button 
                 onClick={addEmptyStudent} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-[11px] sm:text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-[11px] sm:text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
               >
-                <UserPlus className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <UserPlus className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate">+ Öğrenci</span>
               </button>
             </>
@@ -606,55 +611,55 @@ export const StudentsView = () => {
       </header>
 
       {/* Stats Grid - Compact 2x2 on Mobile, 4 Cols on Desktop */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
         {/* Stat 1: Toplam Öğrenci */}
-        <div className="bg-white p-3 sm:p-4 md:p-5 border border-brand-border/70 rounded-2xl shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
-          <div className="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
+          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Toplam Öğrenci</span>
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <Users className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalStudents}</span>
+            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalStudents}</span>
             <span className="text-[10px] sm:text-xs text-brand-ink/50 font-medium">kişi</span>
           </div>
         </div>
 
         {/* Stat 2: Aktif Sınav Kaydı */}
-        <div className="bg-white p-3 sm:p-4 md:p-5 border border-brand-border/70 rounded-2xl shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
-          <div className="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
+          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Aktif Kayıt</span>
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-              <Award className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalRegistrations}</span>
+            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalRegistrations}</span>
             <span className="text-[10px] sm:text-xs text-brand-ink/50 font-medium">sınav</span>
           </div>
         </div>
 
         {/* Stat 3: Gelen Gelir */}
-        <div className="bg-white p-3 sm:p-4 md:p-5 border border-brand-border/70 rounded-2xl shadow-sm flex flex-col justify-between transition-all hover:border-emerald-300">
-          <div className="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-emerald-300">
+          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Gelen Gelir</span>
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">₺{stats.totalFees}</span>
+          <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">₺{stats.totalFees}</span>
         </div>
 
         {/* Stat 4: Toplam Borç */}
-        <div className="bg-white p-3 sm:p-4 md:p-5 border border-brand-border/70 rounded-2xl shadow-sm flex flex-col justify-between transition-all hover:border-rose-300">
-          <div className="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-rose-300">
+          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Toplam Borç</span>
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-              <AlertCircle className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <span className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-rose-600 leading-none">₺{stats.totalUnpaidFees}</span>
+          <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-rose-600 leading-none">₺{stats.totalUnpaidFees}</span>
         </div>
       </section>
 

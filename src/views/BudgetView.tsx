@@ -30,6 +30,7 @@ export const BudgetView = () => {
   const [selectedExpenseIds, setSelectedExpenseIds] = React.useState<string[]>([]);
   const [selectedDebtIds, setSelectedDebtIds] = React.useState<string[]>([]);
   const [selectedStudentDebtKeys, setSelectedStudentDebtKeys] = React.useState<string[]>([]);
+  const [mobileBudgetTab, setMobileBudgetTab] = React.useState<'all' | 'incomes' | 'expenses' | 'debts'>('all');
 
   // Collapse/expand states for groups
   const [expandedIncomes, setExpandedIncomes] = React.useState<Record<string, boolean>>({});
@@ -427,45 +428,145 @@ export const BudgetView = () => {
   const isAnyStudentDebtsSelected = selectedStudentDebtKeys.length > 0;
 
   return (
-    <div className="space-y-4 sm:space-y-6 flex flex-col h-full font-sans text-brand-ink">
-      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0 font-bold">
-              <Coins className="w-4 h-4" />
+    <div className="space-y-2.5 sm:space-y-6 flex flex-col h-full font-sans text-brand-ink">
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-2 sm:gap-4">
+        <div className="w-full sm:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0 font-bold">
+                <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+              <h2 className="text-lg sm:text-3xl md:text-4xl font-serif text-[#5a5a40] font-bold tracking-tight leading-tight">Bütçe Takibi</h2>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-[#5a5a40] font-bold tracking-tight leading-tight">Bütçe Takibi</h2>
+            <span className="sm:hidden text-[11px] font-medium text-brand-ink/50 bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-brand-border/60">
+              Net: ₺{(totalIncome - totalExpense).toLocaleString('tr-TR')}
+            </span>
           </div>
-          <p className="text-brand-ink/60 text-xs sm:text-sm mt-0.5">Sınav ve yayın bazlı gruplanmış gelir, harcama, borç takibi ve finansal özet</p>
+          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-0.5">Sınav ve yayın bazlı gruplanmış gelir, harcama, borç takibi ve finansal özet</p>
         </div>
         
         {/* Top Summary Cards (2x2 grid on mobile, 4 in a row on desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full xl:w-auto shrink-0">
-          <div className="bg-emerald-50/80 p-3 rounded-2xl border border-emerald-200/80 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-emerald-800/70 uppercase tracking-wider">Toplam Gelir</span>
-            <span className="text-base sm:text-lg font-serif font-bold text-emerald-800">₺{totalIncome.toLocaleString('tr-TR')}</span>
-          </div>
-          <div className="bg-rose-50/80 p-3 rounded-2xl border border-rose-200/80 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-rose-800/70 uppercase tracking-wider">Toplam Gider</span>
-            <span className="text-base sm:text-lg font-serif font-bold text-rose-800">₺{totalExpense.toLocaleString('tr-TR')}</span>
-          </div>
-          <div className="bg-amber-50/80 p-3 rounded-2xl border border-amber-200/80 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-amber-800/70 uppercase tracking-wider">Bekleyen Borç</span>
-            <span className="text-base sm:text-lg font-serif font-bold text-amber-800">₺{totalDebt.toLocaleString('tr-TR')}</span>
-          </div>
-          <div className={`p-3 rounded-2xl border flex flex-col justify-between ${remaining >= 0 ? 'bg-emerald-700 text-white border-emerald-800' : 'bg-rose-700 text-white border-rose-800'}`}>
-            <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Net Durum</span>
-            <span className="text-base sm:text-lg font-serif font-bold text-white">₺{remaining.toLocaleString('tr-TR')}</span>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full xl:w-auto shrink-0">
+          <button 
+            type="button"
+            onClick={() => setMobileBudgetTab(prev => prev === 'incomes' ? 'all' : 'incomes')}
+            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+              mobileBudgetTab === 'incomes'
+                ? 'bg-emerald-100 border-emerald-400 ring-2 ring-emerald-500/30'
+                : 'bg-emerald-50/80 border-emerald-200/80 hover:border-emerald-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-emerald-800/70 uppercase tracking-wider">Toplam Gelir</span>
+              {mobileBudgetTab === 'incomes' && <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
+            </div>
+            <span className="text-base sm:text-lg font-serif font-bold text-emerald-800 mt-1">₺{totalIncome.toLocaleString('tr-TR')}</span>
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => setMobileBudgetTab(prev => prev === 'expenses' ? 'all' : 'expenses')}
+            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+              mobileBudgetTab === 'expenses'
+                ? 'bg-rose-100 border-rose-400 ring-2 ring-rose-500/30'
+                : 'bg-rose-50/80 border-rose-200/80 hover:border-rose-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-rose-800/70 uppercase tracking-wider">Toplam Gider</span>
+              {mobileBudgetTab === 'expenses' && <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
+            </div>
+            <span className="text-base sm:text-lg font-serif font-bold text-rose-800 mt-1">₺{totalExpense.toLocaleString('tr-TR')}</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => setMobileBudgetTab(prev => prev === 'debts' ? 'all' : 'debts')}
+            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+              mobileBudgetTab === 'debts'
+                ? 'bg-amber-100 border-amber-400 ring-2 ring-amber-500/30'
+                : 'bg-amber-50/80 border-amber-200/80 hover:border-amber-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-amber-800/70 uppercase tracking-wider">Bekleyen Borç</span>
+              {mobileBudgetTab === 'debts' && <span className="text-[9px] bg-amber-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
+            </div>
+            <span className="text-base sm:text-lg font-serif font-bold text-amber-800 mt-1">₺{totalDebt.toLocaleString('tr-TR')}</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => setMobileBudgetTab('all')}
+            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+              remaining >= 0 ? 'bg-emerald-700 text-white border-emerald-800' : 'bg-rose-700 text-white border-rose-800'
+            } ${mobileBudgetTab === 'all' ? 'ring-2 ring-black/40' : ''}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Net Durum</span>
+              {mobileBudgetTab === 'all' && <span className="text-[9px] bg-black/30 text-white px-1.5 py-0.2 rounded font-bold">Tümü</span>}
+            </div>
+            <span className="text-base sm:text-lg font-serif font-bold text-white mt-1">₺{remaining.toLocaleString('tr-TR')}</span>
+          </button>
         </div>
       </header>
+
+      {/* Mobile Tab Switcher */}
+      <div className="lg:hidden flex bg-[#f5f4f0] p-1 rounded-2xl border border-[#e6e2d3] gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileBudgetTab('all')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+            mobileBudgetTab === 'all'
+              ? 'bg-white text-brand-ink shadow-xs'
+              : 'text-brand-ink/60 hover:text-brand-ink'
+          }`}
+        >
+          Tümü
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileBudgetTab('incomes')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
+            mobileBudgetTab === 'incomes'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-emerald-800 hover:text-emerald-950'
+          }`}
+        >
+          <span>Gelirler</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileBudgetTab('expenses')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
+            mobileBudgetTab === 'expenses'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'text-rose-800 hover:text-rose-950'
+          }`}
+        >
+          <span>Giderler</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileBudgetTab('debts')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
+            mobileBudgetTab === 'debts'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'text-amber-800 hover:text-amber-950'
+          }`}
+        >
+          <span>Borçlar</span>
+        </button>
+      </div>
 
       <div className="bg-white rounded-[32px] p-4 sm:p-6 shadow-sm border border-[#e6e2d3] flex-1 overflow-hidden flex flex-col">
         <div className="overflow-auto flex-1 pb-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-8 h-full">
             
             {/* Gelir Sütunu */}
-            <div className="flex flex-col">
+            <div className={`flex flex-col ${
+              mobileBudgetTab === 'all' || mobileBudgetTab === 'incomes' ? 'flex' : 'hidden lg:flex'
+            }`}>
               <div className="flex items-center justify-between mb-4 border-b border-[#e6e2d3] pb-2 shrink-0">
                 <div className="flex items-center space-x-2">
                   {incomes.length > 0 && (
@@ -615,7 +716,9 @@ export const BudgetView = () => {
             </div>
 
             {/* Gider Sütunu */}
-            <div className="flex flex-col">
+            <div className={`flex flex-col ${
+              mobileBudgetTab === 'all' || mobileBudgetTab === 'expenses' ? 'flex' : 'hidden lg:flex'
+            }`}>
               <div className="flex items-center justify-between mb-4 border-b border-[#e6e2d3] pb-2 shrink-0">
                 <div className="flex items-center space-x-2">
                   {expenses.length > 0 && (
@@ -765,7 +868,9 @@ export const BudgetView = () => {
             </div>
 
             {/* Borç Sütunu */}
-            <div className="flex flex-col space-y-6">
+            <div className={`flex flex-col space-y-6 ${
+              mobileBudgetTab === 'all' || mobileBudgetTab === 'debts' ? 'flex' : 'hidden lg:flex'
+            }`}>
                <div>
                  <div className="flex items-center justify-between mb-4 border-b border-[#e6e2d3] pb-2 shrink-0">
                     <div className="flex items-center space-x-2">

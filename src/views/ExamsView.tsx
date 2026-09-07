@@ -947,27 +947,32 @@ export const ExamsView = () => {
   }, [filteredAndSortedExams, state.students]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 md:space-y-8 flex flex-col h-full relative font-sans text-brand-ink">
+    <div className="space-y-2.5 sm:space-y-6 md:space-y-8 flex flex-col h-full relative font-sans text-brand-ink">
       {/* Upper header action bar */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center sm:hidden shrink-0 font-bold">
-              <Award className="w-4 h-4" />
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+        <div className="w-full sm:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center sm:hidden shrink-0 font-bold">
+                <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+              <h2 className="text-lg sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Deneme Sınavları</h2>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Deneme Sınavları</h2>
+            <span className="sm:hidden text-[11px] font-medium text-brand-ink/50 bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-brand-border/60">
+              {filteredAndSortedExams.length} Sınav
+            </span>
           </div>
-          <p className="text-brand-ink/60 text-xs sm:text-sm mt-0.5">Yıllık sınav takvimi, yayıncı ödemeleri, katılım sınıfları ve salon senkronizasyonu</p>
+          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-0.5">Yıllık sınav takvimi, yayıncı ödemeleri, katılım sınıfları ve salon senkronizasyonu</p>
         </div>
         
         {/* Action Buttons: Touch-Friendly 2x2 Grid on Mobile, Flex on Desktop */}
         <div className="grid grid-cols-2 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto py-0.5">
           <button 
             onClick={() => setIsPrintModalOpen(true)} 
-            className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+            className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
             title="Sınav Takvimi Raporu Yazdır"
           >
-            <Printer className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
+            <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
             <span className="truncate">Yazdır</span>
           </button>
           
@@ -976,27 +981,27 @@ export const ExamsView = () => {
               <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleImport} />
               <button 
                 onClick={() => fileInputRef.current?.click()} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'den İçe Aktar"
               >
-                <Upload className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
+                <Upload className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">İçe Aktar</span>
               </button>
 
               <button 
                 onClick={handleExport} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'e Dışa Aktar"
               >
-                <Download className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
+                <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">Dışa Aktar</span>
               </button>
 
               <button 
                 onClick={addEmptyExam} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-[11px] sm:text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-[11px] sm:text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
               >
-                <Plus className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate">+ Yeni Sınav</span>
               </button>
             </>

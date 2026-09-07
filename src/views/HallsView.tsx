@@ -9,6 +9,7 @@ export const HallsView = () => {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHallId, setEditingHallId] = useState<string | null>(null);
+  const [mobileModalTab, setMobileModalTab] = useState<'settings' | 'preview'>('settings');
   
   // Modal states
   const [hallName, setHallName] = useState('');
@@ -126,6 +127,7 @@ export const HallsView = () => {
     setSelectedGrades([]);
     setSeatingPlan([]);
     setDeselectedStudentIds([]);
+    setMobileModalTab('settings');
     setIsModalOpen(true);
   };
 
@@ -166,7 +168,7 @@ export const HallsView = () => {
     const seatedIds = (hall.seatingPlan || []).map(sp => sp.studentId);
     const initialDeselected = registered.filter(s => !seatedIds.includes(s.id)).map(s => s.id);
     setDeselectedStudentIds(initialDeselected);
-    
+    setMobileModalTab('settings');
     setIsModalOpen(true);
   };
 
@@ -265,6 +267,7 @@ export const HallsView = () => {
     }
 
     setSeatingPlan(newPlan);
+    setMobileModalTab('preview');
   };
 
   const handleSaveHall = () => {
@@ -493,13 +496,18 @@ export const HallsView = () => {
   };
 
   return (
-    <div className="space-y-8 flex flex-col h-full relative">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-3xl font-serif text-[#5a5a40]">Sınav Salonları</h2>
-          <p className="text-[#8e8d82] mt-1">Sınav salonlarını, kapasitelerini ve otomatik oturma düzenlerini yönetin</p>
+    <div className="space-y-2.5 sm:space-y-6 md:space-y-8 flex flex-col h-full relative">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 sm:mb-4">
+        <div className="w-full sm:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <h2 className="text-lg sm:text-3xl font-serif text-[#5a5a40] font-bold">Sınav Salonları</h2>
+            <span className="sm:hidden text-[11px] font-medium text-[#8e8d82] bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-[#e6e2d3]">
+              {state.examHalls.length} Salon
+            </span>
+          </div>
+          <p className="hidden sm:block text-[#8e8d82] text-xs sm:text-sm mt-0.5">Sınav salonlarını, kapasitelerini ve otomatik oturma düzenlerini yönetin</p>
         </div>
-        <button onClick={openNewModal} className="flex items-center px-6 py-2 bg-[#5a5a40] text-white rounded-full text-sm font-bold hover:bg-[#43423b] shadow-sm transition-all">
+        <button onClick={openNewModal} className="flex items-center justify-center w-full sm:w-auto px-4 sm:px-6 py-2 bg-[#5a5a40] text-white rounded-xl sm:rounded-full text-xs sm:text-sm font-bold hover:bg-[#43423b] active:scale-95 shadow-xs transition-all cursor-pointer">
             <Plus className="h-4 w-4 mr-1.5" /> Yeni Salon Oluştur
         </button>
       </div>
@@ -569,17 +577,17 @@ export const HallsView = () => {
           <div className="bg-white rounded-[32px] border border-[#e6e2d3] shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-slide-up max-h-[90vh]">
             
             {/* Header */}
-            <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-5 flex items-center justify-between shrink-0">
+            <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-4 sm:p-5 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-3">
-                <div className="bg-[#d4d19d]/30 p-2.5 rounded-2xl border border-[#d4d19d]/50">
-                  <MapPin className="h-6 w-6 text-[#5a5a40]" />
+                <div className="bg-[#d4d19d]/30 p-2 sm:p-2.5 rounded-2xl border border-[#d4d19d]/50">
+                  <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-[#5a5a40]" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-serif text-[#5a5a40] font-bold">
+                  <h3 className="text-lg sm:text-xl font-serif text-[#5a5a40] font-bold leading-tight">
                     {editingHallId ? 'Sınav Salonu Düzenle' : 'Yeni Sınav Salonu Oluştur'}
                   </h3>
-                  <p className="text-xs text-[#8e8d82]">
-                    Salon detayları, kapasite ve otomatik oturma düzeni yapılandırması
+                  <p className="text-[11px] sm:text-xs text-[#8e8d82]">
+                    Salon detayları, kapasite ve otomatik oturma düzeni
                   </p>
                 </div>
               </div>
@@ -591,11 +599,41 @@ export const HallsView = () => {
               </button>
             </div>
 
+            {/* Mobile Tab Switcher */}
+            <div className="md:hidden flex border-b border-[#e6e2d3] bg-[#fcfbf7] p-1.5 gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setMobileModalTab('settings')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                  mobileModalTab === 'settings'
+                    ? 'bg-[#5a5a40] text-white shadow-xs'
+                    : 'text-[#8e8d82] hover:text-[#5a5a40]'
+                }`}
+              >
+                <Building className="w-3.5 h-3.5" />
+                <span>1. Salon Ayarları & Öğrenciler</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileModalTab('preview')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                  mobileModalTab === 'preview'
+                    ? 'bg-[#5a5a40] text-white shadow-xs'
+                    : 'text-[#8e8d82] hover:text-[#5a5a40]'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>2. Oturma Şeması ({seatingPlan.length}/{capacity})</span>
+              </button>
+            </div>
+
             {/* Content */}
             <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-[#fcfbf7]/40">
               
               {/* Left Sidebar Form */}
-              <div className="w-full md:w-1/3 border-r border-[#e6e2d3] p-6 overflow-y-auto space-y-5 bg-white">
+              <div className={`w-full md:w-1/3 border-r border-[#e6e2d3] p-4 sm:p-6 overflow-y-auto space-y-5 bg-white ${
+                mobileModalTab === 'settings' ? 'block' : 'hidden md:block'
+              }`}>
                 
                 <div>
                   <label className="block text-xs font-bold text-[#8e8d82] mb-1.5 uppercase tracking-wider">Salon Adı / Yeri</label>
@@ -919,7 +957,9 @@ export const HallsView = () => {
               </div>
 
               {/* Right Content - Seating Plan Preview */}
-              <div className="w-full md:w-2/3 p-6 flex flex-col overflow-hidden">
+              <div className={`w-full md:w-2/3 p-4 sm:p-6 flex-col overflow-hidden ${
+                mobileModalTab === 'preview' ? 'flex' : 'hidden md:flex'
+              }`}>
                 <div className="flex justify-between items-center mb-4 shrink-0">
                   <div>
                     <h4 className="text-lg font-serif font-bold text-[#5a5a40]">Oturma Düzeni Önizlemesi</h4>
