@@ -39,44 +39,11 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
-    "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
-    "electron": "^43.1.0",
-    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
-    "glob": "^13.0.6",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3",
-    "wait-on": "^9.0.10"
-  },
-  "main": "electron/main.cjs",
-  "build": {
-    "appId": "com.akademipanel.app",
-    "productName": "Akademi Panel",
-    "directories": {
-      "output": "release/"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "package.json",
-      "!node_modules/**/*"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
+    "vite": "^6.2.3"
   }
 }
