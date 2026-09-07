@@ -1,15 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem, FullBackupData } from '../types';
+import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem } from '../types';
 import { generateId, recalculateLeagueForStudents } from '../lib/utils';
-import { autoSyncToDrive, getAutoSyncEnabled, getAccessToken } from '../lib/googleDrive';
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc, onSnapshot, disableNetwork, enableNetwork } from 'firebase/firestore';
+import { User } from 'firebase/auth';
 
-export interface AppUser {
-  name: string;
-  email: string;
-  role: 'admin' | 'teacher';
-}
-
-export interface AppState {
+interface AppState {
   students: Student[];
   exams: Exam[];
   results: ExamResult[];
@@ -22,13 +18,10 @@ export interface AppState {
   teachers?: string[];
 }
 
-export interface AppContextType {
+interface AppContextType {
   state: AppState;
-  userRole: 'admin' | 'teacher';
-  setUserRole: (role: 'admin' | 'teacher') => void;
-  currentUser: AppUser;
-  setCurrentUser: (user: AppUser) => void;
-  syncStatus: 'synced' | 'saving';
+  userRole: 'admin' | 'teacher' | 'guest';
+  syncStatus: 'synced' | 'saving' | 'quota_exceeded' | 'offline' | 'error';
   syncErrorMessage?: string | null;
   updateUsers: (admins: string[], teachers: string[]) => void;
   setStudents: (students: Student[]) => void;
@@ -53,20 +46,15 @@ const defaultState: AppState = {
   leagueMentors: {},
   leagueTeamPoints: {},
   approvedTransfers: [],
-  admins: ['kirklareliataturkortaokulu@gmail.com'],
+  admins: ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
   teachers: []
-};
-
-const defaultUser: AppUser = {
-  name: 'Yönetici',
-  email: 'kirklareliataturkortaokulu@gmail.com',
-  role: 'admin'
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // --- Financial Sync Engine ---
 const syncFinancials = (students: Student[], exams: Exam[], budget: BudgetData): BudgetData => {
+  // Same logic as before
   const safeBudget: BudgetData = {
     incomes: budget?.incomes || [],
     expenses: budget?.expenses || [],
@@ -160,7 +148,7 @@ const loadInitialState = (): AppState => {
     const saved = localStorage.getItem('okulYonetimState');
     if (saved) {
       const parsed = JSON.parse(saved);
-      const safe: AppState = {
+      return {
         students: parsed.students || [],
         exams: parsed.exams || [],
         results: parsed.results || [],
@@ -169,11 +157,9 @@ const loadInitialState = (): AppState => {
         leagueMentors: parsed.leagueMentors || {},
         leagueTeamPoints: parsed.leagueTeamPoints || {},
         approvedTransfers: parsed.approvedTransfers || [],
-        admins: parsed.admins || ['kirklareliataturkortaokulu@gmail.com'],
+        admins: parsed.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
         teachers: parsed.teachers || []
       };
-      safe.budget = syncFinancials(safe.students, safe.exams, safe.budget);
-      return safe;
     }
   } catch (e) {
     console.error('Error loading initial local state:', e);
@@ -181,122 +167,251 @@ const loadInitialState = (): AppState => {
   return defaultState;
 };
 
-export const AppProvider = ({ children }: { children: ReactNode }) => {
+const getTodayDateStr = () => new Date().toISOString().slice(0, 10);
+
+const checkIsQuotaExceededToday = () => {
+  try {
+    const saved = localStorage.getItem('firestore_quota_exceeded_date');
+    return saved === getTodayDateStr();
+  } catch (e) {
+    return false;
+  }
+};
+
+const markQuotaExceededToday = () => {
+  try {
+    localStorage.setItem('firestore_quota_exceeded_date', getTodayDateStr());
+  } catch (e) {}
+};
+
+const clearQuotaExceeded = () => {
+  try {
+    localStorage.removeItem('firestore_quota_exceeded_date');
+  } catch (e) {}
+};
+
+export const AppProvider = ({ children, user }: { children: ReactNode, user: User }) => {
+  const isInitialQuotaExceeded = checkIsQuotaExceededToday();
   const [state, setState] = useState<AppState>(loadInitialState);
-  const [currentUser, setCurrentUser] = useState<AppUser>(() => {
-    try {
-      const savedUser = localStorage.getItem('app_current_user');
-      if (savedUser) return JSON.parse(savedUser);
-    } catch (e) {}
-    return defaultUser;
-  });
-  const [userRole, setUserRoleState] = useState<'admin' | 'teacher'>(currentUser.role || 'admin');
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'saving'>('synced');
   const stateRef = useRef<AppState>(state);
+  const lastSavedPayloadRef = useRef<string>('');
+  const debounceTimerRef = useRef<any>(null);
+  const isQuotaExceededRef = useRef(isInitialQuotaExceeded);
+  const hasSentGuestRequestRef = useRef(false);
 
-  const setUserRole = (role: 'admin' | 'teacher') => {
-    setUserRoleState(role);
-    const updatedUser = { ...currentUser, role };
-    setCurrentUser(updatedUser);
+  // If quota was already exceeded today, disable Firestore background network stream to prevent retry loops
+  useEffect(() => {
+    if (isInitialQuotaExceeded) {
+      disableNetwork(db).catch(() => {});
+    }
+  }, []);
+
+  const initialRole = (() => {
+    const email = user?.email || '';
+    if (email === 'kirklareliataturkortaokulu@gmail.com' || email === 'bahadirkumcu@gmail.com') return 'admin';
+    if (state.admins?.includes(email)) return 'admin';
+    if (state.teachers?.includes(email)) return 'teacher';
+    return 'guest';
+  })();
+
+  const [loading, setLoading] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'teacher' | 'guest'>(initialRole);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'saving' | 'quota_exceeded' | 'offline' | 'error'>(
+    isInitialQuotaExceeded ? 'quota_exceeded' : 'synced'
+  );
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(
+    isInitialQuotaExceeded ? 'Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz ve güvenle saklanmaktadır.' : null
+  );
+
+  // Firestore Real-time Listener with Quota & Offline Handling
+  useEffect(() => {
+    const docRef = doc(db, 'schools', 'main');
+    
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as AppState;
+        
+        const safeData: AppState = {
+          students: data.students || [],
+          exams: data.exams || [],
+          results: data.results || [],
+          budget: data.budget || { incomes: [], expenses: [], debts: [] },
+          examHalls: data.examHalls || [],
+          leagueMentors: data.leagueMentors || {},
+          leagueTeamPoints: data.leagueTeamPoints || {},
+          approvedTransfers: data.approvedTransfers || [],
+          admins: data.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
+          teachers: data.teachers || []
+        };
+        
+        safeData.budget = syncFinancials(safeData.students, safeData.exams, safeData.budget);
+        
+        setState(safeData);
+        stateRef.current = safeData;
+        
+        // Cache to localStorage
+        try {
+          localStorage.setItem('okulYonetimState', JSON.stringify(safeData));
+          lastSavedPayloadRef.current = JSON.stringify(safeData);
+        } catch (e) {
+          console.warn('LocalStorage save error:', e);
+        }
+        
+        const userEmail = user.email || '';
+        if (userEmail === 'kirklareliataturkortaokulu@gmail.com' || userEmail === 'bahadirkumcu@gmail.com' || safeData.admins.includes(userEmail)) {
+          setUserRole('admin');
+        } else if (safeData.teachers.includes(userEmail)) {
+          setUserRole('teacher');
+        } else {
+          setUserRole('guest');
+          if (userEmail && !hasSentGuestRequestRef.current && !isQuotaExceededRef.current) {
+            hasSentGuestRequestRef.current = true;
+            setDoc(doc(db, 'access_requests', userEmail), {
+              email: userEmail,
+              name: user.displayName || userEmail.split('@')[0],
+              timestamp: new Date().toISOString()
+            }).catch(() => {});
+          }
+        }
+        if (!isQuotaExceededRef.current) {
+          setSyncStatus('synced');
+          setSyncErrorMessage(null);
+        }
+      } else {
+        // Doc doesn't exist yet, if user is super admin initialize it (only if quota not exceeded)
+        const userEmail = user.email || '';
+        if (userEmail === 'kirklareliataturkortaokulu@gmail.com' || userEmail === 'bahadirkumcu@gmail.com') {
+          setUserRole('admin');
+          if (!isQuotaExceededRef.current) {
+            setDoc(docRef, stateRef.current).catch((err) => {
+              if (err?.code === 'resource-exhausted' || err?.message?.includes('Quota') || err?.message?.includes('quota')) {
+                markQuotaExceededToday();
+                isQuotaExceededRef.current = true;
+                setSyncStatus('quota_exceeded');
+                disableNetwork(db).catch(() => {});
+              }
+            });
+          }
+        }
+      }
+      setLoading(false);
+    }, (error: any) => {
+      const isQuota = error?.code === 'resource-exhausted' || error?.message?.includes('Quota') || error?.message?.includes('quota');
+      if (isQuota) {
+        markQuotaExceededToday();
+        isQuotaExceededRef.current = true;
+        setSyncStatus('quota_exceeded');
+        setSyncErrorMessage('Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz ve güvenle saklanmaktadır.');
+        disableNetwork(db).catch(() => {});
+      } else {
+        setSyncStatus('offline');
+        setSyncErrorMessage('Bulut bağlantısı çevrimdışı. Verileriniz yerel hafızada korunmaktadır.');
+      }
+
+      const userEmail = user.email || '';
+      if (userEmail === 'kirklareliataturkortaokulu@gmail.com' || userEmail === 'bahadirkumcu@gmail.com' || stateRef.current.admins?.includes(userEmail)) {
+        setUserRole('admin');
+      } else if (stateRef.current.teachers?.includes(userEmail)) {
+        setUserRole('teacher');
+      }
+
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user.uid, user.email]);
+
+  // Performs actual Firestore write with error protection and status tracking
+  const executeFirestoreWrite = async (newState: AppState, forceRetry = false) => {
+    if (userRole !== 'admin') return;
+
+    // If quota was already exceeded, skip background auto-writes to prevent retry storm unless manually forced
+    if (isQuotaExceededRef.current && !forceRetry) {
+      setSyncStatus('quota_exceeded');
+      return;
+    }
+
     try {
-      localStorage.setItem('app_current_user', JSON.stringify(updatedUser));
-    } catch (e) {}
+      if (forceRetry) {
+        clearQuotaExceeded();
+        isQuotaExceededRef.current = false;
+        await enableNetwork(db).catch(() => {});
+      }
+
+      const cleanState = JSON.parse(JSON.stringify(newState));
+      const payloadString = JSON.stringify(cleanState);
+
+      // Skip redundant writes
+      if (payloadString === lastSavedPayloadRef.current && !forceRetry) {
+        setSyncStatus('synced');
+        return;
+      }
+
+      setSyncStatus('saving');
+      await setDoc(doc(db, 'schools', 'main'), cleanState);
+      
+      lastSavedPayloadRef.current = payloadString;
+      clearQuotaExceeded();
+      isQuotaExceededRef.current = false;
+      setSyncStatus('synced');
+      setSyncErrorMessage(null);
+    } catch (error: any) {
+      const isQuota = error?.code === 'resource-exhausted' || error?.message?.includes('Quota') || error?.message?.includes('quota');
+      
+      if (isQuota) {
+        markQuotaExceededToday();
+        isQuotaExceededRef.current = true;
+        setSyncStatus('quota_exceeded');
+        setSyncErrorMessage('Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz olarak korunmaktadır.');
+        disableNetwork(db).catch(() => {});
+      } else {
+        setSyncStatus('error');
+        setSyncErrorMessage(error?.message || 'Buluta kaydedilemedi. Verileriniz yerel olarak güvendedir.');
+      }
+    }
   };
 
-  const handleSetCurrentUser = (user: AppUser) => {
-    setCurrentUser(user);
-    setUserRoleState(user.role);
-    try {
-      localStorage.setItem('app_current_user', JSON.stringify(user));
-    } catch (e) {}
-  };
-
-  // Pure Local State Persistence
-  const persistState = (newState: AppState) => {
+  const updateFirebase = (newState: AppState) => {
     stateRef.current = newState;
     setState(newState);
-    setSyncStatus('saving');
+
+    // 1. Instant local persistence so data is never lost regardless of network/quota
     try {
       localStorage.setItem('okulYonetimState', JSON.stringify(newState));
     } catch (e) {
       console.warn('LocalStorage save error:', e);
     }
-    setTimeout(() => {
-      setSyncStatus('synced');
-    }, 150);
+
+    // 2. If quota is known to be exceeded, don't spam background writes
+    if (isQuotaExceededRef.current) {
+      setSyncStatus('quota_exceeded');
+      return;
+    }
+
+    // 3. Debounce cloud writes (2500ms) to prevent hitting Firestore write quota limits
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      executeFirestoreWrite(newState);
+    }, 2500);
   };
-
-  // Background Auto-sync to Google Drive if connected and enabled
-  const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
-  useEffect(() => {
-    if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
-
-    autoSyncTimerRef.current = setTimeout(async () => {
-      try {
-        const isAutoSync = getAutoSyncEnabled();
-        const token = await getAccessToken();
-        if (isAutoSync && token && state.students?.length > 0) {
-          const backupObj: FullBackupData = {
-            appName: "AkademiPanel",
-            version: "2.0",
-            backupDate: new Date().toISOString(),
-            school: "Kırklareli Atatürk Ortaokulu",
-            modules: [
-              "Öğrenci Kayıtları",
-              "Deneme Sınavları",
-              "Sınav Sonuçları",
-              "Akademi Arena",
-              "Sınav Salonları",
-              "Bütçe Takibi"
-            ],
-            summary: {
-              studentCount: state.students?.length || 0,
-              examCount: state.exams?.length || 0,
-              resultCount: state.results?.length || 0,
-              hallCount: state.examHalls?.length || 0,
-              budgetIncomesCount: state.budget?.incomes?.length || 0,
-              budgetExpensesCount: state.budget?.expenses?.length || 0,
-              budgetDebtsCount: state.budget?.debts?.length || 0,
-              arenaMentorsCount: Object.keys(state.leagueMentors || {}).length,
-              arenaBonusCount: Object.keys(state.leagueTeamPoints || {}).length,
-              approvedTransferCount: state.approvedTransfers?.length || 0
-            },
-            students: state.students || [],
-            exams: state.exams || [],
-            results: state.results || [],
-            examHalls: state.examHalls || [],
-            budget: {
-              incomes: state.budget?.incomes || [],
-              expenses: state.budget?.expenses || [],
-              debts: state.budget?.debts || []
-            },
-            leagueMentors: state.leagueMentors || {},
-            leagueTeamPoints: state.leagueTeamPoints || {},
-            approvedTransfers: state.approvedTransfers || [],
-            admins: state.admins || ['kirklareliataturkortaokulu@gmail.com'],
-            teachers: state.teachers || []
-          };
-          await autoSyncToDrive(backupObj);
-        }
-      } catch (err) {
-        console.warn('Auto sync check failed:', err);
-      }
-    }, 4000); // 4-second debounce to prevent spamming drive
-
-    return () => {
-      if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
-    };
-  }, [state]);
 
   const saveNow = async () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    // Always persist to localStorage
     try {
       localStorage.setItem('okulYonetimState', JSON.stringify(stateRef.current));
-      setSyncStatus('synced');
     } catch (e) {}
+
+    await executeFirestoreWrite(stateRef.current, true);
   };
 
-  const setStudents = (students: Student[]) => {
-    if (userRole !== 'admin') return;
+  const setStudents = (students: Student[]) => { if (userRole !== 'admin') return; _setStudents(students); };
+  const _setStudents = (students: Student[]) => {
     const s = stateRef.current;
     const updatedHalls = s.examHalls.map(hall => {
       const sp = hall.seatingPlan || [];
@@ -325,11 +440,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
     
     const newBudget = syncFinancials(students, s.exams, s.budget);
-    persistState({ ...s, students, examHalls: updatedHalls, budget: newBudget });
+    updateFirebase({ ...s, students, examHalls: updatedHalls, budget: newBudget });
   };
 
-  const setExams = (exams: Exam[]) => {
-    if (userRole !== 'admin') return;
+  const setExams = (exams: Exam[]) => { if (userRole !== 'admin') return; _setExams(exams); };
+  const _setExams = (exams: Exam[]) => {
     const s = stateRef.current;
     const updatedHalls = s.examHalls.map(hall => {
       const matchingExams = exams.filter(e => e.assignedHalls?.includes(hall.id));
@@ -358,6 +473,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     const newBudget = syncFinancials(s.students, exams, s.budget);
     
+    // Clean up student registrations for exams that no longer exist
     const newExamIds = exams.map(e => e.id);
     const studentsWithCleanRegs = s.students.map(st => {
       const regs = st.examRegistrations || [];
@@ -366,26 +482,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return st;
     });
     const updatedStudents = recalculateLeagueForStudents(studentsWithCleanRegs, s.results, exams, s.approvedTransfers || []);
-    persistState({ ...s, exams, examHalls: updatedHalls, budget: newBudget, students: updatedStudents });
+    updateFirebase({ ...s, exams, examHalls: updatedHalls, budget: newBudget, students: updatedStudents });
   };
 
-  const setResults = (results: ExamResult[]) => {
-    if (userRole !== 'admin') return;
+  const setResults = (results: ExamResult[]) => { if (userRole !== 'admin') return; _setResults(results); };
+  const _setResults = (results: ExamResult[]) => {
     const s = stateRef.current;
     const updatedStudents = recalculateLeagueForStudents(s.students, results, s.exams, s.approvedTransfers || []);
-    persistState({ ...s, results, students: updatedStudents });
+    updateFirebase({ ...s, results, students: updatedStudents });
   };
   
-  const setBudget = (budget: BudgetData) => {
-    if (userRole !== 'admin') return;
+  const setBudget = (budget: BudgetData) => { if (userRole !== 'admin') return; _setBudget(budget); };
+  const _setBudget = (budget: BudgetData) => {
     const s = stateRef.current;
     const { updatedStudents, updatedExams, cleanedBudget } = propagateManualBudgetChanges(s.students, s.exams, budget);
     const finalBudget = syncFinancials(updatedStudents, updatedExams, cleanedBudget);
-    persistState({ ...s, students: updatedStudents, exams: updatedExams, budget: finalBudget });
+    updateFirebase({ ...s, students: updatedStudents, exams: updatedExams, budget: finalBudget });
   };
 
-  const setExamHalls = (examHalls: ExamHall[]) => {
-    if (userRole !== 'admin') return;
+  const setExamHalls = (examHalls: ExamHall[]) => { if (userRole !== 'admin') return; _setExamHalls(examHalls); };
+  const _setExamHalls = (examHalls: ExamHall[]) => {
     const s = stateRef.current;
     const updatedExams = s.exams.map(exam => {
       const matchingHalls = examHalls.filter(h => h.examIds?.includes(exam.id) || h.examId === exam.id);
@@ -396,42 +512,47 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (!isSame) { return { ...exam, assignedHalls: newAssignedHalls }; }
       return exam;
     });
-    persistState({ ...s, examHalls, exams: updatedExams });
+    updateFirebase({ ...s, examHalls, exams: updatedExams });
   };
   
-  const updateBudget = (type: 'incomes' | 'expenses' | 'debts', data: any[]) => {
-    if (userRole !== 'admin') return;
+  const updateBudget = (type: 'incomes' | 'expenses' | 'debts', data: any[]) => { if (userRole !== 'admin') return; _updateBudget(type, data); };
+  const _updateBudget = (type: 'incomes' | 'expenses' | 'debts', data: any[]) => {
     const s = stateRef.current;
     const nextBudget = { ...s.budget, [type]: data };
     const { updatedStudents, updatedExams, cleanedBudget } = propagateManualBudgetChanges(s.students, s.exams, nextBudget);
     const finalBudget = syncFinancials(updatedStudents, updatedExams, cleanedBudget);
-    persistState({ ...s, students: updatedStudents, exams: updatedExams, budget: finalBudget });
+    updateFirebase({ ...s, students: updatedStudents, exams: updatedExams, budget: finalBudget });
   };
 
-  const updateLeagueSettings = (mentors: Record<string, string>, teamPoints: Record<string, number>) => {
-    if (userRole !== 'admin') return;
+  const updateLeagueSettings = (mentors: Record<string, string>, teamPoints: Record<string, number>) => { if (userRole !== 'admin') return; _updateLeagueSettings(mentors, teamPoints); };
+  const _updateLeagueSettings = (mentors: Record<string, string>, teamPoints: Record<string, number>) => {
     const s = stateRef.current;
-    persistState({ ...s, leagueMentors: mentors, leagueTeamPoints: teamPoints });
+    updateFirebase({ ...s, leagueMentors: mentors, leagueTeamPoints: teamPoints });
   };
 
   const updateUsers = (admins: string[], teachers: string[]) => {
     const s = stateRef.current;
-    persistState({ ...s, admins, teachers });
+    updateFirebase({ ...s, admins, teachers });
   };
 
-  const approveTransfer = (studentNo: number, examName: string, toTeam: string) => {
-    if (userRole !== 'admin') return;
+  const approveTransfer = (studentNo: number, examName: string, toTeam: string) => { if (userRole !== 'admin') return; _approveTransfer(studentNo, examName, toTeam); };
+  const _approveTransfer = (studentNo: number, examName: string, toTeam: string) => {
     const s = stateRef.current;
     const newApproved = [...(s.approvedTransfers || []), { studentNo, examName, toTeam }];
     const updatedStudents = recalculateLeagueForStudents(s.students, s.results, s.exams, newApproved);
-    persistState({ ...s, approvedTransfers: newApproved, students: updatedStudents });
+    updateFirebase({ ...s, approvedTransfers: newApproved, students: updatedStudents });
   };
 
   const restoreBackup = async (rawBackup: any): Promise<{ success: boolean; message: string; summary?: any }> => {
+    if (userRole !== 'admin') {
+      return { success: false, message: 'Yedek yükleme işlemi yalnızca yetkili yöneticiler tarafından gerçekleştirilebilir.' };
+    }
+
     if (!rawBackup || typeof rawBackup !== 'object') {
       return { success: false, message: 'Geçersiz yedek dosyası formatı.' };
     }
 
+    // Support nested payload if wrapped under .data or .appState
     const source = (rawBackup.students || rawBackup.exams || rawBackup.results || rawBackup.budget || rawBackup.examHalls)
       ? rawBackup
       : (rawBackup.data || rawBackup.appState || rawBackup);
@@ -444,9 +565,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       (source.budget && typeof source.budget === 'object');
 
     if (!hasRecognizableData) {
-      return { success: false, message: 'Yedek dosyasında geçerli okul verisi bulunamadı.' };
+      return { success: false, message: 'Yedek dosyasında geçerli okul verisi (öğrenci, sınav, salon veya bütçe) bulunamadı.' };
     }
 
+    // 1. Sanitize students
     const cleanStudents: Student[] = Array.isArray(source.students)
       ? source.students.map((s: any) => ({
           id: s.id || generateId(),
@@ -461,6 +583,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }))
       : [];
 
+    // 2. Sanitize exams
     const cleanExams: Exam[] = Array.isArray(source.exams)
       ? source.exams.map((e: any) => ({
           id: e.id || generateId(),
@@ -477,6 +600,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }))
       : [];
 
+    // 3. Sanitize results
     const cleanResults: ExamResult[] = Array.isArray(source.results)
       ? source.results.map((r: any) => ({
           id: r.id || generateId(),
@@ -492,6 +616,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }))
       : [];
 
+    // 4. Sanitize halls
     const cleanHalls: ExamHall[] = Array.isArray(source.examHalls)
       ? source.examHalls.map((h: any) => ({
           id: h.id || generateId(),
@@ -505,6 +630,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }))
       : [];
 
+    // 5. Sanitize budget
     const rawBudget = source.budget || {};
     const cleanBudget: BudgetData = {
       incomes: Array.isArray(rawBudget.incomes) ? rawBudget.incomes : [],
@@ -512,20 +638,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       debts: Array.isArray(rawBudget.debts) ? rawBudget.debts : []
     };
 
+    // 6. Sanitize arena
     const cleanLeagueMentors: Record<string, string> = 
       source.leagueMentors && typeof source.leagueMentors === 'object' ? source.leagueMentors : {};
     const cleanLeagueTeamPoints: Record<string, number> = 
       source.leagueTeamPoints && typeof source.leagueTeamPoints === 'object' ? source.leagueTeamPoints : {};
     const cleanApprovedTransfers = Array.isArray(source.approvedTransfers) ? source.approvedTransfers : [];
 
-    const superAdminEmail = 'kirklareliataturkortaokulu@gmail.com';
-    const adminSet = new Set<string>([superAdminEmail]);
+    // 7. Sanitize admins & teachers (preserving super admin)
+    const superAdminEmails = ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'];
+    const adminSet = new Set<string>(superAdminEmails);
     if (Array.isArray(source.admins)) {
       source.admins.forEach((a: string) => { if (a && typeof a === 'string') adminSet.add(a); });
     }
     const cleanAdmins = Array.from(adminSet);
     const cleanTeachers: string[] = Array.isArray(source.teachers) ? source.teachers.filter(Boolean) : [];
 
+    // 8. Cross-module calculations
     const syncedBudget = syncFinancials(cleanStudents, cleanExams, cleanBudget);
     const updatedStudents = recalculateLeagueForStudents(cleanStudents, cleanResults, cleanExams, cleanApprovedTransfers);
 
@@ -542,7 +671,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       teachers: cleanTeachers
     };
 
-    persistState(fullState);
+    // 9. Update state and local storage immediately
+    stateRef.current = fullState;
+    setState(fullState);
+    try {
+      localStorage.setItem('okulYonetimState', JSON.stringify(fullState));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+
+    // 10. Force write to Firebase immediately
+    await executeFirestoreWrite(fullState, true);
 
     const summary = {
       studentCount: updatedStudents.length,
@@ -556,7 +695,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     return {
       success: true,
-      message: 'Tüm sistem içerikleri başarıyla yüklendi.',
+      message: 'Tüm sistem içerikleri başarıyla yüklendi ve buluta aktarıldı.',
       summary
     };
   };
@@ -569,11 +708,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     <AppContext.Provider value={{ 
       state, 
       userRole, 
-      setUserRole,
-      currentUser,
-      setCurrentUser: handleSetCurrentUser,
       syncStatus, 
-      syncErrorMessage: null, 
+      syncErrorMessage, 
       setStudents, 
       setExams, 
       setResults, 

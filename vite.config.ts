@@ -1,17 +1,25 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { fileURLToPath } from 'url';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import {defineConfig} from 'vite';
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss()
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./', import.meta.url))
-    }
-  }
+export default defineConfig(({ command }) => {
+  return {
+    base: command === 'build' ? './' : '/',
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+      dedupe: ['react', 'react-dom'],
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'lucide-react', 'xlsx', 'd3'],
+    },
+    server: {
+      // HMR is disabled in AI Studio via DISABLE_HMR env var.
+      hmr: process.env.DISABLE_HMR !== 'true',
+      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+  };
 });

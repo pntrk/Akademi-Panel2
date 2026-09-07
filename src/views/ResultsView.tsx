@@ -4,7 +4,6 @@ import { ExamResult } from '../types';
 import { exportToExcel, importFromExcel, generateId, calculateAtaLigPoints, determineLeagueTeam, parseDate, normalizeForSearch } from '../lib/utils';
 import { Upload, Download, Trash2, Plus, BarChart3, ListFilter, CheckCircle2, XCircle, AlertCircle, Search, HelpCircle, X, Printer, FileText, ChevronDown, Award, TrendingUp, UserCheck, Layers, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { StudentProgressCharts } from '../components/StudentProgressCharts';
 
 export const ResultsView = () => {

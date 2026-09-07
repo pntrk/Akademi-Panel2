@@ -1,4 +1,6 @@
 {
-  "name": "Akademi Panel2",
-  "description": "Kazanım Değerlendirme ve Koçluk Takip Uygulaması"
+  "name": "AkademiPanel",
+  "description": "Ölçme ve Değerlendirme Yönetimi",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

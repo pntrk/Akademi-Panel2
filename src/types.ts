@@ -120,16 +120,8 @@ export interface FullBackupSummary {
   approvedTransferCount?: number;
 }
 
-export interface DriveBackupFile {
-  id: string;
-  name: string;
-  createdTime?: string;
-  modifiedTime?: string;
-  size?: string;
-}
-
 export interface FullBackupData {
-  appName?: string;
+  appName: string;
   version: string;
   backupDate: string;
   school?: string;

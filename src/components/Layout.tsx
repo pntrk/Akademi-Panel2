@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, Shield, CheckCircle2, Cloud } from 'lucide-react';
+import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, LogOut, Shield } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { SettingsModal } from './SettingsModal';
-import { GoogleDriveModal } from './GoogleDriveModal';
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { FullBackupData } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onLogout?: () => void;
 }
 
 const navItems = [
@@ -21,15 +23,24 @@ const navItems = [
   { id: 'budget', label: 'Bütçe Takibi', shortLabel: 'Bütçe', icon: DollarSign, colorClass: 'text-cyan-400', hoverColorClass: 'group-hover:text-cyan-400', activeClass: 'bg-cyan-500/15 border-cyan-400 border-l-2 pl-3.5 text-white font-semibold shadow-sm' },
 ];
 
-export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
-  const { userRole, setUserRole, currentUser, state, restoreBackup, syncStatus, saveNow } = useAppContext();
+export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout }) => {
+  const { userRole, state, restoreBackup, syncStatus, syncErrorMessage, saveNow } = useAppContext();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+  
   const getRoleLabel = () => {
-    return userRole === 'admin' ? 'Yönetici' : 'Öğretmen';
+    if (currentUser?.email === 'kirklareliataturkortaokulu@gmail.com' || currentUser?.email === 'bahadirkumcu@gmail.com') return 'Süper Yönetici';
+    if (userRole === 'admin') return 'Yönetici';
+    return 'Öğretmen';
   };
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -121,13 +132,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       };
       reader.readAsText(file);
     }
+    // Reset input value so the same file can be selected again if needed
     e.target.value = '';
   };
 
   const handleManualSave = async () => {
-    await saveNow();
-    setSaveFeedback("Tüm veriler yerel hafızaya kaydedildi.");
-    setTimeout(() => setSaveFeedback(null), 3000);
+    try {
+      await saveNow();
+      setSaveFeedback("Tüm sistem verileri buluta kaydedildi.");
+      setTimeout(() => setSaveFeedback(null), 3000);
+    } catch (e) {
+      setSaveFeedback("Yerel hafızaya kaydedildi.");
+      setTimeout(() => setSaveFeedback(null), 3000);
+    }
   };
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -148,11 +165,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-accent to-[#8d6f3e] flex items-center justify-center text-white shadow-sm font-bold text-sm">
-                  {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
+                  {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-base leading-tight">AkademiPanel</h3>
-                  <p className="text-[11px] text-white/50 truncate max-w-[200px]">{currentUser?.email}</p>
+                  <h3 className="text-white font-semibold text-base leading-tight">Hesap ve Seçenekler</h3>
+                  <p className="text-[11px] text-white/50 truncate max-w-[200px]">{currentUser?.email || 'Giriş Yapılmadı'}</p>
                 </div>
               </div>
               <button 
@@ -163,55 +180,61 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               </button>
             </div>
             
-            {/* Role Switcher */}
+            {/* Role & Status Card */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
                 <span className="text-xs text-white/80 font-medium">Yetki Düzeyi</span>
               </div>
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => setUserRole('admin')}
-                  className={cn(
-                    "text-[10px] px-2.5 py-1 rounded-lg font-bold border transition-colors cursor-pointer",
-                    userRole === 'admin'
-                      ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
-                      : "bg-white/5 border-white/10 text-white/60 hover:text-white"
-                  )}
-                >
-                  Yönetici
-                </button>
-                <button
-                  onClick={() => setUserRole('teacher')}
-                  className={cn(
-                    "text-[10px] px-2.5 py-1 rounded-lg font-bold border transition-colors cursor-pointer",
-                    userRole === 'teacher'
-                      ? "bg-blue-500/20 border-blue-400/40 text-blue-300"
-                      : "bg-white/5 border-white/10 text-white/60 hover:text-white"
-                  )}
-                >
-                  Öğretmen
-                </button>
-              </div>
+              <span className="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent font-bold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider">
+                {getRoleLabel()}
+              </span>
             </div>
             
             {/* Management Actions */}
             <input type="file" accept=".json" className="hidden" id="restore-input-mobile" onChange={handleRestore} />
             
             <div className="space-y-3">
-              {/* Local Storage Status Badge */}
-              <div className="rounded-2xl p-3 flex items-center justify-between border bg-emerald-950/40 border-emerald-500/30 transition-all">
+              {/* Firebase Live Cloud Sync Status Badge */}
+              <div className={cn(
+                "rounded-2xl p-3 flex items-center justify-between border transition-all",
+                syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30",
+                syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30",
+                syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30",
+                (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30"
+              )}>
                 <div className="flex items-center gap-2 min-w-0 mr-2">
-                  <span className="relative flex h-2.5 w-2.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
+                  {syncStatus === 'synced' && (
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                  )}
+                  {syncStatus === 'saving' && (
+                    <span className="animate-spin rounded-full h-3 w-3 border-2 border-sky-400 border-t-transparent shrink-0"></span>
+                  )}
+                  {syncStatus === 'quota_exceeded' && (
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400 shrink-0"></span>
+                  )}
+                  {(syncStatus === 'offline' || syncStatus === 'error') && (
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-400 shrink-0"></span>
+                  )}
                   <div className="min-w-0">
-                    <p className="text-xs font-bold truncate text-emerald-300">
-                      {syncStatus === 'saving' ? "Kaydediliyor..." : "Yerel Hafızada Güvende"}
+                    <p className={cn(
+                      "text-xs font-bold truncate",
+                      syncStatus === 'synced' && "text-emerald-300",
+                      syncStatus === 'saving' && "text-sky-300",
+                      syncStatus === 'quota_exceeded' && "text-amber-300",
+                      (syncStatus === 'offline' || syncStatus === 'error') && "text-rose-300"
+                    )}>
+                      {syncStatus === 'synced' && "Canlı Bulut Senkronizasyonu"}
+                      {syncStatus === 'saving' && "Buluta Kaydediliyor..."}
+                      {syncStatus === 'quota_exceeded' && "Yerel Koruma (Bulut Kotası)"}
+                      {syncStatus === 'offline' && "Çevrimdışı / Yerel Koruma"}
+                      {syncStatus === 'error' && "Yerel Hafıza Koruması"}
                     </p>
                     <p className="text-[10px] text-white/60 truncate">
-                      {saveFeedback || "Tüm veriler cihazınızda otomatik saklanır"}
+                      {saveFeedback || (syncStatus === 'quota_exceeded' ? "Veriler cihazınızda güvende" : "Tüm veriler anlık güvende")}
                     </p>
                   </div>
                 </div>
@@ -220,27 +243,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                   className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold border border-white/20 transition-colors cursor-pointer shrink-0"
                   title="Manuel Kaydet"
                 >
-                  Kaydet
-                </button>
-              </div>
-
-              {/* Google Drive Bulut Senkronizasyonu */}
-              <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/30 rounded-2xl p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Cloud className="w-4 h-4 text-blue-400" />
-                    <p className="text-[11px] font-bold text-white">Google Drive Bulut</p>
-                  </div>
-                  <span className="text-[9px] bg-blue-500/20 text-blue-300 font-bold px-2 py-0.5 rounded-full border border-blue-400/30">
-                    Senkronize
-                  </span>
-                </div>
-                <button
-                  onClick={() => { setIsDriveModalOpen(true); closeMobileMenu(); }}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-sm cursor-pointer"
-                >
-                  <Cloud className="w-4 h-4" />
-                  <span>Google Drive'a Yedekle / Yükle</span>
+                  Şimdi Kaydet
                 </button>
               </div>
 
@@ -254,7 +257,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                   <button 
                     onClick={handleBackup} 
                     className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium p-2.5 rounded-xl border border-white/10 transition-all active:scale-[0.99] text-center cursor-pointer"
-                    title="Tüm Sistem Yedeğini İndir"
+                    title="Tüm Sistem Yedeğini İndir (Öğrenciler, Sınavlar, Sonuçlar, Arena, Salonlar, Bütçe)"
                   >
                     <DownloadCloud className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span className="truncate">Yedek İndir</span>
@@ -263,7 +266,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                   <button 
                     onClick={() => document.getElementById('restore-input-mobile')?.click()} 
                     className="flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white/90 text-xs font-medium p-2.5 rounded-xl border border-white/10 transition-all active:scale-[0.99] text-center cursor-pointer"
-                    title="Tam Sistem Yedeği Yükle (JSON)"
+                    title="Tam Sistem Yedeği Yükle (JSON formatındaki tüm okul verilerini geri yükler)"
                   >
                     <UploadCloud className="w-4 h-4 text-indigo-400 shrink-0" />
                     <span className="truncate">Yedek Yükle</span>
@@ -275,21 +278,40 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => setIsDarkMode(!isDarkMode)} 
-                  className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center cursor-pointer"
+                  className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center"
                 >
                   {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 shrink-0" /> : <Moon className="w-4 h-4 text-indigo-300 shrink-0" />}
                   <span className="text-xs font-semibold">{isDarkMode ? 'Aydınlık Tema' : 'Karanlık Tema'}</span>
                 </button>
 
-                <button 
-                  onClick={() => { setIsSettingsOpen(true); closeMobileMenu(); }} 
-                  className="flex items-center justify-center p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/20 transition-all active:scale-[0.99] gap-2 cursor-pointer"
-                >
-                  <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Kullanıcı Yönetimi</span>
-                </button>
+                {userRole === 'admin' ? (
+                  <button 
+                    onClick={() => { setIsSettingsOpen(true); closeMobileMenu(); }} 
+                    className="flex items-center justify-center p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/20 transition-all active:scale-[0.99] gap-2 cursor-pointer"
+                  >
+                    <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Kullanıcı Yönetimi</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleManualSave} 
+                    className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center"
+                  >
+                    <Save className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-xs font-semibold">Bulut Eşitlendi</span>
+                  </button>
+                )}
               </div>
             </div>
+
+            {onLogout && (
+              <button 
+                onClick={onLogout} 
+                className="flex items-center justify-center w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-semibold py-3 px-4 rounded-2xl border border-red-500/20 transition-all gap-2 mt-1 active:scale-[0.99]"
+              >
+                <LogOut className="w-4 h-4" /> Güvenli Çıkış Yap
+              </button>
+            )}
             
             <div className="text-center pt-2">
               <span className="text-[10px] text-white/30 tracking-wider">AkademiPanel • Sınav & Ölçme Değerlendirme</span>
@@ -339,19 +361,40 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           </nav>
         </div>
         
-        {/* Sidebar Footer */}
+        {/* Sidebar Footer - Optimized and Restructured */}
         <div className="sidebar-footer mt-auto flex flex-col gap-2.5 w-full pt-4 border-t border-white/10">
           <input type="file" accept=".json" className="hidden" id="restore-input" onChange={handleRestore} />
           
-          {/* Storage Indicator */}
-          <div className="flex items-center justify-between px-3 py-2 border rounded-xl text-[0.72rem] font-semibold transition-all bg-emerald-950/40 border-emerald-500/30 text-emerald-300">
+          {/* Firebase Live Cloud Sync Indicator */}
+          <div className={cn(
+            "flex items-center justify-between px-3 py-2 border rounded-xl text-[0.72rem] font-semibold transition-all",
+            syncStatus === 'synced' && "bg-emerald-950/40 border-emerald-500/30 text-emerald-300",
+            syncStatus === 'saving' && "bg-sky-950/40 border-sky-500/30 text-sky-300",
+            syncStatus === 'quota_exceeded' && "bg-amber-950/40 border-amber-500/30 text-amber-300",
+            (syncStatus === 'offline' || syncStatus === 'error') && "bg-rose-950/40 border-rose-500/30 text-rose-300"
+          )}>
             <span className="flex items-center gap-2 truncate mr-1">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
+              {syncStatus === 'synced' && (
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              )}
+              {syncStatus === 'saving' && (
+                <span className="animate-spin rounded-full h-2.5 w-2.5 border-2 border-sky-400 border-t-transparent shrink-0"></span>
+              )}
+              {syncStatus === 'quota_exceeded' && (
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shrink-0"></span>
+              )}
+              {(syncStatus === 'offline' || syncStatus === 'error') && (
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400 shrink-0"></span>
+              )}
               <span className="truncate">
-                {syncStatus === 'saving' ? "Kaydediliyor..." : "Yerel Hafıza Güvende"}
+                {syncStatus === 'synced' && "Bulut Senkronize"}
+                {syncStatus === 'saving' && "Kaydediliyor..."}
+                {syncStatus === 'quota_exceeded' && "Yerel Koruma"}
+                {syncStatus === 'offline' && "Çevrimdışı Mod"}
+                {syncStatus === 'error' && "Yerel Koruma"}
               </span>
             </span>
             <button
@@ -363,31 +406,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             </button>
           </div>
 
-          {/* Google Drive Cloud Sync Button Desktop */}
-          <button 
-            onClick={() => setIsDriveModalOpen(true)} 
-            className="flex items-center justify-between w-full bg-gradient-to-r from-blue-900/40 to-indigo-900/40 hover:from-blue-900/60 hover:to-indigo-900/60 active:scale-[0.98] text-white text-[0.75rem] font-bold py-2 px-3 rounded-xl border border-blue-400/30 shadow-xs transition-all cursor-pointer group"
-          >
-            <span className="flex items-center gap-2 truncate">
-              <Cloud className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
-              <span>Google Drive Yedek</span>
-            </span>
-            <span className="text-[9px] bg-blue-400/20 text-blue-300 font-semibold px-1.5 py-0.5 rounded-full border border-blue-400/30">
-              Bulut
-            </span>
-          </button>
-
           {/* JSON Backup & Restore Pair Buttons */}
           <div className="space-y-1">
             <div className="flex items-center justify-between px-0.5">
-              <span className="text-[10px] text-white/50 font-medium">Yerel JSON Yedeği</span>
+              <span className="text-[10px] text-white/50 font-medium">Tam Sistem Yedeği</span>
               <span className="text-[9px] text-emerald-400/80 font-mono">6 Modül</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button 
                 onClick={handleBackup} 
                 className="flex items-center justify-center bg-white/5 hover:bg-white/10 active:scale-[0.98] text-white/80 hover:text-white text-[0.72rem] font-medium py-2 px-2.5 rounded-xl border border-white/10 transition-all cursor-pointer gap-1.5 truncate"
-                title="Tüm Sistem Yedeğini İndir"
+                title="Tüm Sistem Yedeğini İndir (Öğrenciler, Sınavlar, Sonuçlar, Akademi Arena, Salonlar, Bütçe)"
               >
                 <DownloadCloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="truncate">Yedek İndir</span>
@@ -395,7 +424,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               <button 
                 onClick={() => document.getElementById('restore-input')?.click()} 
                 className="flex items-center justify-center bg-white/5 hover:bg-white/10 active:scale-[0.98] text-white/80 hover:text-white text-[0.72rem] font-medium py-2 px-2.5 rounded-xl border border-white/10 transition-all cursor-pointer gap-1.5 truncate"
-                title="Tam Sistem Yedeği Yükle (JSON)"
+                title="Tam Sistem Yedeği Yükle (Öğrenci, sınav, sonuç, arena, salon ve bütçe verilerini geri yükler)"
               >
                 <UploadCloud className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">Yedek Yükle</span>
@@ -404,13 +433,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           </div>
           
           {/* Admin User Management Button */}
-          <button 
-            onClick={() => setIsSettingsOpen(true)} 
-            className="flex items-center justify-center w-full bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-[0.98] text-emerald-300 text-[0.75rem] font-bold py-2.5 px-3 rounded-xl border border-emerald-500/20 transition-all cursor-pointer gap-2"
-          >
-            <Shield className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Kullanıcı & Yetki Yönetimi</span>
-          </button>
+          {userRole === 'admin' && (
+            <button 
+              onClick={() => setIsSettingsOpen(true)} 
+              className="flex items-center justify-center w-full bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-[0.98] text-emerald-300 text-[0.75rem] font-bold py-2.5 px-3 rounded-xl border border-emerald-500/20 transition-all cursor-pointer gap-2"
+            >
+              <Shield className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Kullanıcı & Yetki Yönetimi</span>
+            </button>
+          )}
 
           {/* Dark / Light Mode Toggle */}
           <button 
@@ -425,15 +456,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between gap-2">
             <div className="flex flex-col min-w-0">
               <span className="text-[10px] font-bold text-brand-accent uppercase tracking-wider">{getRoleLabel()}</span>
-              <span className="text-[11px] text-white/70 truncate" title={currentUser?.email || ''}>{currentUser?.name || 'Kullanıcı'}</span>
+              <span className="text-[11px] text-white/70 truncate" title={currentUser?.email || ''}>{currentUser?.email || 'Kullanıcı'}</span>
             </div>
-            <button
-              onClick={() => setUserRole(userRole === 'admin' ? 'teacher' : 'admin')}
-              className="text-[10px] px-2 py-1 bg-white/10 hover:bg-white/20 rounded-md text-white/80 font-medium transition-colors cursor-pointer"
-              title="Rolü Değiştir"
-            >
-              Değiştir
-            </button>
+            {onLogout && (
+              <button 
+                onClick={onLogout} 
+                className="p-1.5 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg border border-red-500/20 transition-all cursor-pointer shrink-0"
+                title="Çıkış Yap"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           
           <div className="pt-1 text-center">
@@ -445,12 +478,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       </aside>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <GoogleDriveModal isOpen={isDriveModalOpen} onClose={() => setIsDriveModalOpen(false)} />
       
       {/* Main Content */}
       <main className={cn("flex-1 flex flex-col overflow-auto bg-brand-bg transition-all duration-300 w-full pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0", isDarkMode ? "dark-mode-main" : "")}>
         
-        {/* Mobile Header */}
+        {/* Mobile Header - Modern Elevated Glassmorphism */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-[#151618]/95 backdrop-blur-xl text-white border-b border-white/10 shrink-0 sticky top-0 z-30 shadow-md">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-accent to-[#e2c18d] flex items-center justify-center shadow-sm">
@@ -471,27 +503,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           
           <div className="flex items-center gap-1.5">
             <button 
-              onClick={() => setIsDriveModalOpen(true)} 
-              aria-label="Google Drive Bulut Yedekleme"
-              title="Bulut Yedekleme & Cihaz Eşitleme"
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-blue-500/10 hover:bg-blue-500/20 active:scale-95 text-blue-400 border border-blue-400/30 transition-all cursor-pointer"
-            >
-              <Cloud className="w-4 h-4 text-blue-400" />
-            </button>
-            <button 
               onClick={() => setIsDarkMode(!isDarkMode)} 
               aria-label="Temayı Değiştir"
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-white/80 border border-white/10 transition-all cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-white/80 border border-white/10 transition-all"
             >
               {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-300" />}
             </button>
             <button 
               onClick={() => setIsMobileMenuOpen(true)} 
               aria-label="Seçenekler"
-              className="flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-white border border-white/10 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-white border border-white/10 transition-all"
             >
               <div className="w-5 h-5 rounded-full bg-brand-accent/30 text-brand-accent flex items-center justify-center text-[10px] font-bold">
-                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : <Settings className="w-3.5 h-3.5" />}
+                {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : <Settings className="w-3.5 h-3.5" />}
               </div>
               <Settings className="w-3.5 h-3.5 text-white/70" />
             </button>
@@ -503,7 +527,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation - Modern Floating Curved Glass Bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#151618]/95 backdrop-blur-2xl border-t border-white/10 z-40 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_32px_rgba(0,0,0,0.35)]">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {navItems.filter(item => userRole === 'admin' || ['results', 'league'].includes(item.id)).map((item) => {
@@ -544,3 +568,5 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
     </div>
   );
 };
+
+
