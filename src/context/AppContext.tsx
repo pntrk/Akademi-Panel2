@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem, CloudBackupRecord, FullBackupData, FullBackupSummary } from '../types';
 import { generateId, recalculateLeagueForStudents } from '../lib/utils';
 import { db, firebaseConfig, auth } from '../lib/firebase';
-import { doc, getDoc, setDoc, onSnapshot, disableNetwork, enableNetwork, collection, getDocs, deleteDoc, query } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, deleteDoc, query } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 
 interface AppState {
@@ -229,13 +229,6 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
   const isQuotaExceededRef = useRef(isInitialQuotaExceeded);
   const hasSentGuestRequestRef = useRef(false);
 
-  // If quota was already exceeded today, disable Firestore background network stream to prevent retry loops
-  useEffect(() => {
-    if (isInitialQuotaExceeded) {
-      disableNetwork(db).catch(() => {});
-    }
-  }, []);
-
   const initialRole = evaluateUserRole(user?.email || '', state.admins, state.teachers);
 
   const [loading, setLoading] = useState(false);
@@ -252,7 +245,6 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
   const checkAndRefreshRole = async (): Promise<'admin' | 'teacher' | 'guest'> => {
     try {
       const cleanEmail = (user?.email || '').trim().toLowerCase();
-      await enableNetwork(db).catch(() => {});
       const docRef = doc(db, 'schools', 'main');
       const snapshot = await getDoc(docRef);
       
@@ -370,7 +362,6 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
                 markQuotaExceededToday();
                 isQuotaExceededRef.current = true;
                 setSyncStatus('quota_exceeded');
-                disableNetwork(db).catch(() => {});
               }
             });
           }
@@ -385,7 +376,6 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
         isQuotaExceededRef.current = true;
         setSyncStatus('quota_exceeded');
         setSyncErrorMessage('Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz ve güvenle saklanmaktadır.');
-        disableNetwork(db).catch(() => {});
       } else if (error?.code === 'permission-denied') {
         setSyncStatus('error');
         setSyncErrorMessage('Firebase Güvenlik Kuralları Engeli (permission-denied): Firebase Console -> Firestore Database -> Rules sekmesinde yetki verilmesi gerekmektedir.');
@@ -421,7 +411,6 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       if (forceRetry) {
         clearQuotaExceeded();
         isQuotaExceededRef.current = false;
-        await enableNetwork(db).catch(() => {});
       }
 
       const cleanState = JSON.parse(JSON.stringify(newState));
@@ -457,7 +446,6 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
         isQuotaExceededRef.current = true;
         setSyncStatus('quota_exceeded');
         setSyncErrorMessage('Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz olarak korunmaktadır.');
-        disableNetwork(db).catch(() => {});
       } else if (error?.code === 'permission-denied') {
         setSyncStatus('error');
         setSyncErrorMessage('Firebase Güvenlik Kuralı Engeli (permission-denied): Firebase Console -> Firestore -> Rules sekmesinde yetki verilmesi gerekiyor.');
@@ -518,7 +506,6 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
     if (userRole !== 'admin') return;
     clearQuotaExceeded();
     isQuotaExceededRef.current = false;
-    await enableNetwork(db).catch(() => {});
     await executeFirestoreWrite(stateRef.current, true);
   };
 

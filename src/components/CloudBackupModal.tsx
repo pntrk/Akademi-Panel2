@@ -88,7 +88,7 @@ export const CloudBackupModal: React.FC<CloudBackupModalProps> = ({ isOpen, onCl
       await saveNow();
       setFeedback({ 
         type: 'success', 
-        message: 'Tüm sistem verileri başarıyla Firebase Firestore bulut veritabanına eşitlendi!' 
+        message: 'Tüm sistem verileri başarıyla bulut veritabanına eşitlendi!' 
       });
     } catch (err: any) {
       try {
@@ -100,7 +100,7 @@ export const CloudBackupModal: React.FC<CloudBackupModalProps> = ({ isOpen, onCl
       } catch (retryErr: any) {
         setFeedback({ 
           type: 'error', 
-          message: retryErr?.message || 'Firebase ile senkronizasyon sağlanamadı. Lütfen bağlantınızı kontrol edin.' 
+          message: retryErr?.message || 'Bulut ile senkronizasyon sağlanamadı. Lütfen internet bağlantınızı kontrol edin.' 
         });
       }
     } finally {

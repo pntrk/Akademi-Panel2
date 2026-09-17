@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, setLogLevel } from 'firebase/firestore';
+import { getFirestore, setLogLevel } from 'firebase/firestore';
 
 // Direct production configuration for Akademi Panel 2
 export const firebaseConfig = {
@@ -20,12 +20,8 @@ try {
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with robust local caching
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-});
+// Initialize Firestore stably using standard getFirestore (avoids IndexedDB lock assertions)
+export const db = getFirestore(app);
 
 export const auth = getAuth(app);
 

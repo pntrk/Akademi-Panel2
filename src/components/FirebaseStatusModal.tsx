@@ -37,35 +37,28 @@ export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    function isSuperAdmin() {
-      return request.auth != null && (
-        request.auth.token.email == 'kirklareliataturkortaokulu@gmail.com' ||
-        request.auth.token.email == 'bahadirkumcu@gmail.com'
-      );
-    }
-
-    // Okul verileri ve bulut yedekleri: Oturum açmış yetkili idareciler
+    // Central school database: students, exams, results, academy arena, halls, budget
     match /schools/{schoolId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (
-        isSuperAdmin() ||
-        (resource != null && 'admins' in resource.data && request.auth.token.email in resource.data.admins) ||
-        (request.resource != null && 'admins' in request.resource.data && request.auth.token.email in request.resource.data.admins)
-      );
+      allow read, write: if isSignedIn();
 
-      // Bulut yedekleri
+      // Cloud backups snapshot collection
       match /backups/{backupId} {
-        allow read, create, delete: if request.auth != null;
+        allow read, write, delete: if isSignedIn();
       }
     }
 
-    // Erişim istekleri
+    // Top-level backups collection (fallback)
+    match /backups/{backupId} {
+      allow read, write, delete: if isSignedIn();
+    }
+
+    // Access authorization requests
     match /access_requests/{requestId} {
-      allow read, write, delete: if request.auth != null;
+      allow read, write, delete: if isSignedIn();
     }
   }
 }`;

@@ -1,57 +1,23 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny all undefined paths
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isSuperAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'kirklareliataturkortaokulu@gmail.com' ||
-        request.auth.token.email == 'bahadirkumcu@gmail.com'
-      );
-    }
-
-    function isSchoolAdmin() {
-      return isSignedIn() && (
-        isSuperAdmin() ||
-        (resource != null && 'admins' in resource.data && resource.data.admins != null && request.auth.token.email in resource.data.admins) ||
-        (request.resource != null && 'admins' in request.resource.data && request.resource.data.admins != null && request.auth.token.email in request.resource.data.admins)
-      );
-    }
-
-    function isSchoolAdminForSchool(schoolId) {
-      return isSignedIn() && (
-        isSuperAdmin() ||
-        (exists(/databases/$(database)/documents/schools/$(schoolId)) &&
-         'admins' in get(/databases/$(database)/documents/schools/$(schoolId)).data &&
-         request.auth.token.email in get(/databases/$(database)/documents/schools/$(schoolId)).data.admins)
-      );
-    }
-
     // Central school database: students, exams, results, academy arena, halls, budget
     match /schools/{schoolId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSchoolAdmin();
-      allow delete: if isSuperAdmin();
+      allow read, write: if isSignedIn();
 
       // Cloud backups snapshot collection
       match /backups/{backupId} {
-        allow read, create, delete: if isSchoolAdminForSchool(schoolId);
-        allow update: if false;
+        allow read, write, delete: if isSignedIn();
       }
     }
 
-    // Top-level backups collection (direct access path)
+    // Top-level backups collection (direct access path fallback)
     match /backups/{backupId} {
-      allow read, create, delete: if isSuperAdmin();
-      allow update: if false;
+      allow read, write, delete: if isSignedIn();
     }
 
     // Access authorization requests
@@ -60,3 +26,4 @@ service cloud.firestore {
     }
   }
 }
+
