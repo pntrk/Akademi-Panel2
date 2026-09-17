@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, LogOut, Shield, Download, Globe, HardDriveDownload } from 'lucide-react';
+import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, LogOut, Shield, Download, Globe, HardDriveDownload, Cloud } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { SettingsModal } from './SettingsModal';
 import { FirebaseStatusModal } from './FirebaseStatusModal';
+import { CloudBackupModal } from './CloudBackupModal';
 import { AppHubModal } from './AppHubModal';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -26,9 +27,10 @@ const navItems = [
 ];
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout }) => {
-  const { userRole, state, restoreBackup, syncStatus, syncErrorMessage, saveNow } = useAppContext();
+  const { userRole, state, restoreBackup, syncStatus, syncErrorMessage, saveNow, cloudBackups } = useAppContext();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFirebaseStatusOpen, setIsFirebaseStatusOpen] = useState(false);
+  const [isCloudBackupOpen, setIsCloudBackupOpen] = useState(false);
   const [isAppHubOpen, setIsAppHubOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -272,11 +274,31 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
               {/* Yerel Çevrimdışı İndirme / Yükleme - Admin Only */}
               {userRole === 'admin' && (
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-semibold text-white/80">Tam Sistem Yedeği</p>
-                    <span className="text-[9px] text-white/50">6 Modül Kapsamlı</span>
+                    <p className="text-[11px] font-semibold text-white/80">Bulut & Cihaz Yedekleme</p>
+                    <span className="text-[9px] text-amber-300 font-semibold">{cloudBackups.length} Bulut Yedeği</span>
                   </div>
+
+                  {/* Dedicated Firebase Cloud Backups Button Mobile */}
+                  <button
+                    onClick={() => {
+                      setIsCloudBackupOpen(true);
+                      closeMobileMenu();
+                    }}
+                    className="w-full flex items-center justify-between p-2.5 bg-gradient-to-r from-amber-500/20 via-[#B08D57]/25 to-amber-500/15 hover:from-amber-500/30 hover:to-amber-500/20 border border-[#B08D57]/50 rounded-xl text-white transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-[#B08D57] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <Cloud className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-xs font-bold truncate">Firebase Bulut Yedekleri</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#B08D57]/40 text-amber-200 border border-[#B08D57]/60">
+                      Yedek Al / Yükle
+                    </span>
+                  </button>
+
                   <div className="grid grid-cols-2 gap-2">
                     <button 
                       onClick={handleBackup} 
@@ -284,7 +306,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                       title="Tüm Sistem Yedeğini İndir (Öğrenciler, Sınavlar, Sonuçlar, Arena, Salonlar, Bütçe)"
                     >
                       <DownloadCloud className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="truncate">Yedek İndir</span>
+                      <span className="truncate">JSON İndir</span>
                     </button>
 
                     <button 
@@ -293,7 +315,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                       title="Tam Sistem Yedeği Yükle (JSON formatındaki tüm okul verilerini geri yükler)"
                     >
                       <UploadCloud className="w-4 h-4 text-indigo-400 shrink-0" />
-                      <span className="truncate">Yedek Yükle</span>
+                      <span className="truncate">JSON Yükle</span>
                     </button>
                   </div>
                 </div>
@@ -488,6 +510,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             </svg>
           </button>
 
+          {/* Firebase Cloud Backups Button Desktop - Admin Only */}
+          {userRole === 'admin' && (
+            <button 
+              onClick={() => setIsCloudBackupOpen(true)} 
+              className="flex items-center justify-between w-full bg-gradient-to-r from-amber-500/15 via-[#B08D57]/20 to-amber-500/10 hover:from-amber-500/25 hover:to-amber-500/15 active:scale-[0.98] text-amber-200 text-[0.75rem] font-bold py-2.5 px-3 rounded-xl border border-[#B08D57]/40 transition-all cursor-pointer shadow-xs group"
+              title="Google ile yetkilendirilmiş Firebase Bulut Yedekleme & Geri Yükleme"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Cloud className="w-4 h-4 text-[#e2c18d] shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="truncate text-white">Bulut Yedekleri (Firebase)</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#B08D57]/30 text-amber-200 border border-[#B08D57]/50 shrink-0">
+                {cloudBackups.length} Yedek
+              </span>
+            </button>
+          )}
+
           {/* Admin User Management Button */}
           {userRole === 'admin' && (
             <button 
@@ -535,6 +574,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <FirebaseStatusModal isOpen={isFirebaseStatusOpen} onClose={() => setIsFirebaseStatusOpen(false)} />
+      <CloudBackupModal isOpen={isCloudBackupOpen} onClose={() => setIsCloudBackupOpen(false)} />
       <AppHubModal isOpen={isAppHubOpen} onClose={() => setIsAppHubOpen(false)} />
       
       {/* Main Content */}

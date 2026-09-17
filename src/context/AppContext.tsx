@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem } from '../types';
+import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem, CloudBackupRecord, FullBackupData, FullBackupSummary } from '../types';
 import { generateId, recalculateLeagueForStudents } from '../lib/utils';
-import { db, firebaseConfig } from '../lib/firebase';
-import { doc, getDoc, setDoc, onSnapshot, disableNetwork, enableNetwork } from 'firebase/firestore';
+import { db, firebaseConfig, auth } from '../lib/firebase';
+import { doc, getDoc, setDoc, onSnapshot, disableNetwork, enableNetwork, collection, getDocs, deleteDoc, query } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 
 interface AppState {
@@ -23,6 +23,13 @@ interface AppContextType {
   userRole: 'admin' | 'teacher' | 'guest';
   syncStatus: 'synced' | 'saving' | 'quota_exceeded' | 'offline' | 'error';
   syncErrorMessage?: string | null;
+  cloudBackups: CloudBackupRecord[];
+  isLoadingBackups: boolean;
+  createCloudBackup: (backupName?: string, note?: string) => Promise<{ success: boolean; message: string; backupId?: string }>;
+  fetchCloudBackups: () => Promise<void>;
+  restoreCloudBackup: (backupId: string) => Promise<{ success: boolean; message: string; summary?: any }>;
+  deleteCloudBackup: (backupId: string) => Promise<{ success: boolean; message: string }>;
+  saveLocalBackupToCloud: (backupData: any, customName?: string) => Promise<{ success: boolean; message: string; backupId?: string }>;
   updateUsers: (admins: string[], teachers: string[]) => Promise<void>;
   setStudents: (students: Student[]) => void;
   setExams: (exams: Exam[]) => void;
@@ -239,6 +246,8 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(
     isInitialQuotaExceeded ? 'Firestore günlük ücretsiz yazma kotası doldu. Verileriniz bu cihazda kesintisiz ve güvenle saklanmaktadır.' : null
   );
+  const [cloudBackups, setCloudBackups] = useState<CloudBackupRecord[]>([]);
+  const [isLoadingBackups, setIsLoadingBackups] = useState(false);
 
   const checkAndRefreshRole = async (): Promise<'admin' | 'teacher' | 'guest'> => {
     try {
@@ -426,10 +435,10 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
 
       setSyncStatus('saving');
       
-      // Protect against hanging Firestore requests with a 6-second timeout
+      // Protect against hanging Firestore requests with a 15-second timeout
       const writePromise = setDoc(doc(db, 'schools', 'main'), cleanState);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Bulut bağlantısı zaman aşımına uğradı (6s). Firebase Firestore Database oluşturulduğundan ve Güvenlik Kurallarının (Rules) kaydedildiğinden emin olun.')), 6000)
+        setTimeout(() => reject(new Error('Bulut bağlantısı zaman aşımına uğradı (15s). Firebase Firestore Database bağlantısını ve internetinizi kontrol edin. Verileriniz yerel hafızada güvendedir.')), 15000)
       );
 
       await Promise.race([writePromise, timeoutPromise]);
@@ -834,6 +843,217 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
     };
   };
 
+  // --- Cloud Backup & Snapshot Engine ---
+  const fetchCloudBackups = async () => {
+    if (userRole !== 'admin') return;
+    setIsLoadingBackups(true);
+    try {
+      const q = query(collection(db, 'schools', 'main', 'backups'));
+      const snapshot = await getDocs(q);
+      const list: CloudBackupRecord[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as CloudBackupRecord);
+      });
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setCloudBackups(list);
+    } catch (err: any) {
+      console.warn('Fetch cloud backups notice:', err?.message || err);
+    } finally {
+      setIsLoadingBackups(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userRole === 'admin') {
+      const q = query(collection(db, 'schools', 'main', 'backups'));
+      const unsub = onSnapshot(q, (snapshot) => {
+        const list: CloudBackupRecord[] = [];
+        snapshot.forEach(docSnap => {
+          list.push(docSnap.data() as CloudBackupRecord);
+        });
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setCloudBackups(list);
+        setIsLoadingBackups(false);
+      }, (err) => {
+        console.warn('Backups onSnapshot notice:', err?.message || err);
+        setIsLoadingBackups(false);
+      });
+      return () => unsub();
+    }
+  }, [userRole, user?.email]);
+
+  const createCloudBackup = async (backupName?: string, note?: string): Promise<{ success: boolean; message: string; backupId?: string }> => {
+    if (userRole !== 'admin') {
+      return { success: false, message: 'Bulut yedeği alma yetkisi yalnızca yöneticilere aittir.' };
+    }
+
+    try {
+      const currentAuthUser = auth.currentUser;
+      const currentUserEmail = (currentAuthUser?.email || user?.email || '').trim().toLowerCase();
+      
+      const s = stateRef.current;
+      const summary: FullBackupSummary = {
+        studentCount: s.students?.length || 0,
+        examCount: s.exams?.length || 0,
+        resultCount: s.results?.length || 0,
+        hallCount: s.examHalls?.length || 0,
+        budgetIncomesCount: s.budget?.incomes?.length || 0,
+        budgetExpensesCount: s.budget?.expenses?.length || 0,
+        budgetDebtsCount: s.budget?.debts?.length || 0,
+        arenaMentorsCount: Object.keys(s.leagueMentors || {}).length,
+        arenaBonusCount: Object.keys(s.leagueTeamPoints || {}).length,
+        approvedTransferCount: s.approvedTransfers?.length || 0
+      };
+
+      const now = new Date();
+      const backupId = `backup_${now.getTime()}`;
+      const defaultName = backupName?.trim() || `AkademiPanel Yedeği (${now.toLocaleDateString('tr-TR')} ${now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })})`;
+      
+      const backupPayload: CloudBackupRecord = {
+        id: backupId,
+        name: defaultName,
+        createdAt: now.toISOString(),
+        createdByEmail: currentUserEmail,
+        createdByName: currentAuthUser?.displayName || (currentUserEmail ? currentUserEmail.split('@')[0] : 'Yönetici'),
+        summary,
+        data: {
+          appName: "Akademi Panel 2",
+          version: "2.0",
+          backupDate: now.toISOString(),
+          school: "Kırklareli Atatürk Ortaokulu",
+          summary,
+          students: s.students || [],
+          exams: s.exams || [],
+          results: s.results || [],
+          examHalls: s.examHalls || [],
+          budget: s.budget || { incomes: [], expenses: [], debts: [] },
+          leagueMentors: s.leagueMentors || {},
+          leagueTeamPoints: s.leagueTeamPoints || {},
+          approvedTransfers: s.approvedTransfers || [],
+          admins: s.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
+          teachers: s.teachers || []
+        },
+        note: note?.trim() || undefined
+      };
+
+      const backupRef = doc(db, 'schools', 'main', 'backups', backupId);
+      await setDoc(backupRef, JSON.parse(JSON.stringify(backupPayload)));
+
+      setCloudBackups(prev => [backupPayload, ...prev.filter(b => b.id !== backupId)]);
+
+      return {
+        success: true,
+        message: `Bulut yedeği "${backupPayload.name}" başarıyla Firebase'e kaydedildi.`,
+        backupId
+      };
+    } catch (error: any) {
+      console.error('Error creating cloud backup:', error);
+      let errMsg = error?.message || 'Bulut yedeği oluşturulurken bir hata oluştu.';
+      if (error?.code === 'permission-denied') {
+        errMsg = 'Firebase Yetki Engeli: Google ile giriş yapmış yetkili yönetici olmanız gerekmektedir.';
+      }
+      return { success: false, message: errMsg };
+    }
+  };
+
+  const saveLocalBackupToCloud = async (backupData: any, customName?: string): Promise<{ success: boolean; message: string; backupId?: string }> => {
+    if (userRole !== 'admin') {
+      return { success: false, message: 'Yetkisiz işlem.' };
+    }
+    try {
+      const source = (backupData.students || backupData.exams || backupData.results || backupData.budget || backupData.examHalls)
+        ? backupData
+        : (backupData.data || backupData.appState || backupData);
+
+      const summary: FullBackupSummary = {
+        studentCount: Array.isArray(source.students) ? source.students.length : 0,
+        examCount: Array.isArray(source.exams) ? source.exams.length : 0,
+        resultCount: Array.isArray(source.results) ? source.results.length : 0,
+        hallCount: Array.isArray(source.examHalls) ? source.examHalls.length : 0,
+        budgetIncomesCount: source.budget?.incomes?.length || 0,
+        budgetExpensesCount: source.budget?.expenses?.length || 0,
+        budgetDebtsCount: source.budget?.debts?.length || 0,
+        arenaMentorsCount: Object.keys(source.leagueMentors || {}).length,
+        arenaBonusCount: Object.keys(source.leagueTeamPoints || {}).length,
+        approvedTransferCount: source.approvedTransfers?.length || 0
+      };
+
+      const now = new Date();
+      const backupId = `backup_${now.getTime()}`;
+      const defaultName = customName || (source.backupDate ? `İçe Aktarılan Yedek (${source.backupDate.slice(0, 10)})` : `Yüklenen Dosya Yedeği - ${now.toLocaleDateString('tr-TR')}`);
+
+      const backupPayload: CloudBackupRecord = {
+        id: backupId,
+        name: defaultName,
+        createdAt: now.toISOString(),
+        createdByEmail: (auth.currentUser?.email || user?.email || '').trim().toLowerCase(),
+        createdByName: auth.currentUser?.displayName || 'Yönetici',
+        summary,
+        data: source,
+        note: 'Cihazdan yüklenen JSON dosyası'
+      };
+
+      const backupRef = doc(db, 'schools', 'main', 'backups', backupId);
+      await setDoc(backupRef, JSON.parse(JSON.stringify(backupPayload)));
+
+      setCloudBackups(prev => [backupPayload, ...prev.filter(b => b.id !== backupId)]);
+
+      return {
+        success: true,
+        message: `Yedek dosyası Firebase bulutuna başarıyla yüklendi (${summary.studentCount} Öğrenci, ${summary.examCount} Sınav).`,
+        backupId
+      };
+    } catch (e: any) {
+      return { success: false, message: e?.message || 'Buluta yükleme başarısız oldu.' };
+    }
+  };
+
+  const restoreCloudBackup = async (backupId: string): Promise<{ success: boolean; message: string; summary?: any }> => {
+    if (userRole !== 'admin') {
+      return { success: false, message: 'Yedek geri yükleme yetkisi yalnızca yöneticilere aittir.' };
+    }
+
+    try {
+      let targetBackup = cloudBackups.find(b => b.id === backupId);
+      if (!targetBackup) {
+        const snap = await getDoc(doc(db, 'schools', 'main', 'backups', backupId));
+        if (snap.exists()) {
+          targetBackup = snap.data() as CloudBackupRecord;
+        }
+      }
+
+      if (!targetBackup || !targetBackup.data) {
+        return { success: false, message: 'Belirtilen bulut yedeği bulunamadı veya veri içeriği hasarlı.' };
+      }
+
+      const res = await restoreBackup(targetBackup.data);
+      if (res.success) {
+        return {
+          success: true,
+          message: `"${targetBackup.name}" bulut yedeği başarıyla sisteme geri yüklendi ve Firebase ile eşitlendi!`,
+          summary: res.summary
+        };
+      }
+      return res;
+    } catch (error: any) {
+      console.error('Error restoring cloud backup:', error);
+      return { success: false, message: error?.message || 'Bulut yedeği geri yüklenirken hata oluştu.' };
+    }
+  };
+
+  const deleteCloudBackup = async (backupId: string): Promise<{ success: boolean; message: string }> => {
+    if (userRole !== 'admin') {
+      return { success: false, message: 'Yedek silme yetkisi yalnızca yöneticilere aittir.' };
+    }
+    try {
+      await deleteDoc(doc(db, 'schools', 'main', 'backups', backupId));
+      setCloudBackups(prev => prev.filter(b => b.id !== backupId));
+      return { success: true, message: 'Bulut yedeği Firebase üzerinden silindi.' };
+    } catch (error: any) {
+      return { success: false, message: error?.message || 'Yedek silinemedi.' };
+    }
+  };
+
   const overwriteState = (newState: AppState) => {
     restoreBackup(newState);
   };
@@ -844,6 +1064,13 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       userRole, 
       syncStatus, 
       syncErrorMessage, 
+      cloudBackups,
+      isLoadingBackups,
+      createCloudBackup,
+      fetchCloudBackups,
+      restoreCloudBackup,
+      deleteCloudBackup,
+      saveLocalBackupToCloud,
       setStudents, 
       setExams, 
       setResults, 

@@ -27,12 +27,31 @@
         "timestamp": { "type": "string" }
       },
       "required": ["email"]
+    },
+    "CloudBackup": {
+      "title": "CloudBackup",
+      "description": "Timestamped system backup snapshot created by administrators in Firebase Firestore",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "createdByEmail": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "summary": { "type": "object" },
+        "data": { "type": "object" }
+      },
+      "required": ["id", "createdAt", "createdByEmail", "data"]
     }
   },
   "firestore": {
     "/schools/{schoolId}": {
       "schema": "AppState",
       "description": "Central school document storing synchronized school database"
+    },
+    "/schools/{schoolId}/backups/{backupId}": {
+      "schema": "CloudBackup",
+      "description": "Timestamped backups saved by authorized administrators"
     },
     "/access_requests/{requestId}": {
       "schema": "AccessRequest",

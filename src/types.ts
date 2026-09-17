@@ -138,3 +138,15 @@ export interface FullBackupData {
   admins?: string[];
   teachers?: string[];
 }
+
+export interface CloudBackupRecord {
+  id: string;
+  name: string;
+  createdAt: string;
+  createdByEmail: string;
+  createdByName?: string;
+  summary: FullBackupSummary;
+  data: FullBackupData;
+  note?: string;
+}
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CheckCircle2, AlertTriangle, RefreshCw, Copy, Check, ExternalLink, X, Database, CloudCheck, HardDrive, ArrowUpRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, CheckCircle2, AlertTriangle, RefreshCw, Copy, Check, ExternalLink, X, Database, CloudCheck, HardDrive, ArrowUpRight, ChevronDown, ChevronUp, CloudUpload } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { firebaseConfig, auth } from '../lib/firebase';
 
@@ -9,9 +9,10 @@ interface FirebaseStatusModalProps {
 }
 
 export const FirebaseStatusModal: React.FC<FirebaseStatusModalProps> = ({ isOpen, onClose }) => {
-  const { state, syncStatus, syncErrorMessage, retrySync, saveNow, userRole } = useAppContext();
+  const { state, syncStatus, syncErrorMessage, retrySync, saveNow, userRole, cloudBackups, createCloudBackup } = useAppContext();
   const [copied, setCopied] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showRulesGuide, setShowRulesGuide] = useState(syncStatus !== 'synced');
 
@@ -40,14 +41,26 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Okul verileri: Oturum açmış süper yöneticiler ve yetkili idareciler
+    function isSuperAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'kirklareliataturkortaokulu@gmail.com' ||
+        request.auth.token.email == 'bahadirkumcu@gmail.com'
+      );
+    }
+
+    // Okul verileri ve bulut yedekleri: Oturum açmış yetkili idareciler
     match /schools/{schoolId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && (
-        request.auth.token.email == 'kirklareliataturkortaokulu@gmail.com' ||
-        request.auth.token.email == 'bahadirkumcu@gmail.com' ||
-        (resource != null && 'admins' in resource.data && request.auth.token.email in resource.data.admins)
+        isSuperAdmin() ||
+        (resource != null && 'admins' in resource.data && request.auth.token.email in resource.data.admins) ||
+        (request.resource != null && 'admins' in request.resource.data && request.auth.token.email in request.resource.data.admins)
       );
+
+      // Bulut yedekleri
+      match /backups/{backupId} {
+        allow read, create, delete: if request.auth != null;
+      }
     }
 
     // Erişim istekleri
@@ -61,6 +74,32 @@ service cloud.firestore {
     navigator.clipboard.writeText(recommendedRules);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleTakeCloudBackup = async () => {
+    setIsBackingUp(true);
+    setFeedback(null);
+    try {
+      const res = await createCloudBackup();
+      if (res.success) {
+        setFeedback({
+          type: 'success',
+          message: res.message
+        });
+      } else {
+        setFeedback({
+          type: 'error',
+          message: res.message
+        });
+      }
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'Bulut yedeği oluşturulamadı.'
+      });
+    } finally {
+      setIsBackingUp(false);
+    }
   };
 
   const handleSyncCheck = async () => {
@@ -288,10 +327,19 @@ service cloud.firestore {
             </button>
 
             <button
+              onClick={handleTakeCloudBackup}
+              disabled={isBackingUp}
+              className="w-full sm:w-auto py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+            >
+              <CloudUpload className={`w-4 h-4 ${isBackingUp ? 'animate-spin' : ''}`} />
+              {isBackingUp ? 'Yedek Alınıyor...' : `Buluta Yedek Al (${cloudBackups.length})`}
+            </button>
+
+            <button
               onClick={handleDownloadBackup}
               className="w-full sm:w-auto py-3 px-4 bg-white hover:bg-[#f5f3eb] active:scale-[0.99] text-[#5a5a40] font-bold rounded-xl text-xs border border-[#e6e2d3] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              JSON Yedek İndir
+              JSON İndir
             </button>
           </div>
 

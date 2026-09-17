@@ -21,16 +21,37 @@ service cloud.firestore {
     function isSchoolAdmin() {
       return isSignedIn() && (
         isSuperAdmin() ||
-        (resource != null && 'admins' in resource.data && resource.data.admins != null && request.auth.token.email in resource.data.admins)
+        (resource != null && 'admins' in resource.data && resource.data.admins != null && request.auth.token.email in resource.data.admins) ||
+        (request.resource != null && 'admins' in request.resource.data && request.resource.data.admins != null && request.auth.token.email in request.resource.data.admins)
+      );
+    }
+
+    function isSchoolAdminForSchool(schoolId) {
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        (exists(/databases/$(database)/documents/schools/$(schoolId)) &&
+         'admins' in get(/databases/$(database)/documents/schools/$(schoolId)).data &&
+         request.auth.token.email in get(/databases/$(database)/documents/schools/$(schoolId)).data.admins)
       );
     }
 
     // Central school database: students, exams, results, academy arena, halls, budget
     match /schools/{schoolId} {
       allow read: if isSignedIn();
-      allow create: if isSuperAdmin();
-      allow update: if isSchoolAdmin();
+      allow create, update: if isSchoolAdmin();
       allow delete: if isSuperAdmin();
+
+      // Cloud backups snapshot collection
+      match /backups/{backupId} {
+        allow read, create, delete: if isSchoolAdminForSchool(schoolId);
+        allow update: if false;
+      }
+    }
+
+    // Top-level backups collection (direct access path)
+    match /backups/{backupId} {
+      allow read, create, delete: if isSuperAdmin();
+      allow update: if false;
     }
 
     // Access authorization requests
