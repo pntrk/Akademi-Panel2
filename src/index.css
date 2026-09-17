@@ -41,15 +41,267 @@
 }
 
 
-.dark-mode-main {
-  filter: invert(0.92) hue-rotate(180deg) brightness(1.15) contrast(0.9) saturate(1.1);
+:root {
+  --color-brand-bg: #F8F7F4;
+  --color-brand-sidebar-bg: #151618;
+  --color-brand-ink: #1A1B1F;
+  --color-brand-accent: #B08D57;
+  --color-brand-border: rgba(26, 27, 31, 0.08);
+  --color-brand-card-bg: #FFFFFF;
+  color-scheme: light;
 }
 
-.dark-mode-main img, .dark-mode-main svg.lucide {
-  /* Do not invert icons/images back if we want them to stay in original hue/brightness, or maybe we do? 
-     Actually, if we invert the main area, an orange icon becomes blue-ish if we don't hue-rotate. With hue-rotate, orange stays orange. 
-     The only problem is brightness. A light orange becomes dark orange. 
-  */
+html.dark {
+  --color-brand-bg: #121316;
+  --color-brand-sidebar-bg: #0E0F12;
+  --color-brand-ink: #F3F4F6;
+  --color-brand-accent: #C5A065;
+  --color-brand-border: rgba(255, 255, 255, 0.11);
+  --color-brand-card-bg: #1A1C23;
+  color-scheme: dark;
+}
+
+/* ==========================================================================
+   ACADEMI PANEL - SOPHISTICATED, EYE-COMFORT DARK THEME SYSTEM
+   Provides rich contrast, crisp readability, and unified surface elevations (WCAG AA)
+   ========================================================================== */
+
+html.dark body {
+  background-color: #121316;
+  color: #F3F4F6;
+}
+
+/* Surfaces & Cards */
+.dark .bg-brand-bg {
+  background-color: #121316 !important;
+}
+
+.dark .bg-white {
+  background-color: #1A1C23 !important;
+}
+
+.dark .bg-\[\#F8F7F4\],
+.dark .bg-\[\#F9F8F5\],
+.dark .bg-\[\#FAF9F6\],
+.dark .bg-\[\#fcfbf7\],
+.dark .bg-\[\#f5f4f0\],
+.dark .bg-gray-50 {
+  background-color: #21242D !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #282C36 !important;
+}
+
+/* Hover surfaces */
+.dark .hover\:bg-\[\#FAF9F6\]:hover,
+.dark .hover\:bg-gray-50:hover {
+  background-color: #282C37 !important;
+}
+
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-gray-200:hover {
+  background-color: #2E333F !important;
+}
+
+.dark .hover\:bg-white:hover {
+  background-color: #232630 !important;
+}
+
+/* Headings and Typography */
+.dark .text-\[\#5a5a40\] {
+  color: #E6D8BA !important; /* Soft warm gold / champagne for editorial serif headers */
+}
+
+.dark .text-\[\#8e8d82\] {
+  color: #9CA3AF !important; /* Slate-400 for secondary descriptions */
+}
+
+.dark .text-brand-ink {
+  color: #F3F4F6 !important;
+}
+
+.dark .text-brand-ink\/90,
+.dark .text-brand-ink\/80,
+.dark .text-brand-ink\/70 {
+  color: #D1D5DB !important;
+}
+
+.dark .text-brand-ink\/60,
+.dark .text-brand-ink\/50 {
+  color: #9CA3AF !important;
+}
+
+.dark .text-brand-ink\/40,
+.dark .text-brand-ink\/30 {
+  color: #6B7280 !important;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: #F9FAFB !important;
+}
+
+.dark .text-gray-700 {
+  color: #E5E7EB !important;
+}
+
+.dark .text-gray-600 {
+  color: #D1D5DB !important;
+}
+
+.dark .text-gray-500 {
+  color: #9CA3AF !important;
+}
+
+.dark .text-gray-400 {
+  color: #9CA3AF !important;
+}
+
+/* Borders & Dividers */
+.dark .border-brand-border,
+.dark .border-\[\#e6e2d3\],
+.dark .border-gray-200,
+.dark .border-gray-100 {
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+.dark .border-gray-300 {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .divide-gray-100 > * + *,
+.dark .divide-gray-200 > * + * {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Form Controls (Inputs, Selects, Textareas) */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+.dark select,
+.dark textarea {
+  background-color: #15171D !important;
+  color: #F3F4F6 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6B7280 !important;
+}
+
+.dark select option {
+  background-color: #1A1C23 !important;
+  color: #F3F4F6 !important;
+}
+
+/* Tables */
+.dark table th {
+  background-color: #16181E !important;
+  color: #A1A7B5 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+.dark table td {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.dark table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.035) !important;
+}
+
+/* High-Contrast Badge / Chip Color Pairs */
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+.dark .text-amber-800,
+.dark .text-amber-900,
+.dark .text-amber-700 {
+  color: #FCD34D !important;
+}
+
+.dark .bg-emerald-50,
+.dark .bg-green-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+}
+.dark .text-emerald-800,
+.dark .text-emerald-700,
+.dark .text-emerald-600 {
+  color: #34D399 !important;
+}
+.dark .text-green-800,
+.dark .text-green-700 {
+  color: #4ADE80 !important;
+}
+
+.dark .bg-rose-50,
+.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+.dark .text-rose-800,
+.dark .text-rose-700,
+.dark .text-rose-600 {
+  color: #F87171 !important;
+}
+.dark .text-red-800,
+.dark .text-red-700 {
+  color: #F87171 !important;
+}
+
+.dark .bg-blue-50,
+.dark .bg-sky-50 {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+.dark .text-blue-800,
+.dark .text-blue-700,
+.dark .text-blue-600 {
+  color: #60A5FA !important;
+}
+
+.dark .bg-purple-50,
+.dark .bg-indigo-50 {
+  background-color: rgba(168, 85, 247, 0.18) !important;
+}
+.dark .text-purple-800,
+.dark .text-purple-700 {
+  color: #C084FC !important;
+}
+.dark .text-indigo-800,
+.dark .text-indigo-700 {
+  color: #818CF8 !important;
+}
+
+/* Exam Card Colors in Dark Mode */
+.dark .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.22) !important; color: #fef08a !important; }
+.dark .bg-orange-100 { background-color: rgba(249, 115, 22, 0.22) !important; color: #fed7aa !important; }
+.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.22) !important; color: #fecaca !important; }
+.dark .bg-rose-100 { background-color: rgba(244, 63, 94, 0.22) !important; color: #fecdd3 !important; }
+.dark .bg-purple-100 { background-color: rgba(168, 85, 247, 0.22) !important; color: #e9d5ff !important; }
+.dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.22) !important; color: #bfdbfe !important; }
+.dark .bg-cyan-100 { background-color: rgba(6, 182, 212, 0.22) !important; color: #a5f3fc !important; }
+.dark .bg-teal-100 { background-color: rgba(20, 184, 166, 0.22) !important; color: #99f6e4 !important; }
+.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.22) !important; color: #a7f3d0 !important; }
+.dark .bg-green-100 { background-color: rgba(34, 197, 94, 0.22) !important; color: #bbf7d0 !important; }
+.dark .bg-lime-100 { background-color: rgba(132, 204, 22, 0.22) !important; color: #d9f99d !important; }
+
+/* Dark mode action buttons */
+.dark button.bg-\[\#151618\] {
+  background-color: #282C36 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+.dark button.bg-\[\#151618\]:hover {
+  background-color: #333845 !important;
+}
+
+/* Modals & Dropdown Elevation */
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark .shadow-xs,
+.dark .shadow-sm,
+.dark .shadow-md {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
 }
 
 @utility pb-safe {

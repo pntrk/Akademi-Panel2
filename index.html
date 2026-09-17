@@ -13,6 +13,13 @@
     <meta name="description" content="Ölçme ve Değerlendirme Yönetimi" />
     <meta property="og:title" content="AkademiPanel" />
     <meta property="og:description" content="Ölçme ve Değerlendirme Yönetimi" />
+    <script>
+      try {
+        if (localStorage.getItem('akademiDarkMode') === 'true') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
