@@ -982,27 +982,27 @@ export const ExamsView = () => {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
         <div className="w-full sm:w-auto">
           <div className="flex items-center justify-between sm:justify-start gap-2">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center sm:hidden shrink-0 font-bold">
-                <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0 font-bold">
+                <Award className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </div>
-              <h2 className="text-lg sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Deneme Sınavları</h2>
+              <h2 className="text-xl sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Deneme Sınavları</h2>
             </div>
-            <span className="sm:hidden text-[11px] font-medium text-brand-ink/50 bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-brand-border/60">
+            <span className="sm:hidden text-xs font-semibold text-brand-ink/70 bg-[#F5F4F0] px-2.5 py-0.5 rounded-full border border-brand-border/60">
               {filteredAndSortedExams.length} Sınav
             </span>
           </div>
-          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-0.5">Yıllık sınav takvimi, yayıncı ödemeleri, katılım sınıfları ve salon senkronizasyonu</p>
+          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-1">Yıllık sınav takvimi, yayıncı ödemeleri, katılım sınıfları ve salon senkronizasyonu</p>
         </div>
         
-        {/* Action Buttons: Touch-Friendly 2x2 Grid on Mobile, Flex on Desktop */}
+        {/* Action Buttons: Touch-Friendly Grid on Mobile, Flex on Desktop */}
         <div className="grid grid-cols-2 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto py-0.5">
           <button 
             onClick={() => setIsPrintModalOpen(true)} 
-            className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+            className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-2xs sm:shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
             title="Sınav Takvimi Raporu Yazdır"
           >
-            <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
+            <Printer className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
             <span className="truncate">Yazdır</span>
           </button>
           
@@ -1011,27 +1011,27 @@ export const ExamsView = () => {
               <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleImport} />
               <button 
                 onClick={() => fileInputRef.current?.click()} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-2xs sm:shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'den İçe Aktar"
               >
-                <Upload className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
+                <Upload className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">İçe Aktar</span>
               </button>
 
               <button 
                 onClick={handleExport} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-2xs sm:shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'e Dışa Aktar"
               >
-                <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
+                <Download className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">Dışa Aktar</span>
               </button>
 
               <button 
                 onClick={addEmptyExam} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-[11px] sm:text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-2xs sm:shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
               >
-                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
+                <Plus className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate">+ Yeni Sınav</span>
               </button>
             </>
@@ -1040,36 +1040,36 @@ export const ExamsView = () => {
       </header>
 
       {/* Mobile Quick Toggles & Active Filter Pill Bar */}
-      <div className="flex sm:hidden items-center gap-1.5 px-0.5">
+      <div className="flex sm:hidden items-center gap-2 px-0.5">
         <button
           type="button"
           onClick={() => setIsMobileStatsOpen(prev => !prev)}
-          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all ${
             isMobileStatsOpen 
-              ? 'bg-amber-500/15 border-amber-500/40 text-amber-900' 
-              : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-950 shadow-2xs' 
+              : 'bg-white border-brand-border/80 text-brand-ink/75 hover:text-brand-ink shadow-2xs'
           }`}
         >
-          <Award className="w-3 h-3 text-amber-600 shrink-0" />
+          <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
           <span>İstatistikler</span>
-          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
         </button>
 
         <button
           type="button"
           onClick={() => setIsMobileFiltersOpen(prev => !prev)}
-          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all ${
             isMobileFiltersOpen || searchQuery || filterGrade !== 'Tümü' || filterPublisher !== 'Tümü'
-              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900' 
-              : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-950 shadow-2xs' 
+              : 'bg-white border-brand-border/80 text-brand-ink/75 hover:text-brand-ink shadow-2xs'
           }`}
         >
-          <Filter className="w-3 h-3 text-emerald-600 shrink-0" />
+          <Filter className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span>Filtreler</span>
           {(searchQuery || filterGrade !== 'Tümü' || filterPublisher !== 'Tümü') && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
           )}
-          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
         </button>
       </div>
 
@@ -1239,8 +1239,8 @@ export const ExamsView = () => {
               >
                 <option value="date-asc">Tarih: En Yakın → Uzak</option>
                 <option value="date-desc">Tarih: En Uzak → Yakın</option>
-                <option value="no-asc">Ölçme Sıra: 1 → N</option>
-                <option value="no-desc">Ölçme Sıra: N → 1</option>
+                <option value="no-asc">Sıra No: 1 → N</option>
+                <option value="no-desc">Sıra No: N → 1</option>
                 <option value="name-asc">Sınav Adı: A → Z</option>
               </select>
               <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/40 absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1249,7 +1249,7 @@ export const ExamsView = () => {
             {(searchQuery || filterGrade !== 'Tümü' || filterPublisher !== 'Tümü' || sortBy !== 'date-asc') && (
               <button 
                 onClick={() => { setSearchQuery(''); setFilterGrade('Tümü'); setFilterPublisher('Tümü'); setSortBy('date-asc'); }}
-                className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg sm:rounded-xl font-bold shrink-0 transition-colors shadow-xs active:scale-95 whitespace-nowrap"
+                className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg sm:rounded-xl font-bold shrink-0 transition-colors shadow-xs active:scale-95 whitespace-nowrap cursor-pointer"
               >
                 <X className="w-3 h-3" />
                 <span>Temizle</span>
@@ -1266,29 +1266,29 @@ export const ExamsView = () => {
           <table className="w-full border-collapse text-left min-w-[800px]">
             <thead>
               <tr className="bg-[#FAF9F6] border-b-2 border-brand-ink">
-                <th width="80" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">ÖLÇME</th>
-                <th width="150" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">TARİH</th>
-                <th className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV ADI (Detaylar için tıklayın)</th>
-                <th width="200" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">YAYINCI</th>
-                <th width="120" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">KATILAN</th>
-                <th width="120" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İŞLEMLER</th>
+                <th width="80" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">SIRA NO</th>
+                <th width="140" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">TARİH</th>
+                <th className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV ADI</th>
+                <th width="190" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">YAYINCI</th>
+                <th width="120" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">KATILAN</th>
+                <th width="110" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İŞLEMLER</th>
               </tr>
             </thead>
-            <tbody className="text-[0.85rem]">
+            <tbody className="text-sm">
               {filteredAndSortedExams.map((exam, index) => {
                 const registeredCount = state.students.filter(s => s.examRegistrations?.some(r => r.examId === exam.id)).length;
                 
                 return (
                   <tr key={exam.id} className="border-b border-brand-border transition-all hover:bg-[#FAF9F6]">
-                    <td className="py-4 px-5 text-center" data-label="ÖLÇME">
+                    <td className="py-3.5 px-4 text-center" data-label="SIRA NO">
                       {userRole === 'admin' ? (
                         <input 
                           type="number" 
                           value={exam.no !== undefined && exam.no !== null && exam.no !== 0 ? exam.no : ''} 
                           onChange={(e) => updateExam(exam.id, 'no', parseInt(e.target.value) || 0)} 
-                          className="w-14 text-center font-mono font-bold text-brand-accent bg-[#F5F4F0] hover:bg-white focus:bg-white border border-transparent hover:border-brand-border focus:border-brand-accent rounded-lg py-1 px-1 text-sm outline-none transition-all" 
+                          className="w-14 text-center font-mono font-bold text-brand-accent bg-[#F5F4F0] hover:bg-white focus:bg-white border border-transparent hover:border-brand-border focus:border-brand-accent rounded-lg py-1 px-1 text-sm outline-none transition-all cursor-pointer" 
                           placeholder={exam.no ? exam.no.toString() : (index + 1).toString()}
-                          title="Sınav Sıra No (Ölçme) - Değiştirmek için tıklayın"
+                          title="Sınav Sıra No - Değiştirmek için tıklayın"
                         />
                       ) : (
                         <span className="font-mono font-bold text-brand-accent text-sm">
@@ -1296,19 +1296,19 @@ export const ExamsView = () => {
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-5" data-label="BİLGİ">
+                    <td className="py-3.5 px-4" data-label="TARİH">
                       <input 
                         type="text" 
                         value={exam.date} 
                         onChange={(e) => updateExam(exam.id, 'date', e.target.value)} 
-                        className="w-full bg-transparent border-none focus:ring-0 text-brand-ink focus:outline-none p-1 font-mono text-[0.8rem]" 
+                        className="w-full bg-transparent border-none focus:ring-0 text-brand-ink focus:outline-none p-1 font-mono text-xs" 
                         placeholder="GG.AA.YYYY"
                       />
                     </td>
-                    <td className="py-4 px-5 font-semibold" data-label="SINAV ADI">
+                    <td className="py-3.5 px-4 font-semibold" data-label="SINAV ADI">
                       <button 
                         onClick={() => setEditingExam(exam)}
-                        className="text-left font-serif font-bold text-[1.1rem] text-brand-ink hover:text-brand-accent hover:underline decoration-dotted transition-all outline-none cursor-pointer"
+                        className="text-left font-serif font-bold text-base text-brand-ink hover:text-brand-accent transition-colors outline-none cursor-pointer"
                       >
                         {exam.name || '(İsimsiz Sınav)'}
                       </button>
@@ -1538,7 +1538,7 @@ export const ExamsView = () => {
                     </div>
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-bold text-[#8e8d82] mb-1">Sınav Sıra No (Ölçme)</label>
+                        <label className="block text-xs font-bold text-[#8e8d82] mb-1">Sınav Sıra No</label>
                         <input 
                           type="number" 
                           value={examNo || ''} 

@@ -598,7 +598,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           </div>
         </header>
 
-        <div className="flex-1 flex flex-col p-2.5 sm:p-5 md:p-10 w-full max-w-7xl mx-auto h-full">
+        <div 
+          className="flex-1 flex flex-col p-2 sm:p-4 md:p-6 lg:p-8 w-full max-w-7xl mx-auto h-full font-sans antialiased"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
           {children}
         </div>
       </main>

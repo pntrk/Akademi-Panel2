@@ -564,17 +564,17 @@ export const StudentsView = () => {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
         <div className="w-full sm:w-auto">
           <div className="flex items-center justify-between sm:justify-start gap-2">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-brand-accent/15 text-brand-accent flex items-center justify-center sm:hidden shrink-0 font-bold">
-                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-brand-accent/15 text-brand-accent flex items-center justify-center shrink-0 font-bold">
+                <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </div>
-              <h2 className="text-lg sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Öğrenci Kayıtları</h2>
+              <h2 className="text-xl sm:text-3xl md:text-4xl font-serif text-brand-ink font-bold tracking-tight leading-tight">Öğrenci Kayıtları</h2>
             </div>
-            <span className="sm:hidden text-[11px] font-medium text-brand-ink/50 bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-brand-border/60">
+            <span className="sm:hidden text-xs font-semibold text-brand-ink/70 bg-[#F5F4F0] px-2.5 py-0.5 rounded-full border border-brand-border/60">
               {stats.totalStudents} Öğrenci
             </span>
           </div>
-          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-0.5">Sisteme kayıtlı öğrenciler, salon yerleşimleri ve sınav ücreti yönetimi</p>
+          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-1">Sisteme kayıtlı öğrenciler, salon yerleşimleri ve sınav ücreti yönetimi</p>
         </div>
         
         {/* Action Buttons: Ultra-Compact & Grid-Optimized on Mobile */}
@@ -584,27 +584,27 @@ export const StudentsView = () => {
               <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={handleImport} />
               <button 
                 onClick={() => fileInputRef.current?.click()} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-2xs sm:shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'den İçe Aktar"
               >
-                <Upload className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
+                <Upload className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">İçe Aktar</span>
               </button>
 
               <button 
                 onClick={handleExport} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-white border border-brand-border text-[11px] sm:text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-white border border-brand-border text-xs font-bold text-brand-ink rounded-xl transition-all hover:bg-[#FAF9F6] active:scale-95 shadow-2xs sm:shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
                 title="Excel'e Dışa Aktar"
               >
-                <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/70 shrink-0" />
+                <Download className="w-3.5 h-3.5 text-brand-ink/70 shrink-0" />
                 <span className="truncate">Dışa Aktar</span>
               </button>
 
               <button 
                 onClick={addEmptyStudent} 
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-[11px] sm:text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-[#151618] border border-[#151618] text-white text-xs font-bold rounded-xl transition-all hover:bg-black active:scale-95 shadow-2xs sm:shadow-xs cursor-pointer min-w-0 w-full sm:w-auto"
               >
-                <UserPlus className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
+                <UserPlus className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate">+ Öğrenci</span>
               </button>
             </>
@@ -613,36 +613,36 @@ export const StudentsView = () => {
       </header>
 
       {/* Mobile Quick Toggles & Active Filter Pill Bar */}
-      <div className="flex sm:hidden items-center gap-1.5 px-0.5">
+      <div className="flex sm:hidden items-center gap-2 px-0.5">
         <button
           type="button"
           onClick={() => setIsMobileStatsOpen(prev => !prev)}
-          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all ${
             isMobileStatsOpen 
-              ? 'bg-amber-500/15 border-amber-500/40 text-amber-900' 
-              : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-950 shadow-2xs' 
+              : 'bg-white border-brand-border/80 text-brand-ink/75 hover:text-brand-ink shadow-2xs'
           }`}
         >
-          <Users className="w-3 h-3 text-amber-600 shrink-0" />
+          <Users className="w-3.5 h-3.5 text-amber-600 shrink-0" />
           <span>İstatistikler</span>
-          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
         </button>
 
         <button
           type="button"
           onClick={() => setIsMobileFiltersOpen(prev => !prev)}
-          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all ${
             isMobileFiltersOpen || searchQuery || classFilter || examFilter || hallFilter
-              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900' 
-              : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-950 shadow-2xs' 
+              : 'bg-white border-brand-border/80 text-brand-ink/75 hover:text-brand-ink shadow-2xs'
           }`}
         >
-          <Filter className="w-3 h-3 text-emerald-600 shrink-0" />
+          <Filter className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span>Filtreler</span>
           {(searchQuery || classFilter || examFilter || hallFilter) && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
           )}
-          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
         </button>
       </div>
 
@@ -695,7 +695,7 @@ export const StudentsView = () => {
             </div>
           </div>
           <div className="flex items-baseline gap-1 shrink-0">
-            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalStudents}</span>
+            <span className="font-sans text-sm sm:text-2xl md:text-3xl font-bold tracking-tight text-brand-ink leading-none">{stats.totalStudents}</span>
             <span className="text-[9px] sm:text-xs text-brand-ink/50 font-medium">kişi</span>
           </div>
         </div>
@@ -711,7 +711,7 @@ export const StudentsView = () => {
             </div>
           </div>
           <div className="flex items-baseline gap-1 shrink-0">
-            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalRegistrations}</span>
+            <span className="font-sans text-sm sm:text-2xl md:text-3xl font-bold tracking-tight text-brand-ink leading-none">{stats.totalRegistrations}</span>
             <span className="text-[9px] sm:text-xs text-brand-ink/50 font-medium">sınav</span>
           </div>
         </div>
@@ -727,7 +727,7 @@ export const StudentsView = () => {
             </div>
           </div>
           <div className="shrink-0">
-            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">₺{stats.totalFees}</span>
+            <span className="font-sans text-sm sm:text-2xl md:text-3xl font-bold tracking-tight text-emerald-700 leading-none">₺{stats.totalFees}</span>
           </div>
         </div>
 
@@ -742,7 +742,7 @@ export const StudentsView = () => {
             </div>
           </div>
           <div className="shrink-0">
-            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-rose-600 leading-none">₺{stats.totalUnpaidFees}</span>
+            <span className="font-sans text-sm sm:text-2xl md:text-3xl font-bold tracking-tight text-rose-600 leading-none">₺{stats.totalUnpaidFees}</span>
           </div>
         </div>
       </section>
@@ -835,7 +835,7 @@ export const StudentsView = () => {
           <table className="w-full border-collapse text-left min-w-[800px]">
             <thead>
               <tr className="bg-[#FAF9F6] border-b-2 border-brand-ink">
-                <th width="50" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">
+                <th width="50" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">
                   <button 
                     onClick={handleSelectAll}
                     className="p-1 rounded hover:bg-black/5 text-brand-ink transition-colors cursor-pointer"
@@ -848,15 +848,15 @@ export const StudentsView = () => {
                     )}
                   </button>
                 </th>
-                <th width="90" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">NO</th>
-                <th className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">ADI SOYADI</th>
-                <th width="120" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINIFI</th>
-                <th width="180" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV SALONU</th>
-                <th className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">KAYITLI SINAVLAR</th>
-                <th width="80" className="py-4 px-5 font-mono text-[0.65rem] text-brand-ink/50 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İşlem</th>
+                <th width="90" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">NO</th>
+                <th className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">ADI SOYADI</th>
+                <th width="120" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINIFI</th>
+                <th width="180" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV SALONU</th>
+                <th className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">KAYITLI SINAVLAR</th>
+                <th width="80" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İŞLEM</th>
               </tr>
             </thead>
-            <tbody className="text-[0.85rem]">
+            <tbody className="text-sm">
               {filteredStudents.map((student) => {
                 const isSelected = selectedStudentIds.includes(student.id);
                 return (
@@ -1090,7 +1090,7 @@ export const StudentsView = () => {
                       setEditingStudentId(student.id);
                       setIsStudentModalOpen(true);
                     }}
-                    className={`text-base font-serif font-bold text-left leading-snug hover:underline cursor-pointer transition-colors block w-full break-words ${
+                    className={`text-base font-sans font-bold text-left leading-snug hover:text-brand-accent transition-colors block w-full break-words ${
                       hasMissingHall ? 'text-rose-600' : 'text-brand-ink'
                     }`}
                   >

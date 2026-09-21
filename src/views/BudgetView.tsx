@@ -433,17 +433,17 @@ export const BudgetView = () => {
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-2 sm:gap-4">
         <div className="w-full sm:w-auto">
           <div className="flex items-center justify-between sm:justify-start gap-2">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0 font-bold">
-                <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0 font-bold">
+                <Coins className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </div>
-              <h2 className="text-lg sm:text-3xl md:text-4xl font-serif text-[#5a5a40] font-bold tracking-tight leading-tight">Bütçe Takibi</h2>
+              <h2 className="text-xl sm:text-3xl md:text-4xl font-serif text-[#5a5a40] font-bold tracking-tight leading-tight">Bütçe Takibi</h2>
             </div>
-            <span className="sm:hidden text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            <span className="sm:hidden text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
               Net: ₺{(totalIncome - totalExpense).toLocaleString('tr-TR')}
             </span>
           </div>
-          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-0.5">Sınav ve yayın bazlı gruplanmış gelir, harcama, borç takibi ve finansal özet</p>
+          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-1">Sınav ve yayın bazlı gruplanmış gelir, harcama, borç takibi ve finansal özet</p>
         </div>
 
         {/* Mobile Quick Toggles */}
@@ -451,10 +451,10 @@ export const BudgetView = () => {
           <button
             type="button"
             onClick={() => setIsMobileStatsOpen(!isMobileStatsOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
               isMobileStatsOpen 
-                ? 'bg-[#5a5a40] text-white shadow-xs' 
-                : 'bg-[#f5f5f0] text-[#5a5a40] hover:bg-[#e6e2d3]'
+                ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-2xs' 
+                : 'bg-white text-[#5a5a40] border-brand-border/80 shadow-2xs'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -462,13 +462,13 @@ export const BudgetView = () => {
             <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMobileStatsOpen ? 'rotate-180' : ''}`} />
           </button>
 
-          <div className="flex items-center bg-[#f5f4f0] p-0.5 rounded-xl border border-[#e6e2d3] gap-0.5">
+          <div className="flex items-center bg-[#F5F4F0] p-1 rounded-xl border border-[#E6E2D3] gap-1 shadow-2xs">
             <button
               type="button"
               onClick={() => setMobileBudgetTab('all')}
-              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
                 mobileBudgetTab === 'all'
-                  ? 'bg-white text-brand-ink shadow-xs'
+                  ? 'bg-white text-brand-ink shadow-2xs'
                   : 'text-brand-ink/60'
               }`}
             >
@@ -477,9 +477,9 @@ export const BudgetView = () => {
             <button
               type="button"
               onClick={() => setMobileBudgetTab('incomes')}
-              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
                 mobileBudgetTab === 'incomes'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-white shadow-2xs'
                   : 'text-emerald-800'
               }`}
             >
@@ -488,9 +488,9 @@ export const BudgetView = () => {
             <button
               type="button"
               onClick={() => setMobileBudgetTab('expenses')}
-              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
                 mobileBudgetTab === 'expenses'
-                  ? 'bg-rose-600 text-white shadow-xs'
+                  ? 'bg-rose-600 text-white shadow-2xs'
                   : 'text-rose-800'
               }`}
             >
@@ -499,9 +499,9 @@ export const BudgetView = () => {
             <button
               type="button"
               onClick={() => setMobileBudgetTab('debts')}
-              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
                 mobileBudgetTab === 'debts'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                  ? 'bg-amber-600 text-white shadow-2xs'
                   : 'text-amber-800'
               }`}
             >
@@ -525,7 +525,7 @@ export const BudgetView = () => {
               <span className="text-[10px] font-bold text-emerald-800/70 uppercase tracking-wider">Toplam Gelir</span>
               {mobileBudgetTab === 'incomes' && <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
             </div>
-            <span className="text-base sm:text-lg font-serif font-bold text-emerald-800 mt-1">₺{totalIncome.toLocaleString('tr-TR')}</span>
+            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-emerald-800 mt-1">₺{totalIncome.toLocaleString('tr-TR')}</span>
           </button>
           
           <button 
@@ -541,7 +541,7 @@ export const BudgetView = () => {
               <span className="text-[10px] font-bold text-rose-800/70 uppercase tracking-wider">Toplam Gider</span>
               {mobileBudgetTab === 'expenses' && <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
             </div>
-            <span className="text-base sm:text-lg font-serif font-bold text-rose-800 mt-1">₺{totalExpense.toLocaleString('tr-TR')}</span>
+            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-rose-800 mt-1">₺{totalExpense.toLocaleString('tr-TR')}</span>
           </button>
 
           <button 
@@ -557,7 +557,7 @@ export const BudgetView = () => {
               <span className="text-[10px] font-bold text-amber-800/70 uppercase tracking-wider">Bekleyen Borç</span>
               {mobileBudgetTab === 'debts' && <span className="text-[9px] bg-amber-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
             </div>
-            <span className="text-base sm:text-lg font-serif font-bold text-amber-800 mt-1">₺{totalDebt.toLocaleString('tr-TR')}</span>
+            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-amber-800 mt-1">₺{totalDebt.toLocaleString('tr-TR')}</span>
           </button>
 
           <button 
@@ -571,7 +571,7 @@ export const BudgetView = () => {
               <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Net Durum</span>
               {mobileBudgetTab === 'all' && <span className="text-[9px] bg-black/30 text-white px-1.5 py-0.2 rounded font-bold">Tümü</span>}
             </div>
-            <span className="text-base sm:text-lg font-serif font-bold text-white mt-1">₺{remaining.toLocaleString('tr-TR')}</span>
+            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-white mt-1">₺{remaining.toLocaleString('tr-TR')}</span>
           </button>
         </div>
       </header>
