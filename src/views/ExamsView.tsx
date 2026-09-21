@@ -1380,20 +1380,24 @@ export const ExamsView = () => {
             return (
               <div 
                 key={exam.id} 
-                className="bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-brand-border/80 hover:border-brand-border transition-all duration-200 shadow-2xs sm:shadow-sm flex flex-col gap-2"
+                className="bg-white rounded-xl p-2.5 sm:p-3 border border-brand-border/80 hover:border-brand-border transition-all duration-200 shadow-2xs flex flex-col gap-2"
               >
-                {/* Card Header: Badge + Exam Name + Actions */}
+                {/* Card Header: Compact Number Button + Exam Name + Quick Actions */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 flex-1 min-w-0">
-                    <div className="flex items-center gap-1 bg-[#151618] text-white px-2.5 py-1 rounded-xl text-xs font-mono font-bold shrink-0 shadow-xs mt-0.5" title="Sınav Sıra No (Ölçme)">
-                      <span className="text-amber-400 text-[10px]">ÖLÇME</span>
-                      <span>#{exam.no !== undefined && exam.no > 0 ? exam.no : index + 1}</span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingExam(exam)}
+                      className="flex items-center justify-center min-w-[26px] h-6 px-1.5 bg-[#151618] hover:bg-brand-accent text-white rounded-md text-[11px] font-mono font-bold shrink-0 shadow-2xs mt-0.5 transition-colors cursor-pointer active:scale-95"
+                      title={`Sınav No: #${exam.no !== undefined && exam.no > 0 ? exam.no : index + 1}`}
+                    >
+                      #{exam.no !== undefined && exam.no > 0 ? exam.no : index + 1}
+                    </button>
 
                     <div className="flex flex-col flex-1 min-w-0">
                       <button 
                         onClick={() => setEditingExam(exam)}
-                        className="font-serif font-bold text-base text-brand-ink text-left hover:text-brand-accent transition-all truncate"
+                        className="font-serif font-bold text-sm sm:text-base text-brand-ink text-left hover:text-brand-accent transition-all truncate leading-snug cursor-pointer"
                       >
                         {exam.name || '(İsimsiz Sınav)'}
                       </button>
@@ -1408,14 +1412,14 @@ export const ExamsView = () => {
                   <div className="flex items-center gap-1 shrink-0">
                     <button 
                       onClick={() => setEditingExam(exam)}
-                      className="w-8 h-8 rounded-xl bg-gray-50 border border-brand-border/70 flex items-center justify-center text-brand-ink/70 hover:text-brand-accent hover:border-brand-accent transition-all active:scale-95"
+                      className="w-7 h-7 rounded-lg bg-gray-50 border border-brand-border/70 flex items-center justify-center text-brand-ink/70 hover:text-brand-accent hover:border-brand-accent transition-all active:scale-95 cursor-pointer"
                       title="Detayları Düzenle"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </button>
                     <button 
                       onClick={() => removeExam(exam.id)}
-                      className="w-8 h-8 rounded-xl bg-gray-50 border border-brand-border/70 flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95"
+                      className="w-7 h-7 rounded-lg bg-gray-50 border border-brand-border/70 flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 cursor-pointer"
                       title="Sınavı Sil"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -1426,20 +1430,20 @@ export const ExamsView = () => {
                 {/* Meta Badges */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                   {/* Publisher Badge */}
-                  <div className="bg-indigo-50 border border-indigo-100/80 text-indigo-700 px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1">
+                  <div className="bg-indigo-50/80 border border-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold flex items-center gap-1">
                     <Building className="w-3 h-3 opacity-70 shrink-0" />
                     <span className="truncate max-w-[120px]">{exam.publisher || 'Yayıncı Yok'}</span>
                   </div>
 
                   {/* Registered Students Badge */}
-                  <div className="bg-purple-50 border border-purple-100 text-purple-700 px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1">
+                  <div className="bg-purple-50/80 border border-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold flex items-center gap-1">
                     <Users className="w-3 h-3 opacity-70 shrink-0" />
                     <span>{registeredCount} Kayıtlı</span>
                   </div>
 
                   {/* Order Quantity Badge */}
                   {(exam.orderQuantity || 0) > 0 && (
-                    <div className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold flex items-center gap-1">
+                    <div className="bg-blue-50/80 border border-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold flex items-center gap-1">
                       <Package className="w-3 h-3 opacity-70 shrink-0" />
                       <span>{exam.orderQuantity} Sipariş</span>
                     </div>
@@ -1447,7 +1451,7 @@ export const ExamsView = () => {
 
                   {/* Publisher Cost Badge */}
                   {totalCost > 0 && (
-                    <div className="bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1">
+                    <div className="bg-amber-50/80 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold flex items-center gap-1">
                       <DollarSign className="w-3 h-3 opacity-70 shrink-0" />
                       <span>₺{totalCost.toLocaleString('tr-TR')}</span>
                     </div>
@@ -1456,9 +1460,9 @@ export const ExamsView = () => {
 
                 {/* Participating classes & Quick edit bar */}
                 <div className="flex items-center justify-between pt-1 border-t border-brand-border/40 text-[11px]">
-                  <div className="flex items-center gap-1 text-brand-ink/60">
+                  <div className="flex items-center gap-1 text-brand-ink/60 min-w-0 flex-1 mr-2">
                     <Layers className="w-3 h-3 text-brand-ink/40 shrink-0" />
-                    <span className="font-semibold">
+                    <span className="font-semibold truncate">
                       {exam.participatingClasses && exam.participatingClasses.length > 0 
                         ? exam.participatingClasses.map(c => `${c}. Sınıf`).join(', ')
                         : 'Tüm Sınıflar'}
@@ -1467,7 +1471,7 @@ export const ExamsView = () => {
 
                   <button
                     onClick={() => setEditingExam(exam)}
-                    className="text-brand-accent font-bold hover:underline flex items-center gap-1 text-xs"
+                    className="text-brand-accent font-bold hover:underline flex items-center gap-1 text-xs shrink-0 cursor-pointer"
                   >
                     <span>Yönet & Notlar</span>
                     <ChevronDown className="w-3 h-3 -rotate-90" />
