@@ -26,9 +26,9 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
         {/* Header */}
         <div className="p-6 pb-4 flex items-center justify-between border-b border-slate-800 bg-slate-950/50">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-600 p-0.5 shadow-lg shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <HardDriveDownload className="w-6 h-6 text-emerald-400" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 via-sky-600 to-amber-500 p-0.5 shadow-lg shrink-0">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden">
+                <img src="/icon.svg" alt="AkademiPanel" className="w-9 h-9 object-contain" />
               </div>
             </div>
             <div>
@@ -38,7 +38,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
                   PWA Desteği
                 </span>
               </h3>
-              <p className="text-xs text-slate-400">Masaüstü bilgisayarınıza veya mobil cihazınıza kurun</p>
+              <p className="text-xs text-slate-400">AkademiPanel simgesi ile ana ekranınıza yükleyin</p>
             </div>
           </div>
           <button 
@@ -112,6 +112,22 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
               </button>
             </div>
           )}
+
+          {/* App Icon Home Screen Preview */}
+          <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-2xl flex items-center gap-3.5">
+            <div className="relative w-14 h-14 rounded-2xl bg-slate-900 border border-slate-700/80 p-1 shadow-md shrink-0 flex items-center justify-center">
+              <img src="/pwa-192x192.png" alt="AkademiPanel Simgesi" className="w-full h-full object-contain rounded-xl" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white truncate">AkademiPanel</span>
+                <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md font-semibold">Özel Simge</span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Cihaza yüklendiğinde bu altın ve zümrüt detaylı resmi logo ana ekranınıza ve uygulama listenize atanacaktır.
+              </p>
+            </div>
+          </div>
 
           {/* Features list */}
           <div className="grid grid-cols-2 gap-2 text-xs">

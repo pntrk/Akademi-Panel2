@@ -12,7 +12,18 @@ export default defineConfig(({ command }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
+        includeAssets: [
+          'favicon.ico',
+          'favicon-32x32.png',
+          'apple-touch-icon.png',
+          'icon.svg',
+          'icon-maskable.svg',
+          'pwa-192x192.png',
+          'pwa-512x512.png',
+          'pwa-maskable-512x512.png',
+          'manifest.json',
+          'manifest.webmanifest'
+        ],
         manifest: {
           id: '/',
           name: 'AkademiPanel • Sınav & Ölçme Değerlendirme',
@@ -21,6 +32,7 @@ export default defineConfig(({ command }) => {
           theme_color: '#151618',
           background_color: '#0f172a',
           display: 'standalone',
+          orientation: 'any',
           start_url: '/',
           scope: '/',
           icons: [
@@ -41,6 +53,12 @@ export default defineConfig(({ command }) => {
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
+            },
+            {
+              src: '/icon.svg',
+              sizes: '512x512',
+              type: 'image/svg+xml',
+              purpose: 'any',
             },
           ],
         },

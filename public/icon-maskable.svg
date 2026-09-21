@@ -58,15 +58,15 @@
   </defs>
 
   <!-- Base Full-Bleed Canvas Background -->
-  <rect width="512" height="512" rx="112" fill="url(#appBg)" />
-  <rect width="512" height="512" rx="112" fill="url(#glowEmerald)" />
-  <rect width="512" height="512" rx="112" fill="url(#glowSky)" />
-  <rect width="512" height="512" rx="112" fill="url(#glowCenter)" />
+  <rect width="512" height="512"  fill="url(#appBg)" />
+  <rect width="512" height="512"  fill="url(#glowEmerald)" />
+  <rect width="512" height="512"  fill="url(#glowSky)" />
+  <rect width="512" height="512"  fill="url(#glowCenter)" />
 
-  <rect x="6" y="6" width="500" height="500" rx="106" fill="none" stroke="url(#borderGrad)" stroke-width="4" />
+  
 
   <!-- Emblem Center Group (scaled to safe zone if maskable) -->
-  <g transform="translate(30.72, 30.72) scale(0.88)" filter="url(#dropShadow)">
+  <g transform="translate(56.31999999999999, 56.31999999999999) scale(0.78)" filter="url(#dropShadow)">
     
     <!-- Shield / Crest Background -->
     <path d="M 256 70 

@@ -132,6 +132,22 @@ export const AppHubModal: React.FC<AppHubModalProps> = ({ isOpen, onClose }) => 
               <span className="text-[10px] text-slate-400">Çevrimdışı & Tam Ekran</span>
             </div>
 
+            {/* App Icon Info Card */}
+            <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-xl flex items-center gap-3">
+              <div className="relative w-11 h-11 rounded-xl bg-slate-950 border border-slate-700/70 p-1 shadow-sm shrink-0 flex items-center justify-center">
+                <img src="/pwa-192x192.png" alt="AkademiPanel Logosu" className="w-full h-full object-contain rounded-lg" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-white">AkademiPanel Simgesi</span>
+                  <span className="text-[9px] px-1.5 py-0.2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded font-semibold">Özel İkon</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Uygulama telefon veya bilgisayarınıza bu resmi simge görseli ile kurulur.
+                </p>
+              </div>
+            </div>
+
             {isInstalled ? (
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-bold flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
