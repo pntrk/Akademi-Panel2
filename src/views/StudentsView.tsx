@@ -19,6 +19,8 @@ export const StudentsView = () => {
   const [classFilter, setClassFilter] = useState('');
   const [examFilter, setExamFilter] = useState('');
   const [hallFilter, setHallFilter] = useState('');
+  const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Selection states
   const [expandedExamId, setExpandedExamId] = useState<string | null>(null);
@@ -610,130 +612,219 @@ export const StudentsView = () => {
         </div>
       </header>
 
-      {/* Stats Grid - Compact 2x2 on Mobile, 4 Cols on Desktop */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
+      {/* Mobile Quick Toggles & Active Filter Pill Bar */}
+      <div className="flex sm:hidden items-center justify-between gap-1.5 px-0.5">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setIsMobileStatsOpen(prev => !prev)}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+              isMobileStatsOpen 
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-900' 
+                : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+            }`}
+          >
+            <Users className="w-3 h-3 text-amber-600 shrink-0" />
+            <span>İstatistikler</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileFiltersOpen(prev => !prev)}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+              isMobileFiltersOpen || searchQuery || classFilter || examFilter || hallFilter
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900' 
+                : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+            }`}
+          >
+            <Filter className="w-3 h-3 text-emerald-600 shrink-0" />
+            <span>Filtreler</span>
+            {(searchQuery || classFilter || examFilter || hallFilter) && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            )}
+            <ChevronDown className={`w-3 h-3 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
+          </button>
+        </div>
+
+        {/* Compact Mobile Count Badge */}
+        <span className="text-[10px] font-semibold text-brand-ink/60 bg-[#F5F4F0] px-2 py-1 rounded-md shrink-0 border border-brand-border/40">
+          {filteredStudents.length} Öğrenci
+        </span>
+      </div>
+
+      {/* Mobile Active Filter Chips (shows when filters are active and drawer is closed) */}
+      {!isMobileFiltersOpen && (searchQuery || classFilter || examFilter || hallFilter) && (
+        <div className="flex sm:hidden items-center gap-1 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+          {searchQuery && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-medium border border-amber-200 shrink-0">
+              <span>"{searchQuery.slice(0, 12)}{searchQuery.length > 12 ? '...' : ''}"</span>
+              <button onClick={() => setSearchQuery('')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {classFilter && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 text-[10px] font-medium border border-indigo-200 shrink-0">
+              <span>{classFilter}</span>
+              <button onClick={() => setClassFilter('')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {examFilter && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 text-[10px] font-medium border border-purple-200 shrink-0">
+              <span>{state.exams.find(e => e.id === examFilter)?.name || 'Sınav'}</span>
+              <button onClick={() => setExamFilter('')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {hallFilter && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-medium border border-amber-200 shrink-0">
+              <span>{state.examHalls.find(h => h.id === hallFilter)?.name || 'Salon'}</span>
+              <button onClick={() => setHallFilter('')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          <button 
+            onClick={() => { setSearchQuery(''); setClassFilter(''); setExamFilter(''); setHallFilter(''); }}
+            className="text-[10px] text-rose-600 font-bold px-1 py-0.5 shrink-0 underline"
+          >
+            Sıfırla
+          </button>
+        </div>
+      )}
+
+      {/* Stats Grid - Collapsible on Mobile, 4 Cols on Desktop */}
+      <section className={`${isMobileStatsOpen ? 'grid' : 'hidden'} sm:grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-4 md:gap-5`}>
         {/* Stat 1: Toplam Öğrenci */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Toplam Öğrenci</span>
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-brand-accent/50">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              <span className="hidden sm:inline">Toplam </span>Öğrenci
+            </span>
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalStudents}</span>
-            <span className="text-[10px] sm:text-xs text-brand-ink/50 font-medium">kişi</span>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalStudents}</span>
+            <span className="text-[9px] sm:text-xs text-brand-ink/50 font-medium">kişi</span>
           </div>
         </div>
 
         {/* Stat 2: Aktif Sınav Kaydı */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Aktif Kayıt</span>
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-brand-accent/50">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              <span className="hidden sm:inline">Aktif </span>Kayıt
+            </span>
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
               <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalRegistrations}</span>
-            <span className="text-[10px] sm:text-xs text-brand-ink/50 font-medium">sınav</span>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{stats.totalRegistrations}</span>
+            <span className="text-[9px] sm:text-xs text-brand-ink/50 font-medium">sınav</span>
           </div>
         </div>
 
         {/* Stat 3: Gelen Gelir */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-emerald-300">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Gelen Gelir</span>
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-emerald-300">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              <span className="hidden sm:inline">Gelen </span>Gelir
+            </span>
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
               <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">₺{stats.totalFees}</span>
+          <div className="shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">₺{stats.totalFees}</span>
+          </div>
         </div>
 
         {/* Stat 4: Toplam Borç */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-rose-300">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Toplam Borç</span>
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-rose-300">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              <span className="hidden sm:inline">Toplam </span>Borç
+            </span>
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
               <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-rose-600 leading-none">₺{stats.totalUnpaidFees}</span>
+          <div className="shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-rose-600 leading-none">₺{stats.totalUnpaidFees}</span>
+          </div>
         </div>
       </section>
 
-      {/* Filter Bar - Modern, Ergonomic, Mobile-Optimized */}
-      <section className="bg-white p-3 sm:p-4 rounded-2xl border border-brand-border/70 shadow-sm flex flex-col gap-2.5 sm:gap-3">
-        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+      {/* Filter Bar - Collapsible on Mobile, Expanded on Desktop */}
+      <section className={`${isMobileFiltersOpen ? 'flex' : 'hidden sm:flex'} bg-white p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-brand-border/70 shadow-xs sm:shadow-sm flex-col gap-1.5 sm:gap-3`}>
+        <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2.5 items-stretch sm:items-center">
           {/* Search Box */}
           <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-ink/40 h-4 w-4 pointer-events-none" />
+            <Search className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-brand-ink/40 h-3.5 w-3.5 sm:h-4 sm:w-4 pointer-events-none" />
             <input 
               type="text" 
               placeholder="Öğrenci adı veya numarası ile ara..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#F5F4F0] border border-transparent rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-brand-ink placeholder-brand-ink/40 font-medium focus:bg-white focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 focus:outline-none transition-all"
+              className="w-full bg-[#F5F4F0] border border-transparent rounded-lg sm:rounded-xl pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 text-[11px] sm:text-sm text-brand-ink placeholder-brand-ink/40 font-medium focus:bg-white focus:border-brand-accent focus:ring-1 sm:ring-2 focus:ring-brand-accent/20 focus:outline-none transition-all"
             />
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-ink/40 hover:text-brand-ink p-1 rounded-full"
+                className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-brand-ink/40 hover:text-brand-ink p-0.5 sm:p-1 rounded-full"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             )}
           </div>
 
-          {/* Filter Dropdowns - Grid on Mobile (Zero Overflow), Flex on Desktop */}
-          <div className="grid grid-cols-3 sm:flex gap-1.5 sm:gap-2 items-center w-full sm:w-auto shrink-0 py-0.5">
-            <div className="relative w-full min-w-0">
+          {/* Filter Dropdowns - Horizontal Scroll on Mobile, Flex on Desktop */}
+          <div className="flex flex-nowrap sm:flex-wrap gap-1.5 sm:gap-2 items-center overflow-x-auto no-scrollbar shrink-0 py-0.5 w-full sm:w-auto">
+            <div className="relative shrink-0">
               <select
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
-                className="w-full appearance-none pl-2 sm:pl-3 pr-5 sm:pr-7 py-2 border border-brand-border/80 text-[11px] sm:text-xs bg-white rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold truncate shadow-xs cursor-pointer sm:min-w-[105px]"
+                className="appearance-none pl-2.5 pr-6 sm:pl-3 sm:pr-7 py-1.5 sm:py-2 border border-brand-border/80 text-[11px] sm:text-xs bg-white rounded-lg sm:rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold min-w-[95px] sm:min-w-[105px] shadow-xs cursor-pointer truncate"
               >
                 <option value="">Tüm Şubeler</option>
                 {uniqueClassesForFilter.map(cls => (
                   <option key={cls} value={cls}>{cls}</option>
                 ))}
               </select>
-              <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/40 absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none shrink-0" />
+              <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/40 absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
-            <div className="relative w-full min-w-0">
+            <div className="relative shrink-0">
               <select
                 value={examFilter}
                 onChange={(e) => setExamFilter(e.target.value)}
-                className="w-full appearance-none pl-2 sm:pl-3 pr-5 sm:pr-7 py-2 border border-brand-border/80 text-[11px] sm:text-xs bg-white rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold truncate shadow-xs cursor-pointer sm:min-w-[110px] sm:max-w-[160px]"
+                className="appearance-none pl-2.5 pr-6 sm:pl-3 sm:pr-7 py-1.5 sm:py-2 border border-brand-border/80 text-[11px] sm:text-xs bg-white rounded-lg sm:rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold min-w-[100px] sm:min-w-[110px] max-w-[140px] sm:max-w-[160px] shadow-xs cursor-pointer truncate"
               >
                 <option value="">Tüm Sınavlar</option>
                 {state.exams.map(ex => (
                   <option key={ex.id} value={ex.id}>{ex.name}</option>
                 ))}
               </select>
-              <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/40 absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none shrink-0" />
+              <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/40 absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
-            <div className="relative w-full min-w-0">
+            <div className="relative shrink-0">
               <select
                 value={hallFilter}
                 onChange={(e) => setHallFilter(e.target.value)}
-                className="w-full appearance-none pl-2 sm:pl-3 pr-5 sm:pr-7 py-2 border border-brand-border/80 text-[11px] sm:text-xs bg-white rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold truncate shadow-xs cursor-pointer sm:min-w-[105px]"
+                className="appearance-none pl-2.5 pr-6 sm:pl-3 sm:pr-7 py-1.5 sm:py-2 border border-brand-border/80 text-[11px] sm:text-xs bg-white rounded-lg sm:rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold min-w-[95px] sm:min-w-[105px] max-w-[130px] sm:max-w-[150px] shadow-xs cursor-pointer truncate"
               >
                 <option value="">Tüm Salonlar</option>
                 {uniqueHallsForFilter.map(hall => (
                   <option key={hall.id} value={hall.id}>{hall.name}</option>
                 ))}
               </select>
-              <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/40 absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none shrink-0" />
+              <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-ink/40 absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
             {(searchQuery || classFilter || examFilter || hallFilter) && (
               <button 
                 onClick={() => { setSearchQuery(''); setClassFilter(''); setExamFilter(''); setHallFilter(''); }}
-                className="col-span-3 sm:col-span-1 flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl font-bold shrink-0 transition-colors shadow-xs active:scale-95 cursor-pointer mt-1 sm:mt-0"
+                className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg sm:rounded-xl font-bold shrink-0 transition-colors shadow-xs active:scale-95 whitespace-nowrap cursor-pointer"
               >
                 <X className="w-3 h-3" />
                 <span>Temizle</span>

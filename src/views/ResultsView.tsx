@@ -2,7 +2,7 @@ import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ExamResult } from '../types';
 import { exportToExcel, importFromExcel, generateId, calculateAtaLigPoints, determineLeagueTeam, parseDate, normalizeForSearch } from '../lib/utils';
-import { Upload, Download, Trash2, Plus, BarChart3, ListFilter, CheckCircle2, XCircle, AlertCircle, Search, HelpCircle, X, Printer, FileText, ChevronDown, Award, TrendingUp, UserCheck, Layers, Calendar } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, BarChart3, ListFilter, CheckCircle2, XCircle, AlertCircle, Search, HelpCircle, X, Printer, FileText, ChevronDown, Award, TrendingUp, UserCheck, Layers, Calendar, CheckSquare, Square } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { StudentProgressCharts } from '../components/StudentProgressCharts';
 
@@ -30,6 +30,8 @@ export const ResultsView = () => {
   const [classNameFilter, setClassNameFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   
   // Bulk Delete State
   const [selectedResultIds, setSelectedResultIds] = useState<string[]>([]);
@@ -871,65 +873,144 @@ export const ResultsView = () => {
         </div>
       </header>
 
-      {/* Summary Stats - Compact 2x2 on Mobile, 4 Cols on Desktop */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
+      {/* Mobile Quick Toggles & Active Filter Pill Bar */}
+      <div className="flex sm:hidden items-center justify-between gap-1.5 px-0.5">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setIsMobileStatsOpen(prev => !prev)}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+              isMobileStatsOpen 
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-900' 
+                : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+            }`}
+          >
+            <BarChart3 className="w-3 h-3 text-amber-600 shrink-0" />
+            <span>İstatistikler</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileFiltersOpen(prev => !prev)}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+              isMobileFiltersOpen || searchQuery || classNameFilter !== 'all' || selectedGrade !== 'all'
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900' 
+                : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+            }`}
+          >
+            <ListFilter className="w-3 h-3 text-emerald-600 shrink-0" />
+            <span>Filtreler</span>
+            {(searchQuery || classNameFilter !== 'all' || selectedGrade !== 'all') && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            )}
+            <ChevronDown className={`w-3 h-3 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
+          </button>
+        </div>
+
+        {/* Compact Mobile Count Badge */}
+        <span className="text-[10px] font-semibold text-brand-ink/60 bg-[#F5F4F0] px-2 py-1 rounded-md shrink-0 border border-brand-border/40">
+          {summaryStats.totalCount} Sonuç
+        </span>
+      </div>
+
+      {/* Mobile Active Filter Chips (shows when filters are active and drawer is closed) */}
+      {!isMobileFiltersOpen && (searchQuery || classNameFilter !== 'all' || selectedGrade !== 'all') && (
+        <div className="flex sm:hidden items-center gap-1 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+          {searchQuery && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-medium border border-amber-200 shrink-0">
+              <span>"{searchQuery.slice(0, 12)}{searchQuery.length > 12 ? '...' : ''}"</span>
+              <button onClick={() => setSearchQuery('')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {selectedGrade !== 'all' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-medium border border-blue-200 shrink-0">
+              <span>{selectedGrade === 'Diğer' ? 'Diğer' : `${selectedGrade}. Sınıf`}</span>
+              <button onClick={() => setSelectedGrade('all')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {classNameFilter !== 'all' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 text-[10px] font-medium border border-indigo-200 shrink-0">
+              <span>{classNameFilter}</span>
+              <button onClick={() => setClassNameFilter('all')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          <button 
+            onClick={() => { setSearchQuery(''); setClassNameFilter('all'); setSelectedGrade('all'); }}
+            className="text-[10px] text-rose-600 font-bold px-1 py-0.5 shrink-0 underline"
+          >
+            Sıfırla
+          </button>
+        </div>
+      )}
+
+      {/* Summary Stats - Collapsible on Mobile, 4 Cols on Desktop */}
+      <section className={`${isMobileStatsOpen ? 'grid' : 'hidden'} sm:grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-4 md:gap-5`}>
         {/* Stat 1: Sonuç Kaydı */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Kayıtlı Sonuç</span>
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-brand-accent/50">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              <span className="hidden sm:inline">Kayıtlı </span>Sonuç
+            </span>
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <UserCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{summaryStats.totalCount}</span>
-            <span className="text-[10px] sm:text-xs text-brand-ink/50 font-medium">öğrenci</span>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{summaryStats.totalCount}</span>
+            <span className="text-[9px] sm:text-xs text-brand-ink/50 font-medium">öğrenci</span>
           </div>
         </div>
 
         {/* Stat 2: Sınav Sayısı */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-brand-accent/50">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Sınav Havuzu</span>
-            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-brand-accent/50">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              Sınav Havuzu
+            </span>
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
               <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{summaryStats.examCount}</span>
-            <span className="text-[10px] sm:text-xs text-brand-ink/50 font-medium">deneme</span>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-brand-ink leading-none">{summaryStats.examCount}</span>
+            <span className="text-[9px] sm:text-xs text-brand-ink/50 font-medium">deneme</span>
           </div>
         </div>
 
         {/* Stat 3: Genel Puan Ortalaması */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-amber-300">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">Puan Ortalaması</span>
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-amber-300">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              Puan Ortalaması
+            </span>
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
               <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">
               {summaryStats.overallAvg.toFixed(2).replace('.', ',')}
             </span>
-            <span className="text-[10px] sm:text-xs text-emerald-600/70 font-medium">puan</span>
+            <span className="text-[9px] sm:text-xs text-emerald-600/70 font-medium">puan</span>
           </div>
         </div>
 
         {/* Stat 4: Zirve Puan */}
-        <div className="bg-white p-2.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm flex flex-col justify-between transition-all hover:border-emerald-300">
-          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">En Yüksek Ort.</span>
+        <div className="bg-white px-2.5 py-1.5 sm:p-4 md:p-5 border border-brand-border/70 rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-emerald-300">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-brand-ink/60 uppercase tracking-wider truncate">
+              En Yüksek Ort.
+            </span>
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
               <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-amber-700 leading-none">
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-amber-700 leading-none">
               {summaryStats.maxAvg.toFixed(2).replace('.', ',')}
             </span>
-            <span className="text-[10px] sm:text-xs text-amber-600/70 font-medium">puan</span>
+            <span className="text-[9px] sm:text-xs text-amber-600/70 font-medium">puan</span>
           </div>
         </div>
       </section>
@@ -1021,8 +1102,8 @@ export const ResultsView = () => {
       {activeTab === 'summary' ? (
         /* Summary Scores View */
         <div className="bg-white rounded-2xl border border-brand-border/70 shadow-sm flex-1 overflow-hidden flex flex-col min-h-[400px]">
-          {/* Controls Bar */}
-          <div className="p-3 sm:p-4 border-b border-brand-border/60 flex flex-col sm:flex-row justify-between gap-2.5 bg-[#FAF9F6]">
+          {/* Controls Bar - Collapsible on Mobile */}
+          <div className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} sm:flex p-2.5 sm:p-4 border-b border-brand-border/60 flex-col sm:flex-row justify-between gap-2 sm:gap-2.5 bg-[#FAF9F6]`}>
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-ink/40 h-4 w-4 pointer-events-none" />
               <input
@@ -1030,7 +1111,7 @@ export const ResultsView = () => {
                 placeholder="Öğrenci adı veya okul no ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-brand-border/80 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-brand-ink placeholder-brand-ink/40 font-medium focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 focus:outline-none transition-all"
+                className="w-full bg-white border border-brand-border/80 rounded-xl pl-9 pr-8 py-1.5 sm:py-2 text-xs sm:text-sm text-brand-ink placeholder-brand-ink/40 font-medium focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 focus:outline-none transition-all"
               />
               {searchQuery && (
                 <button 
@@ -1042,12 +1123,12 @@ export const ResultsView = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="relative">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="relative flex-1 sm:flex-none">
                 <select
                   value={classNameFilter}
                   onChange={(e) => setClassNameFilter(e.target.value)}
-                  className="appearance-none pl-3 pr-7 py-2 bg-white border border-brand-border/80 rounded-xl text-xs text-brand-ink font-semibold focus:outline-none focus:border-brand-accent min-w-[130px] shadow-xs cursor-pointer"
+                  className="w-full sm:w-auto appearance-none pl-3 pr-7 py-1.5 sm:py-2 bg-white border border-brand-border/80 rounded-xl text-xs text-brand-ink font-semibold focus:outline-none focus:border-brand-accent min-w-[110px] sm:min-w-[130px] shadow-xs cursor-pointer"
                 >
                   <option value="all">Tüm Şubeler</option>
                   {filteredUniqueClasses.map(c => (
@@ -1060,7 +1141,7 @@ export const ResultsView = () => {
               {(searchQuery || classNameFilter !== 'all' || selectedGrade !== 'all') && (
                 <button 
                   onClick={() => { setSearchQuery(''); setClassNameFilter('all'); setSelectedGrade('all'); }}
-                  className="flex items-center gap-1 px-2.5 py-2 text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl font-bold shrink-0 transition-colors shadow-xs active:scale-95"
+                  className="flex items-center gap-1 px-2.5 py-1.5 sm:py-2 text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl font-bold shrink-0 transition-colors shadow-xs active:scale-95 cursor-pointer"
                 >
                   <X className="w-3 h-3" />
                   <span>Temizle</span>
@@ -1234,12 +1315,37 @@ export const ResultsView = () => {
           </div>
           {/* Mobile Modern Cards View */}
           <div className="md:hidden flex-1 overflow-auto w-full p-3 flex flex-col gap-2.5 bg-[#F9F8F5]">
-            <div className="flex items-center justify-between px-1 py-0.5 text-xs text-brand-ink/60 font-semibold">
+            <div className="flex items-center justify-between px-1 py-1 text-xs text-brand-ink/60 font-semibold">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-brand-ink">{filteredResults.length}</span>
                 <span>öğrenci sonucu</span>
               </div>
-              <span className="text-[11px] text-brand-ink/50">Profil için isme dokunun</span>
+              {userRole === 'admin' ? (
+                <button 
+                  onClick={() => {
+                    if (selectedResultIds.length === filteredResults.length && filteredResults.length > 0) {
+                      setSelectedResultIds([]);
+                    } else {
+                      setSelectedResultIds(filteredResults.map(r => r.id));
+                    }
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-brand-accent font-bold hover:underline cursor-pointer active:scale-95 transition-all"
+                >
+                  {selectedResultIds.length === filteredResults.length && filteredResults.length > 0 ? (
+                    <>
+                      <CheckSquare className="w-4 h-4 text-brand-accent" />
+                      <span>Seçimi Kaldır</span>
+                    </>
+                  ) : (
+                    <>
+                      <Square className="w-4 h-4 text-brand-ink/40" />
+                      <span>Tümünü Seç</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <span className="text-[11px] text-brand-ink/50">Profil için isme dokunun</span>
+              )}
             </div>
 
             {filteredResults.map((result) => {
