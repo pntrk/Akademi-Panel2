@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ExamHall, SeatingPlanItem } from '../types';
 import { generateId, exportToExcel } from '../lib/utils';
-import { Plus, Trash2, Download, LayoutTemplate, X, Users, RefreshCw, AlertCircle, Building, MapPin } from 'lucide-react';
+import { Plus, Trash2, Download, LayoutTemplate, X, Users, RefreshCw, AlertCircle, Building, MapPin, Search, Filter, ChevronDown, CheckCircle2, Eye } from 'lucide-react';
 
 export const HallsView = () => {
   const { state, setExamHalls } = useAppContext();
@@ -11,6 +11,12 @@ export const HallsView = () => {
   const [editingHallId, setEditingHallId] = useState<string | null>(null);
   const [mobileModalTab, setMobileModalTab] = useState<'settings' | 'preview'>('settings');
   
+  // Mobile Quick Toggles & Filters
+  const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [occupancyFilter, setOccupancyFilter] = useState<'all' | 'full' | 'partial' | 'empty'>('all');
+
   // Modal states
   const [hallName, setHallName] = useState('');
   const [columns, setColumns] = useState<{id: string, deskCount: number, seatsPerDesk: number, name: string}[]>([
@@ -198,12 +204,12 @@ export const HallsView = () => {
     }
   };
 
-  const handleDrop = (e: React.DragEvent, targetSeatNum: number) => {
+  const handleDrop = (e: React.DragEvent | { preventDefault: () => void; dataTransfer?: any }, targetSeatNum: number) => {
     e.preventDefault();
     setDragOverSeatNum(null);
     
     // Fallback to dataTransfer if state was lost
-    const sourceSeatNumStr = e.dataTransfer.getData('text/plain');
+    const sourceSeatNumStr = (e as any).dataTransfer?.getData ? (e as any).dataTransfer.getData('text/plain') : null;
     const sourceSeatNum = draggedSeatNum !== null ? draggedSeatNum : (sourceSeatNumStr ? parseInt(sourceSeatNumStr, 10) : null);
     
     if (sourceSeatNum === null || sourceSeatNum === targetSeatNum) {
@@ -236,6 +242,20 @@ export const HallsView = () => {
     setTimeout(() => {
       setShowSaveToast(false);
     }, 1500);
+  };
+
+  // Touch / Click to swap desks easily on mobile
+  const handleSeatClick = (seatNum: number) => {
+    if (draggedSeatNum === null) {
+      const hasStudent = seatingPlan.some(s => s.deskNumber === seatNum);
+      if (hasStudent) {
+        setDraggedSeatNum(seatNum);
+      }
+    } else if (draggedSeatNum === seatNum) {
+      setDraggedSeatNum(null);
+    } else {
+      handleDrop({ preventDefault: () => {} } as any, seatNum);
+    }
   };
 
   const handleGenerateSeating = () => {
@@ -296,8 +316,49 @@ export const HallsView = () => {
   };
 
   const removeHall = (hallId: string) => {
-    setExamHalls(state.examHalls.filter(h => h.id !== hallId));
+    const hall = state.examHalls.find(h => h.id === hallId);
+    const hallName = hall?.name || 'Bu salonu';
+    if (window.confirm(`${hallName} silinecektir. Onaylıyor musunuz?`)) {
+      setExamHalls(state.examHalls.filter(h => h.id !== hallId));
+    }
   };
+
+  // Summary Stats
+  const summaryStats = useMemo(() => {
+    const totalHalls = state.examHalls.length;
+    const totalCapacity = state.examHalls.reduce((acc, h) => acc + (h.capacity || 0), 0);
+    const totalSeated = state.examHalls.reduce((acc, h) => acc + (h.seatingPlan?.length || 0), 0);
+    const occupancyRate = totalCapacity > 0 ? Math.round((totalSeated / totalCapacity) * 100) : 0;
+
+    return {
+      totalHalls,
+      totalCapacity,
+      totalSeated,
+      occupancyRate
+    };
+  }, [state.examHalls]);
+
+  // Filtered Halls
+  const filteredHalls = useMemo(() => {
+    return state.examHalls.filter(hall => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const nameMatch = hall.name.toLowerCase().includes(q);
+        const classMatch = (hall.selectedClasses || []).some(c => c.toLowerCase().includes(q));
+        if (!nameMatch && !classMatch) return false;
+      }
+
+      if (occupancyFilter !== 'all') {
+        const used = hall.seatingPlan?.length || 0;
+        const total = hall.capacity || 0;
+        if (occupancyFilter === 'full' && (used < total || total === 0)) return false;
+        if (occupancyFilter === 'empty' && used > 0) return false;
+        if (occupancyFilter === 'partial' && (used === 0 || used >= total)) return false;
+      }
+
+      return true;
+    });
+  }, [state.examHalls, searchQuery, occupancyFilter]);
 
   const handleExport = (hall: ExamHall) => {
     if (!hall.seatingPlan || hall.seatingPlan.length === 0) {
@@ -496,76 +557,356 @@ export const HallsView = () => {
   };
 
   return (
-    <div className="space-y-2.5 sm:space-y-6 md:space-y-8 flex flex-col h-full relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 sm:mb-4">
-        <div className="w-full sm:w-auto">
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <h2 className="text-lg sm:text-3xl font-serif text-[#5a5a40] font-bold">Sınav Salonları</h2>
-            <span className="sm:hidden text-[11px] font-medium text-[#8e8d82] bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-[#e6e2d3]">
+    <div className="space-y-3 sm:space-y-6 pb-20 md:pb-12 flex flex-col h-full relative">
+      {/* Header */}
+      <header className="flex flex-row justify-between items-center gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif text-[#5a5a40] font-bold tracking-tight">
+              Sınav Salonları
+            </h1>
+            <span className="sm:hidden text-xs font-bold text-[#8e8d82] bg-[#f5f4f0] px-2 py-0.5 rounded-md border border-[#e6e2d3]">
               {state.examHalls.length} Salon
             </span>
           </div>
-          <p className="hidden sm:block text-[#8e8d82] text-xs sm:text-sm mt-0.5">Sınav salonlarını, kapasitelerini ve otomatik oturma düzenlerini yönetin</p>
+          <p className="hidden sm:block text-[#8e8d82] text-xs sm:text-sm mt-0.5">
+            Sınav salonlarını, kapasitelerini ve otomatik oturma düzenlerini yönetin
+          </p>
         </div>
-        <button onClick={openNewModal} className="flex items-center justify-center w-full sm:w-auto px-4 sm:px-6 py-2 bg-[#5a5a40] text-white rounded-xl sm:rounded-full text-xs sm:text-sm font-bold hover:bg-[#43423b] active:scale-95 shadow-xs transition-all cursor-pointer">
-            <Plus className="h-4 w-4 mr-1.5" /> Yeni Salon Oluştur
+
+        <button 
+          onClick={openNewModal} 
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-[#5a5a40] text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-[#43423b] active:scale-95 shadow-sm transition-all cursor-pointer shrink-0"
+        >
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Yeni Salon Oluştur</span>
+          <span className="sm:hidden">Yeni Salon</span>
+        </button>
+      </header>
+
+      {/* Mobile Quick Toggles */}
+      <div className="flex sm:hidden items-center gap-1.5 px-0.5">
+        <button
+          type="button"
+          onClick={() => setIsMobileStatsOpen(prev => !prev)}
+          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+            isMobileStatsOpen 
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-900' 
+              : 'bg-white border-[#e6e2d3] text-[#5a5a40]/70 hover:text-[#5a5a40] shadow-2xs'
+          }`}
+        >
+          <Building className="w-3 h-3 text-amber-600 shrink-0" />
+          <span>İstatistikler</span>
+          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-[#5a5a40]/40'}`} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setIsMobileFiltersOpen(prev => !prev)}
+          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+            isMobileFiltersOpen || searchQuery || occupancyFilter !== 'all'
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900' 
+              : 'bg-white border-[#e6e2d3] text-[#5a5a40]/70 hover:text-[#5a5a40] shadow-2xs'
+          }`}
+        >
+          <Filter className="w-3 h-3 text-emerald-600 shrink-0" />
+          <span>Filtreler</span>
+          {(searchQuery || occupancyFilter !== 'all') && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          )}
+          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-[#5a5a40]/40'}`} />
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-auto pb-10">
-        {state.examHalls.map(hall => {
+      {/* Mobile Active Filter Chips */}
+      {!isMobileFiltersOpen && (searchQuery || occupancyFilter !== 'all') && (
+        <div className="flex sm:hidden items-center gap-1 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+          {searchQuery && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-medium border border-amber-200 shrink-0">
+              <span>"{searchQuery}"</span>
+              <button onClick={() => setSearchQuery('')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {occupancyFilter !== 'all' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-medium border border-blue-200 shrink-0">
+              <span>
+                {occupancyFilter === 'full' ? 'Tam Dolu' : occupancyFilter === 'partial' ? 'Kısmi Dolu' : 'Boş'}
+              </span>
+              <button onClick={() => setOccupancyFilter('all')}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          <button 
+            onClick={() => { setSearchQuery(''); setOccupancyFilter('all'); }}
+            className="text-[10px] text-rose-600 font-bold px-1 py-0.5 shrink-0 underline cursor-pointer"
+          >
+            Sıfırla
+          </button>
+        </div>
+      )}
+
+      {/* Summary Stats - Collapsible on Mobile */}
+      <section className={`${isMobileStatsOpen ? 'grid' : 'hidden'} sm:grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-4 md:gap-5`}>
+        {/* Stat 1: Toplam Salon */}
+        <div className="bg-white px-2.5 py-2 sm:p-4 md:p-5 border border-[#e6e2d3] rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-[#d4d19d]">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-[#8e8d82] uppercase tracking-wider truncate">
+              Toplam Salon
+            </span>
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Building className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-[#5a5a40] leading-none">{summaryStats.totalHalls}</span>
+            <span className="text-[9px] sm:text-xs text-[#8e8d82] font-medium">salon</span>
+          </div>
+        </div>
+
+        {/* Stat 2: Toplam Kapasite */}
+        <div className="bg-white px-2.5 py-2 sm:p-4 md:p-5 border border-[#e6e2d3] rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-[#d4d19d]">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-[#8e8d82] uppercase tracking-wider truncate">
+              Toplam Kapasite
+            </span>
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <LayoutTemplate className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-[#5a5a40] leading-none">{summaryStats.totalCapacity}</span>
+            <span className="text-[9px] sm:text-xs text-[#8e8d82] font-medium">sıra/kişi</span>
+          </div>
+        </div>
+
+        {/* Stat 3: Yerleşen Öğrenci */}
+        <div className="bg-white px-2.5 py-2 sm:p-4 md:p-5 border border-[#e6e2d3] rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-[#d4d19d]">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-[#8e8d82] uppercase tracking-wider truncate">
+              Yerleşen Öğrenci
+            </span>
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+              <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-emerald-700 leading-none">{summaryStats.totalSeated}</span>
+            <span className="text-[9px] sm:text-xs text-emerald-600/70 font-medium">öğrenci</span>
+          </div>
+        </div>
+
+        {/* Stat 4: Ortalama Doluluk */}
+        <div className="bg-white px-2.5 py-2 sm:p-4 md:p-5 border border-[#e6e2d3] rounded-xl sm:rounded-2xl shadow-2xs sm:shadow-sm flex items-center sm:flex-col justify-between sm:justify-between gap-1.5 sm:gap-2 transition-all hover:border-[#d4d19d]">
+          <div className="flex items-center gap-1.5 min-w-0 sm:w-full sm:justify-between sm:mb-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-[#8e8d82] uppercase tracking-wider truncate">
+              Ortalama Doluluk
+            </span>
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className="font-serif text-sm sm:text-2xl md:text-3xl font-bold text-amber-700 leading-none">%{summaryStats.occupancyRate}</span>
+            <span className="text-[9px] sm:text-xs text-amber-600/70 font-medium">oran</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Filter / Search Controls - Collapsible on Mobile */}
+      <div className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} sm:flex p-2.5 sm:p-4 bg-white rounded-2xl border border-[#e6e2d3] shadow-2xs sm:shadow-sm flex-col sm:flex-row justify-between gap-2 sm:gap-2.5`}>
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8e8d82] h-4 w-4 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Salon adı veya atanmış şube ara..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl pl-9 pr-8 py-1.5 sm:py-2 text-xs sm:text-sm text-[#5a5a40] placeholder-[#8e8d82] font-medium focus:border-[#d4d19d] focus:ring-2 focus:ring-[#d4d19d]/30 focus:outline-none transition-all"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8e8d82] hover:text-[#5a5a40] p-1 rounded-md"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="relative flex-1 sm:flex-none">
+            <select
+              value={occupancyFilter}
+              onChange={(e) => setOccupancyFilter(e.target.value as any)}
+              className="w-full sm:w-auto appearance-none pl-3 pr-7 py-1.5 sm:py-2 bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl text-xs text-[#5a5a40] font-semibold focus:outline-none focus:border-[#d4d19d] min-w-[130px] shadow-2xs cursor-pointer"
+            >
+              <option value="all">Tüm Durumlar</option>
+              <option value="full">Tam Dolu Salonlar</option>
+              <option value="partial">Kısmi Dolu Salonlar</option>
+              <option value="empty">Boş Salonlar</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8e8d82] h-3 w-3 pointer-events-none" />
+          </div>
+
+          {(searchQuery || occupancyFilter !== 'all') && (
+            <button 
+              onClick={() => { setSearchQuery(''); setOccupancyFilter('all'); }}
+              className="flex items-center gap-1 px-2.5 py-1.5 sm:py-2 text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl font-bold shrink-0 transition-colors shadow-2xs active:scale-95 cursor-pointer"
+            >
+              <X className="w-3 h-3" />
+              <span>Temizle</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Halls Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 overflow-auto pb-10">
+        {filteredHalls.map(hall => {
           const usedCapacity = hall.seatingPlan?.length || 0;
           const totalCapacity = hall.capacity || 0;
           const percentage = totalCapacity > 0 ? (usedCapacity / totalCapacity) * 100 : 0;
+          const isFull = percentage >= 100;
+          const isEmpty = usedCapacity === 0;
           
           return (
-            <div key={hall.id} className="bg-white rounded-[32px] p-6 shadow-sm border border-[#e6e2d3] flex flex-col group hover:border-[#d4d19d] transition-all relative">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-serif text-[#5a5a40] font-bold">{hall.name}</h3>
-                  <div className="text-xs text-[#8e8d82] mt-1 flex items-center">
-                    <Building className="w-3.5 h-3.5 mr-1" />
-                    Kapasite: {totalCapacity} Kişi
+            <div 
+              key={hall.id} 
+              className="bg-white rounded-2xl p-3.5 sm:p-5 shadow-2xs sm:shadow-sm border border-[#e6e2d3] hover:border-[#d4d19d] flex flex-col justify-between transition-all group relative"
+            >
+              {/* Card Header Row */}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-serif text-[#5a5a40] font-bold leading-tight truncate">
+                      {hall.name}
+                    </h3>
+                    {isFull ? (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                        Tam Dolu
+                      </span>
+                    ) : isEmpty ? (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200 shrink-0">
+                        Boş
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                        %{percentage.toFixed(0)} Dolu
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-[#8e8d82] mt-1 flex items-center gap-1.5 flex-wrap">
+                    <span className="flex items-center gap-1 font-medium">
+                      <Building className="w-3 h-3 text-[#8e8d82]" />
+                      {totalCapacity} Kişi Kapasite
+                    </span>
+                    <span>•</span>
+                    <span className="font-medium text-[#8e8d82]">
+                      {hall.columns?.length || 0} Sütun
+                    </span>
                   </div>
                 </div>
-                <div className="flex space-x-1">
-                  <button onClick={() => handleExport(hall)} className="p-2 text-[#5a5a40] hover:bg-[#f5f5f0] bg-white border border-transparent hover:border-[#e6e2d3] rounded-full transition-colors" title="Yoklama Listesi İndir">
-                    <Download className="w-4 h-4"/>
+
+                {/* Quick actions top-right */}
+                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                  <button 
+                    onClick={() => handleExport(hall)} 
+                    className="p-1.5 sm:p-2 text-[#5a5a40] hover:text-[#43423b] hover:bg-[#f5f5f0] rounded-lg transition-colors cursor-pointer border border-transparent hover:border-[#e6e2d3]" 
+                    title="Yoklama Listesi İndir"
+                    aria-label="Yoklama Listesi İndir"
+                  >
+                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
-                  <button onClick={() => removeHall(hall.id)} className="p-2 text-[#8e8d82] hover:text-red-500 hover:bg-red-50 bg-white border border-transparent rounded-full transition-colors" title="Salonu Sil">
-                    <Trash2 className="w-4 h-4"/>
+                  <button 
+                    onClick={() => removeHall(hall.id)} 
+                    className="p-1.5 sm:p-2 text-[#8e8d82] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-rose-200" 
+                    title="Salonu Sil"
+                    aria-label="Salonu Sil"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                 </div>
               </div>
-              
-              <div className="mt-auto pt-4 border-t border-[#f5f5f0] space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="font-semibold text-[#8e8d82]">Doluluk</span>
-                  <span className="font-bold text-[#5a5a40]">{usedCapacity} / {totalCapacity}</span>
+
+              {/* Assigned Classes / Badges */}
+              {hall.selectedClasses && hall.selectedClasses.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap my-1.5 py-1.5 border-t border-b border-[#f5f5f0]">
+                  <span className="text-[10px] font-semibold text-[#8e8d82] mr-0.5">Şubeler:</span>
+                  {hall.selectedClasses.slice(0, 4).map(cls => (
+                    <span key={cls} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#fcfbf7] text-[#5a5a40] border border-[#e6e2d3]">
+                      {cls}
+                    </span>
+                  ))}
+                  {hall.selectedClasses.length > 4 && (
+                    <span className="text-[10px] font-bold text-[#8e8d82]">
+                      +{hall.selectedClasses.length - 4}
+                    </span>
+                  )}
                 </div>
-                <div className="w-full bg-[#f5f5f0] h-2 rounded-full overflow-hidden">
+              )}
+
+              {/* Occupancy Progress */}
+              <div className="mt-auto pt-2 space-y-1.5 sm:space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-[#8e8d82] text-[11px]">Yerleşen Öğrenci</span>
+                  <span className="font-bold text-[#5a5a40] text-xs">
+                    {usedCapacity} <span className="text-[#8e8d82] font-normal">/ {totalCapacity}</span>
+                  </span>
+                </div>
+                <div className="w-full bg-[#f5f5f0] h-2 rounded-full overflow-hidden border border-[#e6e2d3]/50">
                   <div 
-                    className={`h-full rounded-full transition-all ${percentage >= 100 ? 'bg-amber-500' : 'bg-[#d4d19d]'}`} 
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      percentage >= 100 
+                        ? 'bg-emerald-600' 
+                        : percentage > 0 
+                        ? 'bg-amber-500' 
+                        : 'bg-transparent'
+                    }`} 
                     style={{ width: `${Math.min(100, percentage)}%` }} 
                   />
                 </div>
                 
+                {/* Main Action Button */}
                 <button 
                   onClick={() => openEditModal(hall)} 
-                  className="w-full py-2 bg-[#fcfbf7] border border-[#e6e2d3] text-[#5a5a40] font-bold text-xs rounded-full hover:bg-[#f5f5f0] transition-colors"
+                  className="w-full mt-2 py-2 px-3 bg-[#fcfbf7] border border-[#e6e2d3] text-[#5a5a40] hover:bg-white hover:border-[#d4d19d] font-bold text-xs rounded-xl transition-all shadow-2xs flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
                 >
-                  Detayları ve Oturma Düzenini Gör
+                  <Eye className="w-3.5 h-3.5 text-[#5a5a40] shrink-0" />
+                  <span>Detayları ve Oturma Düzenini Gör</span>
                 </button>
               </div>
             </div>
           );
         })}
         
-        {state.examHalls.length === 0 && (
-            <div className="col-span-full text-center p-16 bg-white rounded-[32px] border border-dashed border-[#d6d2c3] text-[#8e8d82]">
-                <LayoutTemplate className="w-12 h-12 mx-auto mb-4 text-[#d6d2c3]" />
-                <p>Henüz sınav salonu oluşturmadınız.<br/>Yukarıdan yeni bir salon oluşturarak başlayabilirsiniz.</p>
-            </div>
+        {filteredHalls.length === 0 && (
+          <div className="col-span-full text-center p-8 sm:p-12 bg-white rounded-2xl border border-dashed border-[#e6e2d3] text-[#8e8d82]">
+            <LayoutTemplate className="w-10 h-10 mx-auto mb-3 text-[#8e8d82]/40" />
+            <h4 className="text-sm font-bold text-[#5a5a40] mb-1">
+              {state.examHalls.length === 0 ? 'Henüz sınav salonu oluşturmadınız' : 'Aramanızla eşleşen sınav salonu bulunamadı'}
+            </h4>
+            <p className="text-xs text-[#8e8d82] max-w-sm mx-auto mb-4">
+              {state.examHalls.length === 0 
+                ? 'Yukarıdaki "Yeni Salon Oluştur" butonuna tıklayarak salon ve otomatik oturma düzeni oluşturabilirsiniz.' 
+                : 'Farklı bir arama terimi deneyin veya filtreleri temizleyin.'}
+            </p>
+            {state.examHalls.length === 0 ? (
+              <button 
+                onClick={openNewModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#5a5a40] text-white rounded-xl text-xs font-bold hover:bg-[#43423b] active:scale-95 shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>İlk Salonu Oluştur</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => { setSearchQuery(''); setOccupancyFilter('all'); }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#f5f5f0] text-[#5a5a40] rounded-xl text-xs font-bold hover:bg-[#e6e2d3] transition-all cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+                <span>Filtreleri Sıfırla</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -573,27 +914,27 @@ export const HallsView = () => {
       {/* EXAM HALL MODAL */}
       {/* ========================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-[32px] border border-[#e6e2d3] shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-slide-up max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-2 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl sm:rounded-[32px] border border-[#e6e2d3] shadow-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col overflow-hidden animate-slide-up max-h-[92vh]">
             
             {/* Header */}
-            <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-4 sm:p-5 flex items-center justify-between shrink-0">
-              <div className="flex items-center space-x-3">
-                <div className="bg-[#d4d19d]/30 p-2 sm:p-2.5 rounded-2xl border border-[#d4d19d]/50">
-                  <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-[#5a5a40]" />
+            <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-3 sm:p-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-2.5 sm:space-x-3">
+                <div className="bg-[#d4d19d]/30 p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl border border-[#d4d19d]/50">
+                  <MapPin className="h-4 w-4 sm:h-6 sm:w-6 text-[#5a5a40]" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-serif text-[#5a5a40] font-bold leading-tight">
+                  <h3 className="text-base sm:text-xl font-serif text-[#5a5a40] font-bold leading-tight">
                     {editingHallId ? 'Sınav Salonu Düzenle' : 'Yeni Sınav Salonu Oluştur'}
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-[#8e8d82]">
+                  <p className="text-[10px] sm:text-xs text-[#8e8d82]">
                     Salon detayları, kapasite ve otomatik oturma düzeni
                   </p>
                 </div>
               </div>
               <button 
                 onClick={closeModal}
-                className="p-2 text-[#8e8d82] hover:text-[#5a5a40] hover:bg-[#f5f5f0] rounded-full transition-all"
+                className="p-1.5 sm:p-2 text-[#8e8d82] hover:text-[#5a5a40] hover:bg-[#f5f5f0] rounded-full transition-all"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -622,7 +963,7 @@ export const HallsView = () => {
                     : 'text-[#8e8d82] hover:text-[#5a5a40]'
                 }`}
               >
-                <Users className="w-3.5 h-3.5" />
+                <LayoutTemplate className="w-3.5 h-3.5" />
                 <span>2. Oturma Şeması ({seatingPlan.length}/{capacity})</span>
               </button>
             </div>
@@ -962,11 +1303,15 @@ export const HallsView = () => {
               }`}>
                 <div className="flex justify-between items-center mb-4 shrink-0">
                   <div>
-                    <h4 className="text-lg font-serif font-bold text-[#5a5a40]">Oturma Düzeni Önizlemesi</h4>
+                    <h4 className="text-base sm:text-lg font-serif font-bold text-[#5a5a40]">Oturma Düzeni Önizlemesi</h4>
                     {seatingPlan.length > 0 && (
-                      <p className="text-xs font-medium text-amber-600 mt-1 flex items-center">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Öğrencileri sürükleyip bırakarak yerlerini değiştirebilirsiniz.
+                      <p className="text-[11px] sm:text-xs font-medium text-amber-700 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3 shrink-0" />
+                        <span>
+                          {draggedSeatNum 
+                            ? `${draggedSeatNum}. sıra seçildi. Taşımak için hedef sıraya dokunun.`
+                            : 'Öğrenciye dokunup ardından hedef sıraya dokunarak kolayca yer değiştirebilirsiniz.'}
+                        </span>
                       </p>
                     )}
                   </div>
@@ -985,7 +1330,7 @@ export const HallsView = () => {
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden relative bg-[#fcfbf7]/50 border border-[#e6e2d3] rounded-2xl shadow-inner p-2 sm:p-4 print:bg-white print:border-none print:shadow-none print:p-0 print:overflow-visible" id="seating-plan-printable">
+                <div className="flex-1 overflow-y-auto overflow-x-auto relative bg-[#fcfbf7]/50 border border-[#e6e2d3] rounded-2xl shadow-inner p-2 sm:p-4 print:bg-white print:border-none print:shadow-none print:p-0 print:overflow-visible" id="seating-plan-printable">
                   {showSaveToast && (
                     <div className="absolute top-4 right-4 z-50 bg-green-50 text-green-700 px-3 py-1.5 rounded-full shadow-sm border border-green-200 text-xs font-bold flex items-center print:hidden animate-in fade-in slide-in-from-top-2 duration-300">
                       <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
@@ -999,7 +1344,7 @@ export const HallsView = () => {
                   </div>
                   
                   {seatingPlan.length > 0 ? (
-                    <div className="flex gap-2 sm:gap-4 items-start w-full justify-between print:w-full print:justify-center print:gap-8 pb-4">
+                    <div className="flex gap-2 sm:gap-4 items-start min-w-[340px] sm:min-w-full justify-start sm:justify-between print:w-full print:justify-center print:gap-8 pb-4">
                       {columns.map((col, colIdx) => (
                         <div key={col.id} className="flex flex-col gap-2 sm:gap-3 flex-1 min-w-0">
                           <div className="text-center font-bold text-[#8e8d82] text-[10px] sm:text-xs uppercase tracking-wider print:text-black truncate px-1">
@@ -1022,17 +1367,18 @@ export const HallsView = () => {
                                   <div 
                                     key={seatIdx}
                                     draggable={!!student}
+                                    onClick={() => handleSeatClick(seatNum)}
                                     onDragStart={(e) => {
                                       if (student) handleDragStart(e, seatNum);
                                     }}
                                     onDragOver={(e) => handleDragOver(e, seatNum)}
                                     onDragLeave={(e) => handleDragLeave(e, seatNum)}
                                     onDrop={(e) => handleDrop(e, seatNum)}
-                                    className={`flex flex-col items-center justify-center p-1 sm:p-2 rounded-lg border relative min-h-[4.5rem] sm:min-h-[5rem] flex-1 min-w-0 print:h-24 print:w-32 transition-transform hover:scale-105 hover:z-10 ${
+                                    className={`flex flex-col items-center justify-center p-1 sm:p-2 rounded-lg border relative min-h-[4.5rem] sm:min-h-[5rem] flex-1 min-w-0 print:h-24 print:w-32 transition-transform hover:scale-105 hover:z-10 cursor-pointer ${
                                       student 
-                                        ? 'bg-white border-[#d4d19d] shadow-sm print:border-black cursor-grab active:cursor-grabbing' 
+                                        ? 'bg-white border-[#d4d19d] shadow-2xs print:border-black cursor-grab active:cursor-grabbing' 
                                         : 'bg-[#fcfbf7] border-dashed border-[#e6e2d3] print:border-gray-300'
-                                    } ${draggedSeatNum === seatNum ? 'opacity-50 ring-2 ring-[#B08D57]' : ''} ${dragOverSeatNum === seatNum ? 'ring-2 ring-amber-500 bg-amber-50 scale-105' : ''}`}
+                                    } ${draggedSeatNum === seatNum ? 'opacity-90 ring-2 ring-amber-500 bg-amber-50 scale-105 z-20 shadow-md' : ''} ${dragOverSeatNum === seatNum ? 'ring-2 ring-amber-500 bg-amber-50 scale-105' : ''}`}
                                   >
                                     <span className="absolute top-0.5 left-1 sm:top-1 sm:left-1.5 text-[8px] sm:text-[10px] font-bold text-[#8e8d82] print:text-black print:text-xs">
                                       {seatNum}

@@ -613,44 +613,37 @@ export const StudentsView = () => {
       </header>
 
       {/* Mobile Quick Toggles & Active Filter Pill Bar */}
-      <div className="flex sm:hidden items-center justify-between gap-1.5 px-0.5">
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <button
-            type="button"
-            onClick={() => setIsMobileStatsOpen(prev => !prev)}
-            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
-              isMobileStatsOpen 
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-900' 
-                : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
-            }`}
-          >
-            <Users className="w-3 h-3 text-amber-600 shrink-0" />
-            <span>İstatistikler</span>
-            <ChevronDown className={`w-3 h-3 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
-          </button>
+      <div className="flex sm:hidden items-center gap-1.5 px-0.5">
+        <button
+          type="button"
+          onClick={() => setIsMobileStatsOpen(prev => !prev)}
+          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+            isMobileStatsOpen 
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-900' 
+              : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+          }`}
+        >
+          <Users className="w-3 h-3 text-amber-600 shrink-0" />
+          <span>İstatistikler</span>
+          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileStatsOpen ? 'rotate-180 text-amber-700' : 'text-brand-ink/40'}`} />
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setIsMobileFiltersOpen(prev => !prev)}
-            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
-              isMobileFiltersOpen || searchQuery || classFilter || examFilter || hallFilter
-                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900' 
-                : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
-            }`}
-          >
-            <Filter className="w-3 h-3 text-emerald-600 shrink-0" />
-            <span>Filtreler</span>
-            {(searchQuery || classFilter || examFilter || hallFilter) && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            )}
-            <ChevronDown className={`w-3 h-3 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
-          </button>
-        </div>
-
-        {/* Compact Mobile Count Badge */}
-        <span className="text-[10px] font-semibold text-brand-ink/60 bg-[#F5F4F0] px-2 py-1 rounded-md shrink-0 border border-brand-border/40">
-          {filteredStudents.length} Öğrenci
-        </span>
+        <button
+          type="button"
+          onClick={() => setIsMobileFiltersOpen(prev => !prev)}
+          className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+            isMobileFiltersOpen || searchQuery || classFilter || examFilter || hallFilter
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-900' 
+              : 'bg-white border-brand-border/80 text-brand-ink/70 hover:text-brand-ink shadow-2xs'
+          }`}
+        >
+          <Filter className="w-3 h-3 text-emerald-600 shrink-0" />
+          <span>Filtreler</span>
+          {(searchQuery || classFilter || examFilter || hallFilter) && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          )}
+          <ChevronDown className={`w-3 h-3 transition-transform ${isMobileFiltersOpen ? 'rotate-180 text-emerald-700' : 'text-brand-ink/40'}`} />
+        </button>
       </div>
 
       {/* Mobile Active Filter Chips (shows when filters are active and drawer is closed) */}

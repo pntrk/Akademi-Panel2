@@ -31,6 +31,7 @@ export const BudgetView = () => {
   const [selectedDebtIds, setSelectedDebtIds] = React.useState<string[]>([]);
   const [selectedStudentDebtKeys, setSelectedStudentDebtKeys] = React.useState<string[]>([]);
   const [mobileBudgetTab, setMobileBudgetTab] = React.useState<'all' | 'incomes' | 'expenses' | 'debts'>('all');
+  const [isMobileStatsOpen, setIsMobileStatsOpen] = React.useState(false);
 
   // Collapse/expand states for groups
   const [expandedIncomes, setExpandedIncomes] = React.useState<Record<string, boolean>>({});
@@ -438,19 +439,83 @@ export const BudgetView = () => {
               </div>
               <h2 className="text-lg sm:text-3xl md:text-4xl font-serif text-[#5a5a40] font-bold tracking-tight leading-tight">Bütçe Takibi</h2>
             </div>
-            <span className="sm:hidden text-[11px] font-medium text-brand-ink/50 bg-[#f5f4f0] px-2 py-0.5 rounded-full border border-brand-border/60">
+            <span className="sm:hidden text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
               Net: ₺{(totalIncome - totalExpense).toLocaleString('tr-TR')}
             </span>
           </div>
           <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-0.5">Sınav ve yayın bazlı gruplanmış gelir, harcama, borç takibi ve finansal özet</p>
         </div>
+
+        {/* Mobile Quick Toggles */}
+        <div className="sm:hidden flex items-center justify-between w-full gap-2 pt-0.5">
+          <button
+            type="button"
+            onClick={() => setIsMobileStatsOpen(!isMobileStatsOpen)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              isMobileStatsOpen 
+                ? 'bg-[#5a5a40] text-white shadow-xs' 
+                : 'bg-[#f5f5f0] text-[#5a5a40] hover:bg-[#e6e2d3]'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Finansal Özet</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMobileStatsOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          <div className="flex items-center bg-[#f5f4f0] p-0.5 rounded-xl border border-[#e6e2d3] gap-0.5">
+            <button
+              type="button"
+              onClick={() => setMobileBudgetTab('all')}
+              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                mobileBudgetTab === 'all'
+                  ? 'bg-white text-brand-ink shadow-xs'
+                  : 'text-brand-ink/60'
+              }`}
+            >
+              Tümü
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileBudgetTab('incomes')}
+              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                mobileBudgetTab === 'incomes'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-emerald-800'
+              }`}
+            >
+              Gelir
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileBudgetTab('expenses')}
+              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                mobileBudgetTab === 'expenses'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-rose-800'
+              }`}
+            >
+              Gider
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileBudgetTab('debts')}
+              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                mobileBudgetTab === 'debts'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-amber-800'
+              }`}
+            >
+              Borç
+            </button>
+          </div>
+        </div>
         
-        {/* Top Summary Cards (2x2 grid on mobile, 4 in a row on desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full xl:w-auto shrink-0">
+        {/* Top Summary Cards (Collapsible on mobile, always visible on desktop) */}
+        <div className={`${isMobileStatsOpen ? 'grid' : 'hidden'} sm:grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full xl:w-auto shrink-0`}>
           <button 
             type="button"
             onClick={() => setMobileBudgetTab(prev => prev === 'incomes' ? 'all' : 'incomes')}
-            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
               mobileBudgetTab === 'incomes'
                 ? 'bg-emerald-100 border-emerald-400 ring-2 ring-emerald-500/30'
                 : 'bg-emerald-50/80 border-emerald-200/80 hover:border-emerald-300'
@@ -466,7 +531,7 @@ export const BudgetView = () => {
           <button 
             type="button"
             onClick={() => setMobileBudgetTab(prev => prev === 'expenses' ? 'all' : 'expenses')}
-            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
               mobileBudgetTab === 'expenses'
                 ? 'bg-rose-100 border-rose-400 ring-2 ring-rose-500/30'
                 : 'bg-rose-50/80 border-rose-200/80 hover:border-rose-300'
@@ -482,7 +547,7 @@ export const BudgetView = () => {
           <button 
             type="button"
             onClick={() => setMobileBudgetTab(prev => prev === 'debts' ? 'all' : 'debts')}
-            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
               mobileBudgetTab === 'debts'
                 ? 'bg-amber-100 border-amber-400 ring-2 ring-amber-500/30'
                 : 'bg-amber-50/80 border-amber-200/80 hover:border-amber-300'
@@ -498,7 +563,7 @@ export const BudgetView = () => {
           <button 
             type="button"
             onClick={() => setMobileBudgetTab('all')}
-            className={`p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
               remaining >= 0 ? 'bg-emerald-700 text-white border-emerald-800' : 'bg-rose-700 text-white border-rose-800'
             } ${mobileBudgetTab === 'all' ? 'ring-2 ring-black/40' : ''}`}
           >
@@ -511,8 +576,8 @@ export const BudgetView = () => {
         </div>
       </header>
 
-      {/* Mobile Tab Switcher */}
-      <div className="lg:hidden flex bg-[#f5f4f0] p-1 rounded-2xl border border-[#e6e2d3] gap-1 shrink-0">
+      {/* Desktop Tab Switcher for Tablets/Laptops */}
+      <div className="hidden sm:flex lg:hidden bg-[#f5f4f0] p-1 rounded-2xl border border-[#e6e2d3] gap-1 shrink-0">
         <button
           type="button"
           onClick={() => setMobileBudgetTab('all')}
@@ -559,7 +624,7 @@ export const BudgetView = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-[32px] p-4 sm:p-6 shadow-sm border border-[#e6e2d3] flex-1 overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl sm:rounded-[32px] p-2.5 sm:p-6 shadow-xs border border-[#e6e2d3] flex-1 overflow-hidden flex flex-col">
         <div className="overflow-auto flex-1 pb-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-8 h-full">
             
