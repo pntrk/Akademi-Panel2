@@ -48,9 +48,10 @@ export const ExamsView = () => {
   const [manualStudentId, setManualStudentId] = useState('');
   const [manualStudentScore, setManualStudentScore] = useState('');
 
-  // Sınıf filtresi, arama ve sıralama durumu
+  // Sınıf filtresi, yayıncı filtresi, arama ve sıralama durumu
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGrade, setFilterGrade] = useState<string>('Tümü');
+  const [filterPublisher, setFilterPublisher] = useState<string>('Tümü');
   const [sortBy, setSortBy] = useState<'date-asc' | 'date-desc' | 'no-asc' | 'no-desc' | 'name-asc'>('date-asc');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [showPrintSettings, setShowPrintSettings] = useState(false);
@@ -141,6 +142,23 @@ export const ExamsView = () => {
     });
   }, [uniqueClasses]);
 
+  // Unique publishers compiled from exams
+  const availablePublishers = useMemo(() => {
+    const pubMap = new Map<string, string>(); // normalized -> display name
+
+    state.exams.forEach(e => {
+      if (e.publisher && e.publisher.trim()) {
+        const trimmed = e.publisher.trim();
+        const normKey = normalizeForSearch(trimmed);
+        if (normKey && !pubMap.has(normKey)) {
+          pubMap.set(normKey, trimmed);
+        }
+      }
+    });
+
+    return Array.from(pubMap.values()).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [state.exams]);
+
   // Sort and filter exams
   const filteredAndSortedExams = useMemo(() => {
     let result = [...state.exams];
@@ -171,6 +189,16 @@ export const ExamsView = () => {
           }
         }
         return false;
+      });
+    }
+
+    // Yayıncı adına göre filtrele (Sadece deneme sınavında girilen yayıncı adı bilgisi)
+    if (filterPublisher !== 'Tümü') {
+      const targetNorm = normalizeForSearch(filterPublisher);
+      result = result.filter(e => {
+        if (!e || !e.publisher) return false;
+        const pubNorm = normalizeForSearch(e.publisher.trim());
+        return pubNorm === targetNorm || pubNorm.includes(targetNorm) || targetNorm.includes(pubNorm);
       });
     }
 
@@ -265,7 +293,7 @@ export const ExamsView = () => {
     });
 
     return result;
-  }, [state.exams, filterGrade, searchQuery, sortBy]);
+  }, [state.exams, filterGrade, filterPublisher, searchQuery, sortBy]);
 
   const uniquePublishers = useMemo(() => {
     const pubs = new Set<string>();
@@ -1092,7 +1120,7 @@ export const ExamsView = () => {
             )}
           </div>
 
-          {/* Grade & Sort Filter Dropdowns */}
+          {/* Grade, Publisher & Sort Filter Dropdowns */}
           <div className="flex flex-wrap gap-2 items-center overflow-x-auto no-scrollbar shrink-0 py-0.5">
             {/* Grade Filter */}
             <div className="relative shrink-0">
@@ -1104,6 +1132,22 @@ export const ExamsView = () => {
                 <option value="Tümü">Tüm Sınıflar</option>
                 {availableGradeLevels.map(lvl => (
                   <option key={lvl} value={lvl}>{lvl === 'Diğer' ? 'Diğer Sınıflar' : `${lvl}. Sınıf`}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-brand-ink/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Publisher Filter */}
+            <div className="relative shrink-0">
+              <select
+                value={filterPublisher}
+                onChange={(e) => setFilterPublisher(e.target.value)}
+                className="appearance-none pl-3 pr-7 py-2 border border-brand-border/80 text-xs bg-white rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold min-w-[130px] max-w-[200px] shadow-sm cursor-pointer truncate"
+                title="Yayıncı Filtresi"
+              >
+                <option value="Tümü">Tüm Yayıncılar</option>
+                {availablePublishers.map(pub => (
+                  <option key={pub} value={pub}>{pub}</option>
                 ))}
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-brand-ink/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1126,9 +1170,9 @@ export const ExamsView = () => {
               <ChevronDown className="w-3.5 h-3.5 text-brand-ink/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
-            {(searchQuery || filterGrade !== 'Tümü' || sortBy !== 'date-asc') && (
+            {(searchQuery || filterGrade !== 'Tümü' || filterPublisher !== 'Tümü' || sortBy !== 'date-asc') && (
               <button 
-                onClick={() => { setSearchQuery(''); setFilterGrade('Tümü'); setSortBy('date-asc'); }}
+                onClick={() => { setSearchQuery(''); setFilterGrade('Tümü'); setFilterPublisher('Tümü'); setSortBy('date-asc'); }}
                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl font-bold shrink-0 transition-colors shadow-sm active:scale-95"
               >
                 <X className="w-3 h-3" />
