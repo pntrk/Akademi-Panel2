@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem, CloudBackupRecord, FullBackupData, FullBackupSummary } from '../types';
+import { Student, Exam, ExamResult, BudgetData, ExamHall, SeatingPlanItem, CloudBackupRecord, FullBackupData, FullBackupSummary, AppNotification } from '../types';
 import { generateId, recalculateLeagueForStudents } from '../lib/utils';
 import { db, firebaseConfig, auth } from '../lib/firebase';
 import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, deleteDoc, query } from 'firebase/firestore';
 import { User } from 'firebase/auth';
+import { 
+  subscribeToNotifications, 
+  displayBrowserNotification, 
+  registerNotificationServiceWorker, 
+  publishCloudNotification 
+} from '../lib/notifications';
 
 interface AppState {
   students: Student[];
@@ -44,6 +50,13 @@ interface AppContextType {
   saveNow: () => Promise<void>;
   retrySync: () => Promise<void>;
   checkAndRefreshRole: () => Promise<'admin' | 'teacher' | 'guest'>;
+  notifications: AppNotification[];
+  unreadNotificationsCount: number;
+  isNotificationModalOpen: boolean;
+  setIsNotificationModalOpen: (open: boolean) => void;
+  openNotificationModal: (prefilledData?: Partial<AppNotification>) => void;
+  markNotificationsAsSeen: () => void;
+  sendPushNotification: (notif: Omit<AppNotification, 'id' | 'createdAt'>) => Promise<{ success: boolean; id?: string; error?: string }>;
 }
 
 const defaultState: AppState = {
@@ -241,6 +254,57 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
   );
   const [cloudBackups, setCloudBackups] = useState<CloudBackupRecord[]>([]);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
+
+  // Push Notification & Announcement States
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [notificationPrefill, setNotificationPrefill] = useState<Partial<AppNotification> | null>(null);
+
+  const markNotificationsAsSeen = () => {
+    localStorage.setItem('last_seen_notification_ts', Date.now().toString());
+    setUnreadNotificationsCount(0);
+  };
+
+  const openNotificationModal = (prefilledData?: Partial<AppNotification>) => {
+    if (prefilledData) {
+      setNotificationPrefill(prefilledData);
+    } else {
+      setNotificationPrefill(null);
+    }
+    markNotificationsAsSeen();
+    setIsNotificationModalOpen(true);
+  };
+
+  const sendPushNotification = async (notif: Omit<AppNotification, 'id' | 'createdAt'>) => {
+    return await publishCloudNotification(notif);
+  };
+
+  // Real-time Push Notifications listener & Service Worker registration
+  useEffect(() => {
+    registerNotificationServiceWorker().catch(() => {});
+
+    const unsubscribeNotifs = subscribeToNotifications(
+      (items) => {
+        setNotifications(items);
+        const lastSeen = parseInt(localStorage.getItem('last_seen_notification_ts') || '0', 10);
+        const unread = items.filter(n => new Date(n.createdAt).getTime() > lastSeen).length;
+        setUnreadNotificationsCount(unread);
+      },
+      (newNotif) => {
+        displayBrowserNotification(
+          newNotif.title,
+          newNotif.message,
+          newNotif.id,
+          newNotif.linkTab
+        );
+      }
+    );
+
+    return () => {
+      unsubscribeNotifs();
+    };
+  }, []);
 
   const checkAndRefreshRole = async (): Promise<'admin' | 'teacher' | 'guest'> => {
     try {
@@ -1071,7 +1135,14 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
       restoreBackup,
       saveNow,
       retrySync,
-      checkAndRefreshRole
+      checkAndRefreshRole,
+      notifications,
+      unreadNotificationsCount,
+      isNotificationModalOpen,
+      setIsNotificationModalOpen,
+      openNotificationModal,
+      markNotificationsAsSeen,
+      sendPushNotification
     }}>
       {children}
     </AppContext.Provider>

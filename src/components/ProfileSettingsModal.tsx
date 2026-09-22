@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, User, Shield, Moon, Sun, HardDriveDownload, 
   DownloadCloud, UploadCloud, Cloud, LogOut, Check, 
   RefreshCw, Database, Activity, ChevronRight, AlertCircle,
-  Laptop, Smartphone
+  Laptop, Smartphone, Bell, BellRing
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { User as FirebaseUser } from 'firebase/auth';
+import { getPushPermissionState, requestPushPermission, displayBrowserNotification } from '../lib/notifications';
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface ProfileSettingsModalProps {
   onOpenAppHub: () => void;
   onOpenFirebaseStatus: () => void;
   onOpenUserManagement: () => void;
+  onOpenNotifications?: () => void;
   handleBackup: () => void;
   handleRestore: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleManualSave: () => Promise<void>;
@@ -39,6 +41,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   onOpenAppHub,
   onOpenFirebaseStatus,
   onOpenUserManagement,
+  onOpenNotifications,
   handleBackup,
   handleRestore,
   handleManualSave,
@@ -47,6 +50,27 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'backup' | 'cloud' | 'appearance'>('profile');
   const [isSaving, setIsSaving] = useState(false);
+  const [permissionState, setPermissionState] = useState<NotificationPermission>('default');
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPermissionState(getPushPermissionState());
+    }
+  }, [isOpen]);
+
+  const handleTogglePermission = async () => {
+    setIsRequestingPermission(true);
+    try {
+      const res = await requestPushPermission();
+      setPermissionState(res);
+      if (res === 'granted') {
+        displayBrowserNotification('🔔 Bildirimler Aktif!', 'AkademiPanel anlık bildirimleri başarıyla açıldı.');
+      }
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -312,6 +336,67 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                   </div>
                   <ChevronRight className="w-4 h-4 text-white/60 group-hover:translate-x-0.5 transition-transform" />
                 </button>
+              </div>
+
+              {/* PWA Push Notification System */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-brand-accent/10 to-transparent border border-amber-500/20 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                      <BellRing className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-white">Anlık Push Bildirimleri</h4>
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                          permissionState === 'granted' 
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" 
+                            : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                        )}>
+                          {permissionState === 'granted' ? 'Aktif (Açık)' : 'İzin Bekleniyor'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/50">Yeni sınav sonuçları ve duyuruları tarayıcınızdan anında alın</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  {permissionState !== 'granted' ? (
+                    <button
+                      onClick={handleTogglePermission}
+                      disabled={isRequestingPermission}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-brand-accent hover:bg-brand-accent/90 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+                    >
+                      <Bell className="w-3.5 h-3.5" />
+                      {isRequestingPermission ? 'İzin İsteniyor...' : 'Bildirimleri Aç & İzin Ver'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        displayBrowserNotification('🔔 Test Bildirimi', 'AkademiPanel anlık bildirim sistemi aktif ve çalışıyor!');
+                      }}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-brand-accent" />
+                      Test Bildirimi Gönder
+                    </button>
+                  )}
+
+                  {onOpenNotifications && (
+                    <button
+                      onClick={() => {
+                        onOpenNotifications();
+                        onClose();
+                      }}
+                      className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white font-semibold text-xs border border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>Merkezi Aç</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* User Permissions Management (Admin Only) */}

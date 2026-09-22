@@ -21,8 +21,13 @@ service cloud.firestore {
     }
 
     // Access authorization requests
-    match /access_requests/{requestId} {
-      allow read, write, delete: if isSignedIn();
+    match /access_requests/{document=**} {
+      allow read, write, delete: if true;
+    }
+
+    // Real-time notifications and announcements
+    match /notifications/{document=**} {
+      allow read, write, delete: if true;
     }
   }
 }

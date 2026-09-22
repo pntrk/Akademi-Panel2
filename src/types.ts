@@ -150,3 +150,18 @@ export interface CloudBackupRecord {
   note?: string;
 }
 
+export interface AppNotification {
+  id: string;
+  type: 'exam_result' | 'exam_created' | 'announcement' | 'arena_update' | 'system';
+  title: string;
+  message: string;
+  createdAt: string;
+  createdByEmail?: string;
+  createdByName?: string;
+  targetRole?: 'all' | 'teachers' | 'students';
+  targetGrade?: string; // 'Tümü', '8', '7', '6', '5'
+  linkTab?: 'results' | 'exams' | 'league' | 'students' | 'halls' | 'budget';
+  readBy?: string[];
+  urgent?: boolean;
+}
+

@@ -7,7 +7,7 @@ import {
   Search, Calendar, DollarSign, Users, Award, Sparkles, BookOpen, 
   AlertCircle, SlidersHorizontal, Trash, ChevronDown, ChevronRight,
   TrendingUp, Wallet, Check, UserPlus, Filter, DoorOpen, CheckCircle2,
-  XCircle, ArrowUpDown
+  XCircle, ArrowUpDown, Layers, Receipt, CreditCard, GraduationCap, Hash, User
 } from 'lucide-react';
 
 export const StudentsView = () => {
@@ -1222,14 +1222,14 @@ export const StudentsView = () => {
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button 
               onClick={() => setIsBulkModalOpen(true)}
-              className="flex-1 sm:flex-initial bg-gradient-to-r from-brand-accent to-[#9c7b48] text-white hover:opacity-90 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              className="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-400 text-black px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
             >
-              <Sparkles className="h-3.5 w-3.5 text-white shrink-0" />
+              <Sparkles className="h-3.5 w-3.5 text-black shrink-0" />
               <span>Sınava Toplu Kaydet</span>
             </button>
             <button 
               onClick={handleBulkDelete}
-              className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1 active:scale-95 cursor-pointer shrink-0"
+              className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shrink-0"
               title="Seçili Öğrencileri Sil"
             >
               <Trash className="h-3.5 w-3.5 shrink-0" />
@@ -1453,116 +1453,435 @@ export const StudentsView = () => {
             }}
           >
             <div 
-              className="bg-white rounded-t-[28px] sm:rounded-[32px] border border-[#e6e2d3] shadow-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-hidden flex flex-col animate-slide-up sm:animate-none pb-safe sm:pb-0"
+              className="bg-white rounded-t-[28px] sm:rounded-[32px] border border-[#e6e2d3] shadow-2xl w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] overflow-hidden flex flex-col animate-slide-up sm:animate-none pb-safe sm:pb-0"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-4 sm:p-5 flex items-center justify-between shrink-0 rounded-t-[28px] sm:rounded-t-[32px]">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-[#5a5a40]/10 p-2 sm:p-2.5 rounded-xl">
-                    <Users className="h-5 w-5 text-[#5a5a40]" />
+              <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] px-4 pt-3.5 pb-3 sm:px-6 sm:py-4 shrink-0 rounded-t-[28px] sm:rounded-t-[32px]">
+                {/* Mobile Drag Pill */}
+                <div className="w-12 h-1.5 bg-[#dcd8c8] rounded-full mx-auto mb-3 sm:hidden" />
+
+                {/* Main Header Content */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                    {/* Student Monogram Avatar */}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#5a5a40]/10 border border-[#5a5a40]/20 flex items-center justify-center text-[#5a5a40] font-bold text-sm sm:text-base shrink-0 shadow-xs">
+                      {student.name ? student.name.trim().slice(0, 2).toUpperCase() : 'ÖG'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base sm:text-xl font-serif text-[#2d2c25] font-bold truncate max-w-[200px] sm:max-w-md">
+                          {student.name || 'İsimsiz Öğrenci'}
+                        </h3>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-[#f0eee6] text-[#5a5a40] border border-[#e6e2d3]">
+                          #{student.no || '0'}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          {student.className || 'Sınıfsız'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#737265] mt-0.5 flex items-center gap-2">
+                        <span>Öğrenci Yönetim & Sınav Katılım Portalı</span>
+                        <span className="hidden sm:inline text-[#dcd8c8]">•</span>
+                        <span className="hidden sm:inline font-medium text-[#5a5a40]">
+                          {(student.examRegistrations || []).length} Kayıtlı Sınav
+                        </span>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-serif text-[#5a5a40] font-bold">Öğrenci Detayları</h3>
-                    <p className="text-xs text-[#8e8d82] font-semibold">{student.name} ({student.no})</p>
+
+                  {/* Header Action & Close Button */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {(() => {
+                      const regs = student.examRegistrations || [];
+                      const unpaidTotal = regs.filter(r => !r.isPaid).reduce((sum, r) => sum + (r.fee || 0), 0);
+                      if (unpaidTotal > 0) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => handlePayAllRegistrations(student.id)}
+                            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all shadow-xs cursor-pointer active:scale-95"
+                            title="Öğrencinin tüm borçlarını tahsil et"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-rose-600" />
+                            <span>₺{unpaidTotal} Borç - Tahsil Et</span>
+                          </button>
+                        );
+                      } else if (regs.length > 0) {
+                        return (
+                          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Borç Yok</span>
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    <button 
+                      onClick={() => {
+                        setIsStudentModalOpen(false);
+                        setEditingStudentId(null);
+                      }}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[#737265] hover:text-[#2d2c25] hover:bg-[#eae7db] transition-colors cursor-pointer"
+                      aria-label="Kapat"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
-                <button 
-                  onClick={() => {
-                    setIsStudentModalOpen(false);
-                    setEditingStudentId(null);
-                  }}
-                  className="p-2 text-[#8e8d82] hover:text-[#5a5a40] hover:bg-[#f5f5f0] rounded-full transition-all active:scale-95"
-                >
-                  <X className="h-5 w-5" />
-                </button>
               </div>
 
-              {/* Modal Content */}
-              <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              {/* Modal Content - All Sections Fully Visible */}
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
                 
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[#8e8d82] uppercase tracking-wider mb-1.5">Öğrenci No</label>
-                    <input 
-                      type="number" 
-                      value={student.no || ''} 
-                      onChange={(e) => updateStudent(student.id, 'no', parseInt(e.target.value) || 0)}
-                      className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2.5 text-sm font-bold text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#8e8d82] uppercase tracking-wider mb-1.5">Adı Soyadı</label>
-                    <input 
-                      type="text" 
-                      value={student.name} 
-                      onChange={(e) => updateStudent(student.id, 'name', e.target.value)}
-                      className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2.5 text-sm font-bold text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#8e8d82] uppercase tracking-wider mb-1.5">Sınıfı</label>
-                    <input 
-                      type="text" 
-                      value={student.className} 
-                      onChange={(e) => updateStudent(student.id, 'className', e.target.value)}
-                      className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2.5 text-sm font-bold text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40]"
-                    />
-                  </div>
-                </div>
+                {/* Section 1: Basic Info & Financial Summary */}
+                <div className="space-y-4">
+                  {/* Financial Summary KPIs */}
+                    {(() => {
+                      const regs = student.examRegistrations || [];
+                      const paidCount = regs.filter(r => r.isPaid).length;
+                      const unpaidCount = regs.filter(r => !r.isPaid).length;
+                      const paidAmount = regs.filter(r => r.isPaid).reduce((sum, r) => sum + (r.fee || 0), 0);
+                      const unpaidAmount = regs.filter(r => !r.isPaid).reduce((sum, r) => sum + (r.fee || 0), 0);
+                      const totalAmount = paidAmount + unpaidAmount;
 
-                {/* Exam History */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-bold text-[#5a5a40] uppercase tracking-wider flex items-center">
-                      <BookOpen className="w-4 h-4 mr-1.5" />
-                      Deneme Sınavı Geçmişi ve Salon Bilgileri
-                    </h4>
-                    {student.examRegistrations && student.examRegistrations.some(r => !r.isPaid) && (
-                      <button
-                        type="button"
-                        onClick={() => handlePayAllRegistrations(student.id)}
-                        className="text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded-full shadow-sm transition-colors"
-                      >
-                        Tümünü Öde
-                      </button>
-                    )}
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                          <div className="bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl p-3 sm:p-3.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#737265] block">Toplam Sınav</span>
+                            <div className="flex items-baseline gap-1 mt-1">
+                              <span className="text-xl sm:text-2xl font-serif font-bold text-[#2d2c25]">{regs.length}</span>
+                              <span className="text-xs text-[#737265]">katılım</span>
+                            </div>
+                          </div>
+                          <div className="bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl p-3 sm:p-3.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#737265] block">Toplam Kayıt Tutarı</span>
+                            <div className="flex items-baseline gap-1 mt-1">
+                              <span className="text-xl sm:text-2xl font-serif font-bold text-[#2d2c25]">₺{totalAmount}</span>
+                            </div>
+                          </div>
+                          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-3 sm:p-3.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Tahsil Edilen (Gelir)</span>
+                            <div className="flex items-baseline gap-1 mt-1">
+                              <span className="text-xl sm:text-2xl font-serif font-bold text-emerald-700">₺{paidAmount}</span>
+                              <span className="text-[11px] font-semibold text-emerald-600">({paidCount})</span>
+                            </div>
+                          </div>
+                          <div className={`rounded-2xl p-3 sm:p-3.5 border transition-all ${
+                            unpaidAmount > 0 
+                              ? 'bg-rose-50/70 border-rose-200/80' 
+                              : 'bg-[#fcfbf7] border-[#e6e2d3]'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                                unpaidAmount > 0 ? 'text-rose-800' : 'text-[#737265]'
+                              }`}>
+                                Kalan Borç
+                              </span>
+                              {unpaidAmount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePayAllRegistrations(student.id)}
+                                  className="text-[10px] font-bold text-white bg-rose-600 hover:bg-rose-700 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                                >
+                                  Tahsil Et
+                                </button>
+                              )}
+                            </div>
+                            <div className="flex items-baseline gap-1 mt-1">
+                              <span className={`text-xl sm:text-2xl font-serif font-bold ${
+                                unpaidAmount > 0 ? 'text-rose-700' : 'text-[#737265]'
+                              }`}>
+                                ₺{unpaidAmount}
+                              </span>
+                              {unpaidAmount > 0 && (
+                                <span className="text-[11px] font-semibold text-rose-600">({unpaidCount})</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Student Identity Inputs */}
+                    <div className="bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl p-4 sm:p-5">
+                      <h4 className="text-xs font-bold text-[#5a5a40] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-[#5a5a40]" />
+                        <span>Öğrenci Kimlik & Sınıf Bilgileri</span>
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#737265] uppercase tracking-wider mb-1.5">
+                            Öğrenci Numarası
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737265] text-xs font-mono font-bold">#</span>
+                            <input 
+                              type="number" 
+                              value={student.no || ''} 
+                              onChange={(e) => updateStudent(student.id, 'no', parseInt(e.target.value) || 0)}
+                              className="w-full bg-white border border-[#e6e2d3] rounded-xl pl-7 pr-3 py-2 text-sm font-bold text-[#2d2c25] focus:ring-2 focus:ring-[#5a5a40]/20 focus:border-[#5a5a40] focus:outline-none transition-all"
+                              placeholder="Örn: 104"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#737265] uppercase tracking-wider mb-1.5">
+                            Adı Soyadı
+                          </label>
+                          <div className="relative">
+                            <input 
+                              type="text" 
+                              value={student.name} 
+                              onChange={(e) => updateStudent(student.id, 'name', e.target.value)}
+                              className="w-full bg-white border border-[#e6e2d3] rounded-xl px-3 py-2 text-sm font-bold text-[#2d2c25] focus:ring-2 focus:ring-[#5a5a40]/20 focus:border-[#5a5a40] focus:outline-none transition-all"
+                              placeholder="Örn: Ahmet Yılmaz"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#737265] uppercase tracking-wider mb-1.5">
+                            Sınıfı / Şubesi
+                          </label>
+                          <div className="relative">
+                            <input 
+                              type="text" 
+                              value={student.className} 
+                              onChange={(e) => updateStudent(student.id, 'className', e.target.value)}
+                              className="w-full bg-white border border-[#e6e2d3] rounded-xl px-3 py-2 text-sm font-bold text-[#2d2c25] focus:ring-2 focus:ring-[#5a5a40]/20 focus:border-[#5a5a40] focus:outline-none transition-all"
+                              placeholder="Örn: 12-A veya 8-B"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  
-                  {student.examRegistrations && student.examRegistrations.length > 0 ? (
-                    <div className="bg-white border border-[#e6e2d3] rounded-2xl overflow-hidden shadow-inner">
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-[#fcfbf7]">
-                          <tr className="text-xs text-[#8e8d82] border-b border-[#e6e2d3]">
-                            <th className="py-2.5 px-4 font-bold">Deneme Sınavı</th>
-                            <th className="py-2.5 px-4 font-bold">Ödenen Ücret</th>
-                            <th className="py-2.5 px-4 font-bold">Kayıt Tarihi</th>
-                            <th className="py-2.5 px-4 font-bold">Sınav Salonu / Sıra</th>
-                            <th className="py-2.5 px-4 font-bold w-12 text-center">İşlem</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+
+                {/* Section 2: Exam History & Halls */}
+                <div>
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-[#5a5a40] uppercase tracking-wider flex items-center">
+                          <BookOpen className="w-4 h-4 mr-1.5 text-[#5a5a40]" />
+                          Deneme Sınavı Geçmişi ve Salon Bilgileri
+                        </h4>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#e6e2d3]/60 text-[#5a5a40]">
+                          {(student.examRegistrations || []).length} Sınav
+                        </span>
+                      </div>
+                      {student.examRegistrations && student.examRegistrations.some(r => !r.isPaid) && (
+                        <button
+                          type="button"
+                          onClick={() => handlePayAllRegistrations(student.id)}
+                          className="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 rounded-full shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Tüm Borçları Tahsil Et</span>
+                        </button>
+                      )}
+                    </div>
+                    
+                    {student.examRegistrations && student.examRegistrations.length > 0 ? (
+                      <div className="space-y-3">
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block bg-white border border-[#e6e2d3] rounded-2xl overflow-hidden shadow-xs">
+                          <table className="w-full text-left text-sm">
+                            <thead className="bg-[#fcfbf7]">
+                              <tr className="text-xs text-[#737265] border-b border-[#e6e2d3]">
+                                <th className="py-3 px-4 font-bold">Deneme Sınavı</th>
+                                <th className="py-3 px-4 font-bold">Ücret / Durum</th>
+                                <th className="py-3 px-4 font-bold">Kayıt Tarihi</th>
+                                <th className="py-3 px-4 font-bold">Sınav Salonu / Sıra</th>
+                                <th className="py-3 px-4 font-bold w-12 text-center">İşlem</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#f0eee6]">
+                              {student.examRegistrations.map((reg) => {
+                                const exam = state.exams.find(e => e.id === reg.examId);
+                                const examName = exam ? exam.name : 'Silinmiş Sınav';
+                                
+                                let deskNo = '-';
+                                const hall = state.examHalls.find(h => 
+                                  (h.examId === reg.examId || h.examIds?.includes(reg.examId)) && 
+                                  h.seatingPlan?.some(sp => sp.studentId === student.id)
+                                );
+                                
+                                if (hall) {
+                                  const seating = hall.seatingPlan?.find(sp => sp.studentId === student.id);
+                                  if (seating) {
+                                    deskNo = seating.deskNumber.toString();
+                                  }
+                                }
+
+                                const eligibleHalls = state.examHalls.filter(h => 
+                                  h.examId === reg.examId || h.examIds?.includes(reg.examId)
+                                );
+
+                                const isExpanded = expandedExamId === reg.examId;
+                                const studentResult = state.results.find(r => (r.studentNo === student.no || r.studentNo === Number(student.no)));
+                                const examDetail = studentResult?.details?.[examName];
+                                
+                                return (
+                                  <React.Fragment key={reg.examId}>
+                                  <tr className="hover:bg-[#fcfbf7] transition-colors">
+                                    <td className="py-3 px-4 font-bold text-[#2d2c25]">
+                                      <div 
+                                        className="flex items-center gap-2 cursor-pointer group"
+                                        onClick={() => setExpandedExamId(isExpanded ? null : reg.examId)}
+                                        title="Karne net detaylarını aç/kapat"
+                                      >
+                                        <div className="p-1 rounded-md group-hover:bg-[#eae7db] transition-colors">
+                                          {isExpanded ? (
+                                            <ChevronDown className="w-4 h-4 text-emerald-600" />
+                                          ) : (
+                                            <ChevronRight className="w-4 h-4 text-[#737265]" />
+                                          )}
+                                        </div>
+                                        <div>
+                                          <span className="group-hover:text-[#5a5a40] transition-colors">{examName}</span>
+                                          {exam?.date && (
+                                            <span className="block text-[11px] font-normal text-[#737265]">
+                                              {formatDateLong(exam.date)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="font-bold text-[#2d2c25]">₺{reg.fee}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleRegistrationPayment(student.id, reg.examId)}
+                                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                                            reg.isPaid
+                                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                          }`}
+                                          title={reg.isPaid ? "Ödeme alındı. Borç yapmak için tıklayın." : "Borç ödenmedi. Tahsil etmek için tıklayın."}
+                                        >
+                                          {reg.isPaid ? '✓ Ödendi' : 'Borç'}
+                                        </button>
+                                      </div>
+                                    </td>
+                                    <td className="py-3 px-4 text-[#737265] text-xs font-medium">
+                                      {reg.dateRegistered || '-'}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <select
+                                        value={hall ? hall.id : 'unassigned'}
+                                        onChange={(e) => handleHallChange(reg.examId, e.target.value)}
+                                        className={`text-xs font-bold rounded-xl border px-3 py-1.5 bg-white focus:ring-2 focus:ring-[#5a5a40]/20 focus:outline-none transition-all cursor-pointer ${
+                                          hall ? 'text-[#2d2c25] border-[#e6e2d3]' : 'text-rose-600 border-rose-200 font-bold bg-rose-50/50'
+                                        }`}
+                                      >
+                                        <option value="unassigned">Yerleştirilmedi (Salonsuz)</option>
+                                        {eligibleHalls.map(h => {
+                                          const cap = h.columns?.reduce((acc, col) => acc + (col.deskCount * col.seatsPerDesk), 0) || h.capacity || 30;
+                                          const occupiedCount = h.seatingPlan?.length || 0;
+                                          const isCurrent = hall?.id === h.id;
+                                          const isFull = occupiedCount >= cap;
+                                          
+                                          return (
+                                            <option key={h.id} value={h.id} disabled={isFull && !isCurrent}>
+                                              {h.name} {isCurrent ? `(Sıra: ${deskNo})` : `(${occupiedCount}/${cap}${isFull ? ' - Dolu' : ''})`}
+                                            </option>
+                                          );
+                                        })}
+                                      </select>
+                                    </td>
+                                    <td className="py-3 px-4 text-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => removeSingleRegistration(student.id, reg.examId)}
+                                        className="p-1.5 text-[#737265] hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                                        title="Kaydı Sil"
+                                      >
+                                        <Trash2 className="w-4 h-4 mx-auto" />
+                                      </button>
+                                    </td>
+                                  </tr>
+
+                                  {/* Collapsible Net & Karne Summary */}
+                                  {isExpanded && (
+                                    <tr className="bg-[#fcfbf7]/80">
+                                      <td colSpan={5} className="p-4 border-b border-[#e6e2d3]">
+                                        {examDetail && examDetail.lessons ? (
+                                          <div className="bg-white rounded-xl border border-[#e6e2d3] p-4 shadow-xs">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <h5 className="text-xs font-bold text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
+                                                <Award className="w-3.5 h-3.5 text-amber-600" />
+                                                <span>Derslere Göre Net ve Karne Özeti</span>
+                                              </h5>
+                                              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                                                Toplam Net: {Number(examDetail.totalNet || 0).toFixed(2).replace('.', ',')}
+                                              </span>
+                                            </div>
+                                            <table className="w-full text-left text-xs">
+                                              <thead>
+                                                <tr className="text-[#737265] border-b border-[#e6e2d3]">
+                                                  <th className="py-1.5 px-2">Ders</th>
+                                                  <th className="py-1.5 px-2 text-center text-emerald-600">D</th>
+                                                  <th className="py-1.5 px-2 text-center text-rose-500">Y</th>
+                                                  <th className="py-1.5 px-2 text-center text-amber-500">B</th>
+                                                  <th className="py-1.5 px-2 text-center text-blue-600 font-bold">Net</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {(() => {
+                                                  const lessonsArray = Array.isArray(examDetail.lessons) 
+                                                    ? examDetail.lessons 
+                                                    : Object.entries(examDetail.lessons).map(([name, data]) => ({ name, ...(data as object) }));
+                                                  return lessonsArray.map((l: any, idx) => {
+                                                    const stdName = l.name || l.lessonName || '';
+                                                    if (!stdName || stdName.toLowerCase().includes('toplam') || stdName.toLowerCase().includes('genel')) return null;
+                                                    const nVal = typeof l === 'number' ? l : (l.N ?? l.n ?? l.net ?? (parseFloat(l.N || l.n || l.net || '0') || 0));
+                                                    return (
+                                                      <tr key={idx} className="border-b border-[#e6e2d3]/30">
+                                                        <td className="py-1.5 px-2 font-semibold text-[#2d2c25]">{stdName}</td>
+                                                        <td className="py-1.5 px-2 text-center font-bold text-emerald-600">{l.D ?? 0}</td>
+                                                        <td className="py-1.5 px-2 text-center font-bold text-rose-500">{l.Y ?? 0}</td>
+                                                        <td className="py-1.5 px-2 text-center font-bold text-amber-500">{l.B ?? 0}</td>
+                                                        <td className="py-1.5 px-2 text-center font-bold text-blue-600">{nVal.toFixed(2).replace('.', ',')}</td>
+                                                      </tr>
+                                                    );
+                                                  }).filter(Boolean);
+                                                })()}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        ) : (
+                                          <div className="text-center py-3 text-xs text-[#737265] bg-white rounded-xl border border-[#e6e2d3]">
+                                            Bu sınav için henüz yüklenmiş bir sonuç veya net verisi bulunmuyor.
+                                          </div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )}
+                                  </React.Fragment>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile Cards View (Optimized for Phones & Touch) */}
+                        <div className="block sm:hidden space-y-3">
                           {student.examRegistrations.map((reg) => {
                             const exam = state.exams.find(e => e.id === reg.examId);
                             const examName = exam ? exam.name : 'Silinmiş Sınav';
                             
-                            // Find which hall this student is in for this exam
                             let deskNo = '-';
-                            
                             const hall = state.examHalls.find(h => 
                               (h.examId === reg.examId || h.examIds?.includes(reg.examId)) && 
                               h.seatingPlan?.some(sp => sp.studentId === student.id)
                             );
-                            
                             if (hall) {
                               const seating = hall.seatingPlan?.find(sp => sp.studentId === student.id);
-                              if (seating) {
-                                deskNo = seating.deskNumber.toString();
-                              }
+                              if (seating) deskNo = seating.deskNumber.toString();
                             }
 
-                            // Get all eligible halls for this specific exam
                             const eligibleHalls = state.examHalls.filter(h => 
                               h.examId === reg.examId || h.examIds?.includes(reg.examId)
                             );
@@ -1570,240 +1889,292 @@ export const StudentsView = () => {
                             const isExpanded = expandedExamId === reg.examId;
                             const studentResult = state.results.find(r => (r.studentNo === student.no || r.studentNo === Number(student.no)));
                             const examDetail = studentResult?.details?.[examName];
-                            
+
                             return (
-                              <React.Fragment key={reg.examId}>
-                              <tr onClick={() => setExpandedExamId(isExpanded ? null : reg.examId)} className="border-b border-[#f5f5f0] hover:bg-[#fcfbf7] cursor-pointer">
-                                <td className="py-2.5 px-4 font-bold text-[#5a5a40] flex items-center gap-2">
-                                  {isExpanded ? <ChevronDown className="w-4 h-4 text-emerald-600" /> : <ChevronRight className="w-4 h-4 text-[#8e8d82]" />}
-                                  {examName}
-                                </td>
-                                <td className="py-2.5 px-4 font-semibold text-emerald-700">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="font-bold text-[#5a5a40]">₺{reg.fee}</span>
+                              <div key={reg.examId} className="bg-white border border-[#e6e2d3] rounded-2xl p-4 shadow-xs space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <h5 className="font-bold text-[#2d2c25] text-sm leading-snug">{examName}</h5>
+                                    {exam?.date && (
+                                      <p className="text-[11px] text-[#737265] mt-0.5">{formatDateLong(exam.date)}</p>
+                                    )}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSingleRegistration(student.id, reg.examId)}
+                                    className="p-1.5 text-[#737265] hover:text-rose-600 rounded-lg"
+                                    title="Kaydı Sil"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1 border-t border-[#f0eee6]">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-[#2d2c25]">₺{reg.fee}</span>
                                     <button
                                       type="button"
                                       onClick={() => toggleRegistrationPayment(student.id, reg.examId)}
                                       className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${
                                         reg.isPaid
                                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                          : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                                          : 'bg-rose-50 text-rose-700 border-rose-200'
                                       }`}
-                                      title={reg.isPaid ? "Ödeme alındı. Borç olarak işaretlemek için tıklayın." : "Borç ödenmedi. Ödeme almak için tıklayın."}
                                     >
-                                      {reg.isPaid ? 'Ödendi' : 'Borç'}
+                                      {reg.isPaid ? '✓ Ödendi' : 'Borç (Öde)'}
                                     </button>
                                   </div>
-                                </td>
-                                <td className="py-2.5 px-4 text-[#8e8d82]">
-                                  {reg.dateRegistered || '-'}
-                                </td>
-                                <td className="py-2.5 px-4">
+                                  <span className="text-[11px] text-[#737265]">Kayıt: {reg.dateRegistered || '-'}</span>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[10px] font-bold text-[#737265] uppercase mb-1">
+                                    Sınav Salonu & Sıra
+                                  </label>
                                   <select
                                     value={hall ? hall.id : 'unassigned'}
                                     onChange={(e) => handleHallChange(reg.examId, e.target.value)}
-                                    className={`text-xs font-bold rounded-lg border px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-[#5a5a40] focus:outline-none transition-all ${
-                                      hall ? 'text-[#5a5a40] border-[#e6e2d3]' : 'text-red-600 border-red-200 font-bold bg-red-50/50'
+                                    className={`w-full text-xs font-bold rounded-xl border p-2 bg-white ${
+                                      hall ? 'text-[#2d2c25] border-[#e6e2d3]' : 'text-rose-600 border-rose-200 bg-rose-50/40'
                                     }`}
                                   >
-                                    <option value="unassigned">Yerleştirilmedi</option>
+                                    <option value="unassigned">Yerleştirilmedi (Salonsuz)</option>
                                     {eligibleHalls.map(h => {
                                       const cap = h.columns?.reduce((acc, col) => acc + (col.deskCount * col.seatsPerDesk), 0) || h.capacity || 30;
                                       const occupiedCount = h.seatingPlan?.length || 0;
                                       const isCurrent = hall?.id === h.id;
                                       const isFull = occupiedCount >= cap;
-                                      
                                       return (
                                         <option key={h.id} value={h.id} disabled={isFull && !isCurrent}>
-                                          {h.name} {isCurrent ? `(Sıra: ${deskNo})` : `(${occupiedCount}/${cap}${isFull ? ' - Dolu' : ''})`}
+                                          {h.name} {isCurrent ? `(Sıra: ${deskNo})` : `(${occupiedCount}/${cap})`}
                                         </option>
                                       );
                                     })}
                                   </select>
-                                </td>
-                                <td className="py-2.5 px-4 text-center">
-                                  <button
-                                    onClick={() => removeSingleRegistration(student.id, reg.examId)}
-                                    className="p-1.5 text-[#8e8d82] hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                                    title="Kaydı Sil"
-                                  >
-                                    <Trash2 className="w-4 h-4 mx-auto" />
-                                  </button>
-                                </td>
-                              </tr>
-                              {isExpanded && examDetail && examDetail.lessons && (
-                                <tr className="bg-[#fcfbf7]/60">
-                                  <td colSpan={5} className="p-4 border-b border-[#e6e2d3]">
-                                    <div className="bg-white rounded-xl border border-[#e6e2d3] p-4 shadow-sm">
-                                      <h5 className="text-xs font-bold text-[#5a5a40] uppercase tracking-wider mb-3">Derslere Göre Net ve Karne Özeti</h5>
-                                      <table className="w-full text-left text-xs">
-                                        <thead>
-                                          <tr className="text-[#8e8d82] border-b border-[#e6e2d3]">
-                                            <th className="py-1.5 px-2">Ders</th>
-                                            <th className="py-1.5 px-2 text-center text-emerald-600">D</th>
-                                            <th className="py-1.5 px-2 text-center text-red-500">Y</th>
-                                            <th className="py-1.5 px-2 text-center text-amber-500">B</th>
-                                            <th className="py-1.5 px-2 text-center text-blue-600">Net</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {(() => {
-                                            const lessonsArray = Array.isArray(examDetail.lessons) ? examDetail.lessons : Object.entries(examDetail.lessons).map(([name, data]) => ({ name, ...(data as object) }));
-                                            return lessonsArray.map((l: any, idx) => {
-                                              const stdName = l.name || l.lessonName || '';
-                                              if (!stdName || stdName.toLowerCase().includes('toplam') || stdName.toLowerCase().includes('genel')) return null;
-                                              const nVal = typeof l === 'number' ? l : (l.N ?? l.n ?? l.net ?? (parseFloat(l.N || l.n || l.net || '0') || 0));
-                                              return (
-                                                <tr key={idx} className="border-b border-[#e6e2d3]/30">
-                                                  <td className="py-1.5 px-2 font-semibold text-[#5a5a40]">{stdName}</td>
-                                                  <td className="py-1.5 px-2 text-center font-bold text-emerald-600">{l.D ?? 0}</td>
-                                                  <td className="py-1.5 px-2 text-center font-bold text-red-500">{l.Y ?? 0}</td>
-                                                  <td className="py-1.5 px-2 text-center font-bold text-amber-500">{l.B ?? 0}</td>
-                                                  <td className="py-1.5 px-2 text-center font-bold text-blue-600">{nVal.toFixed(2).replace('.', ',')}</td>
-                                                </tr>
-                                              );
-                                            }).filter(Boolean);
-                                          })()}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                              </React.Fragment>
+                                </div>
+
+                                {examDetail && examDetail.lessons && (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedExamId(isExpanded ? null : reg.examId)}
+                                      className="text-xs font-bold text-[#5a5a40] hover:text-[#2d2c25] flex items-center gap-1"
+                                    >
+                                      {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                      <span>Karne Net Sonuçlarını {isExpanded ? 'Gizle' : 'Göster'}</span>
+                                    </button>
+                                    {isExpanded && (
+                                      <div className="mt-2 p-2.5 bg-[#fcfbf7] rounded-xl border border-[#e6e2d3] text-xs">
+                                        <div className="font-bold text-blue-700 mb-1.5">
+                                          Toplam Net: {Number(examDetail.totalNet || 0).toFixed(2).replace('.', ',')}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-1 text-[11px]">
+                                          {Object.entries(examDetail.lessons).map(([name, data]: [string, any]) => (
+                                            <div key={name} className="flex justify-between border-b border-[#e6e2d3]/40 py-0.5">
+                                              <span className="truncate pr-1 text-[#737265]">{name}:</span>
+                                              <span className="font-bold text-[#2d2c25]">
+                                                {typeof data === 'number' ? data : (data.net || data.N || 0)} Net
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl p-6 text-center text-[#8e8d82] text-sm">
-                      Öğrencinin kayıtlı olduğu bir deneme sınavı bulunmuyor.
-                    </div>
-                  )}
-
-                  {/* Inline Exam Registration Form inside Detail Modal */}
-                  {(() => {
-                    const studentRegisteredExamIds = (student.examRegistrations || []).map(r => r.examId);
-                    const studentGrade = student.className ? (student.className.trim().match(/^(\d+)/)?.[1] || 'Diğer') : 'Diğer';
-                    const availableExamsForReg = state.exams.filter(ex => {
-                      if (studentRegisteredExamIds.includes(ex.id)) return false;
-                      if (!ex.participatingClasses || ex.participatingClasses.length === 0) return true;
-                      return ex.participatingClasses.includes(studentGrade);
-                    });
-                    
-                    if (availableExamsForReg.length === 0) return null;
-
-                    return (
-                      <div className="mt-4 p-4 bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl space-y-4">
-                        <h5 className="text-xs font-bold text-[#5a5a40] uppercase tracking-wider">
-                          Yeni Sınav Kaydı Ekle (Toplu Seçim)
-                        </h5>
-                        <div className="space-y-3">
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <label className="block text-[10px] font-bold text-[#8e8d82] uppercase">
-                                Sınav Seçimi
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedDetailExamIds.length === availableExamsForReg.length) {
-                                    setSelectedDetailExamIds([]);
-                                  } else {
-                                    setSelectedDetailExamIds(availableExamsForReg.map(e => e.id));
-                                  }
-                                }}
-                                className="text-[10px] font-bold text-[#5a5a40] bg-[#e6e2d3]/50 hover:bg-[#e6e2d3] px-2 py-0.5 rounded transition-colors"
-                              >
-                                {selectedDetailExamIds.length === availableExamsForReg.length ? 'Tümünü Kaldır' : 'Tümüne Katıl'}
-                              </button>
-                            </div>
-                            <div className="space-y-1.5 max-h-36 overflow-y-auto bg-white border border-[#e6e2d3] rounded-xl p-2.5">
-                              {availableExamsForReg.map(ex => (
-                                <label key={ex.id} className="flex items-center space-x-2.5 hover:bg-[#f5f5f0] p-1 rounded cursor-pointer text-xs font-semibold text-[#5a5a40]">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedDetailExamIds.includes(ex.id)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedDetailExamIds([...selectedDetailExamIds, ex.id]);
-                                      } else {
-                                        setSelectedDetailExamIds(selectedDetailExamIds.filter(id => id !== ex.id));
-                                      }
-                                    }}
-                                    className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] w-3.5 h-3.5"
-                                  />
-                                  <span>{ex.name} {ex.date ? `(${formatDateLong(ex.date)})` : ''}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-bold text-[#8e8d82] uppercase mb-1">
-                                Sınav Başına Kayıt Ücreti
-                              </label>
-                              <div className="relative">
-                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8e8d82] text-xs font-bold">₺</span>
-                                <input
-                                  type="number"
-                                  value={newRegFee || ''}
-                                  onChange={(e) => setNewRegFee(parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-white border border-[#e6e2d3] rounded-xl pl-6 pr-2 py-1.5 text-xs font-bold text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40]"
-                                  placeholder="0"
-                                  min="0"
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-[#8e8d82] uppercase mb-1">
-                                Ödeme Durumu
-                              </label>
-                              <select
-                                value={newRegPaid ? 'paid' : 'debt'}
-                                onChange={(e) => setNewRegPaid(e.target.value === 'paid')}
-                                className="w-full bg-white border border-[#e6e2d3] rounded-xl px-2.5 py-1.5 text-xs text-[#5a5a40] font-semibold focus:ring-1 focus:ring-[#5a5a40]"
-                              >
-                                <option value="debt">Ödenmedi (Borç)</option>
-                                <option value="paid">Ödendi (Gelir)</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-end pt-1">
-                          <button
-                            type="button"
-                            onClick={() => addDetailRegistrations(student.id)}
-                            disabled={selectedDetailExamIds.length === 0}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all shadow-sm ${
-                              selectedDetailExamIds.length > 0
-                                ? 'bg-[#5a5a40] hover:bg-[#43423b] text-white'
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            }`}
-                          >
-                            Öğrenciyi Seçilen Sınavlara Kaydet
-                          </button>
                         </div>
                       </div>
+                    ) : (
+                      <div className="bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl p-8 text-center text-[#737265] text-sm space-y-2">
+                        <BookOpen className="w-8 h-8 text-[#dcd8c8] mx-auto" />
+                        <p className="font-bold text-[#2d2c25]">Henüz Sınav Kaydı Bulunmuyor</p>
+                        <p className="text-xs">Aşağıdaki bölümden öğrenciyi açık olan deneme sınavlarına kaydedebilirsiniz.</p>
+                      </div>
+                    )}
+                  </div>
+
+                {/* Section 3: Inline New Exam Registration */}
+                {(() => {
+                  const studentRegisteredExamIds = (student.examRegistrations || []).map(r => r.examId);
+                  const studentGrade = student.className ? (student.className.trim().match(/^(\d+)/)?.[1] || 'Diğer') : 'Diğer';
+                  const availableExamsForReg = state.exams.filter(ex => {
+                    if (studentRegisteredExamIds.includes(ex.id)) return false;
+                    if (!ex.participatingClasses || ex.participatingClasses.length === 0) return true;
+                    return ex.participatingClasses.includes(studentGrade);
+                  });
+                  
+                  if (availableExamsForReg.length === 0) {
+                    return (
+                      <div className="p-4 sm:p-5 bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl text-center">
+                        <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto mb-1.5" />
+                        <p className="text-xs font-bold text-[#2d2c25]">Tüm Uygun Sınavlar Kayıtlı</p>
+                        <p className="text-[11px] text-[#737265] mt-0.5">Öğrencinin seviyesine uygun kaydedilebilecek başka aktif sınav bulunmuyor.</p>
+                      </div>
                     );
-                  })()}
-                </div>
+                  }
+
+                  const allAvailableSelected = selectedDetailExamIds.length === availableExamsForReg.length;
+
+                  return (
+                    <div className="p-4 sm:p-5 bg-[#fcfbf7] border border-[#e6e2d3] rounded-2xl space-y-4">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-[#5a5a40]/10 flex items-center justify-center text-[#5a5a40]">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-[#5a5a40] uppercase tracking-wider">
+                              Yeni Sınav Kaydı Ekle (Toplu veya Tekli)
+                            </h5>
+                            <p className="text-[11px] text-[#737265]">Kayıt edilecek sınavları seçip ücret ve ödeme durumunu belirleyin.</p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (allAvailableSelected) {
+                              setSelectedDetailExamIds([]);
+                            } else {
+                              setSelectedDetailExamIds(availableExamsForReg.map(e => e.id));
+                            }
+                          }}
+                          className="text-xs font-bold text-[#5a5a40] hover:text-[#2d2c25] bg-white hover:bg-[#eae7db] border border-[#e6e2d3] px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs"
+                        >
+                          {allAvailableSelected ? 'Tüm Seçimi Temizle' : 'Tümünü Seç'}
+                        </button>
+                      </div>
+
+                      {/* Exams Selection Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 bg-white border border-[#e6e2d3] rounded-xl">
+                        {availableExamsForReg.map(ex => {
+                          const isChecked = selectedDetailExamIds.includes(ex.id);
+                          return (
+                            <label 
+                              key={ex.id} 
+                              className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                                isChecked 
+                                  ? 'bg-[#5a5a40]/5 border-[#5a5a40]/40' 
+                                  : 'hover:bg-[#fcfbf7] border-transparent'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedDetailExamIds([...selectedDetailExamIds, ex.id]);
+                                  } else {
+                                    setSelectedDetailExamIds(selectedDetailExamIds.filter(id => id !== ex.id));
+                                  }
+                                }}
+                                className="mt-0.5 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] w-4 h-4 cursor-pointer"
+                              />
+                              <div className="min-w-0">
+                                <span className="block text-xs font-bold text-[#2d2c25] truncate">{ex.name}</span>
+                                {ex.date && (
+                                  <span className="block text-[10px] text-[#737265] mt-0.5">
+                                    {formatDateLong(ex.date)}
+                                  </span>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Pricing & Payment Status Inputs */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#737265] uppercase mb-1">
+                            Sınav Başına Kayıt Ücreti
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737265] text-xs font-bold">₺</span>
+                            <input
+                              type="number"
+                              value={newRegFee || ''}
+                              onChange={(e) => setNewRegFee(parseFloat(e.target.value) || 0)}
+                              className="w-full bg-white border border-[#e6e2d3] rounded-xl pl-7 pr-3 py-2 text-xs font-bold text-[#2d2c25] focus:ring-2 focus:ring-[#5a5a40]/20 focus:border-[#5a5a40] focus:outline-none transition-all"
+                              placeholder="0"
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-[#737265] uppercase mb-1">
+                            Ödeme Durumu
+                          </label>
+                          <select
+                            value={newRegPaid ? 'paid' : 'debt'}
+                            onChange={(e) => setNewRegPaid(e.target.value === 'paid')}
+                            className="w-full bg-white border border-[#e6e2d3] rounded-xl px-3 py-2 text-xs text-[#2d2c25] font-bold focus:ring-2 focus:ring-[#5a5a40]/20 focus:border-[#5a5a40] focus:outline-none transition-all cursor-pointer"
+                          >
+                            <option value="debt">Ödenmedi (Borç Olarak Ekle)</option>
+                            <option value="paid">Ödendi (Gelir Olarak Ekle)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Calculation & Budget Sync preview */}
+                      {selectedDetailExamIds.length > 0 && newRegFee > 0 && (
+                        <div className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
+                          newRegPaid 
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                            : 'bg-rose-50 border-rose-200 text-rose-800'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 shrink-0" />
+                            <span>
+                              {selectedDetailExamIds.length} Sınav × ₺{newRegFee} = <strong>₺{selectedDetailExamIds.length * newRegFee}</strong> ({newRegPaid ? 'Bütçeye Gelir Eklenecek' : 'Öğrenciye Borç Eklenecek'})
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end pt-2">
+                        <button
+                          type="button"
+                          onClick={() => addDetailRegistrations(student.id)}
+                          disabled={selectedDetailExamIds.length === 0}
+                          className={`w-full sm:w-auto px-6 py-2.5 text-xs font-bold rounded-full transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
+                            selectedDetailExamIds.length > 0
+                              ? 'bg-[#5a5a40] hover:bg-[#43423b] text-white hover:shadow'
+                              : 'bg-[#e6e2d3] text-[#737265] cursor-not-allowed'
+                          }`}
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Öğrenciyi Seçilen Sınavlara Kaydet ({selectedDetailExamIds.length})</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
 
               </div>
 
               {/* Modal Footer */}
-              <div className="bg-[#fcfbf7] border-t border-[#e6e2d3] p-4 flex items-center justify-end shrink-0">
-                <button
-                  onClick={() => {
-                    setIsStudentModalOpen(false);
-                    setEditingStudentId(null);
-                  }}
-                  className="px-6 py-2.5 bg-[#5a5a40] hover:bg-[#43423b] text-white text-sm font-bold rounded-full shadow-sm transition-all"
-                >
-                  Tamam
-                </button>
+              <div className="bg-[#fcfbf7] border-t border-[#e6e2d3] px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between shrink-0 rounded-b-[28px] sm:rounded-b-[32px]">
+                <div className="text-xs text-[#737265] truncate mr-2">
+                  <strong className="text-[#2d2c25]">{student.name}</strong>
+                  <span className="hidden sm:inline"> • {student.className || 'Sınıf Belirtilmemiş'} • {(student.examRegistrations || []).length} Sınav Kaydı</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsStudentModalOpen(false);
+                      setEditingStudentId(null);
+                    }}
+                    className="px-5 py-2 sm:px-6 sm:py-2.5 bg-[#5a5a40] hover:bg-[#43423b] text-white text-xs sm:text-sm font-bold rounded-full shadow-xs hover:shadow transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Tamamla & Kapat</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

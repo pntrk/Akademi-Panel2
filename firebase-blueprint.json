@@ -42,6 +42,26 @@
         "data": { "type": "object" }
       },
       "required": ["id", "createdAt", "createdByEmail", "data"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Real-time push notification and announcement broadcasted to users, teachers, or students",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["exam_result", "exam_created", "announcement", "arena_update", "system"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "createdByEmail": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "targetRole": { "type": "string" },
+        "targetGrade": { "type": "string" },
+        "linkTab": { "type": "string" },
+        "readBy": { "type": "array" },
+        "urgent": { "type": "boolean" }
+      },
+      "required": ["id", "type", "title", "message", "createdAt"]
     }
   },
   "firestore": {
@@ -56,6 +76,10 @@
     "/access_requests/{requestId}": {
       "schema": "AccessRequest",
       "description": "User access requests awaiting administrator review"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "AppNotification",
+      "description": "Real-time notifications and announcements dispatched across devices"
     }
   }
 }

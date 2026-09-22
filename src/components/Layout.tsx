@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, LogOut, Shield, Download, Globe, HardDriveDownload, Cloud } from 'lucide-react';
+import { Users, Calendar, BarChart2, DollarSign, LayoutTemplate, Save, DownloadCloud, UploadCloud, Trophy, Sun, Moon, X, Settings, LogOut, Shield, Download, Globe, HardDriveDownload, Cloud, Bell } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { SettingsModal } from './SettingsModal';
@@ -7,6 +7,7 @@ import { FirebaseStatusModal } from './FirebaseStatusModal';
 import { CloudBackupModal } from './CloudBackupModal';
 import { AppHubModal } from './AppHubModal';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
+import { NotificationModal } from './NotificationModal';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { FullBackupData } from '../types';
@@ -28,7 +29,20 @@ const navItems = [
 ];
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout }) => {
-  const { userRole, state, restoreBackup, syncStatus, syncErrorMessage, saveNow, cloudBackups } = useAppContext();
+  const { 
+    userRole, 
+    state, 
+    restoreBackup, 
+    syncStatus, 
+    syncErrorMessage, 
+    saveNow, 
+    cloudBackups,
+    notifications,
+    unreadNotificationsCount,
+    isNotificationModalOpen,
+    setIsNotificationModalOpen,
+    openNotificationModal
+  } = useAppContext();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFirebaseStatusOpen, setIsFirebaseStatusOpen] = useState(false);
   const [isCloudBackupOpen, setIsCloudBackupOpen] = useState(false);
@@ -37,6 +51,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    (window as any).__navigateToTab = (tab: string) => setActiveTab(tab);
+  }, [setActiveTab]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -342,6 +360,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                 </button>
 
                 <button 
+                  onClick={() => { openNotificationModal(); closeMobileMenu(); }} 
+                  className="flex items-center justify-center p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] border border-amber-500/20 text-white transition-all gap-2 text-center cursor-pointer"
+                >
+                  <Bell className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-xs font-semibold">Bildirimler ({unreadNotificationsCount})</span>
+                </button>
+
+                <button 
                   onClick={() => setIsDarkMode(!isDarkMode)} 
                   className="flex items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white transition-all gap-2 text-center cursor-pointer"
                 >
@@ -387,6 +413,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               <h1 className="font-serif text-[1.75rem] italic font-semibold tracking-tight text-white mb-0.5">AkademiPanel</h1>
               <p className="text-[10px] uppercase tracking-[0.16em] text-white/50 font-medium">Ölçme ve Değerlendirme</p>
             </div>
+            <button
+              onClick={() => openNotificationModal()}
+              aria-label="Bildirimler"
+              title="Anlık Bildirim & Duyuru Merkezi"
+              className="relative p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white transition-all cursor-pointer active:scale-95 group"
+            >
+              <Bell className="w-4 h-4 text-amber-400 transition-transform group-hover:scale-110" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center shadow-md animate-pulse">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Navigation Menu */}
@@ -533,6 +572,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         onOpenAppHub={() => setIsAppHubOpen(true)}
         onOpenFirebaseStatus={() => setIsFirebaseStatusOpen(true)}
         onOpenUserManagement={() => setIsSettingsOpen(true)}
+        onOpenNotifications={() => openNotificationModal()}
         handleBackup={handleBackup}
         handleRestore={handleRestore}
         handleManualSave={handleManualSave}
@@ -543,6 +583,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       <FirebaseStatusModal isOpen={isFirebaseStatusOpen} onClose={() => setIsFirebaseStatusOpen(false)} />
       <CloudBackupModal isOpen={isCloudBackupOpen} onClose={() => setIsCloudBackupOpen(false)} />
       <AppHubModal isOpen={isAppHubOpen} onClose={() => setIsAppHubOpen(false)} />
+      <NotificationModal 
+        isOpen={isNotificationModalOpen} 
+        onClose={() => setIsNotificationModalOpen(false)}
+        notifications={notifications}
+        onNavigateTab={(tab) => setActiveTab(tab)}
+        currentUserEmail={currentUser?.email || undefined}
+      />
       
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-auto bg-brand-bg text-brand-ink transition-colors duration-200 w-full pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-0">
@@ -567,6 +614,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           </div>
           
           <div className="flex items-center gap-1.5">
+            <button 
+              onClick={() => openNotificationModal()} 
+              aria-label="Bildirimler"
+              title="Anlık Bildirimler & Duyurular"
+              className="relative w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 text-white/80 border border-white/10 transition-all cursor-pointer"
+            >
+              <Bell className="w-3.5 h-3.5 text-amber-400" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center animate-pulse">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
             <button 
               onClick={() => setIsAppHubOpen(true)} 
               aria-label="Cihaza Yükle & Vercel"

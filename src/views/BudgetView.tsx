@@ -14,7 +14,15 @@ import {
   MinusSquare,
   Sparkles,
   RefreshCw,
-  Coins
+  Coins,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Wallet,
+  Building2,
+  Calendar,
+  GraduationCap,
+  Layers,
+  CreditCard
 } from 'lucide-react';
 
 export const BudgetView = () => {
@@ -429,32 +437,42 @@ export const BudgetView = () => {
   const isAnyStudentDebtsSelected = selectedStudentDebtKeys.length > 0;
 
   return (
-    <div className="space-y-2.5 sm:space-y-6 flex flex-col h-full font-sans text-brand-ink">
-      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-2 sm:gap-4">
+    <div className="space-y-3 sm:space-y-5 flex flex-col h-full font-sans text-brand-ink">
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 sm:gap-4">
         <div className="w-full sm:w-auto">
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0 font-bold">
-                <Coins className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+          <div className="flex items-center justify-between sm:justify-start gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0 font-bold shadow-2xs">
+                <Coins className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
               </div>
-              <h2 className="text-xl sm:text-3xl md:text-4xl font-serif text-[#5a5a40] font-bold tracking-tight leading-tight">Bütçe Takibi</h2>
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-serif text-brand-ink font-bold tracking-tight leading-tight">
+                  Bütçe Takibi
+                </h2>
+                <p className="hidden sm:block text-brand-ink/60 text-xs mt-0.5">
+                  Sınav ve yayın bazlı gruplanmış gelir, harcama, borç takibi ve finansal özet
+                </p>
+              </div>
             </div>
-            <span className="sm:hidden text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            <span className={`sm:hidden text-xs font-bold px-2.5 py-1 rounded-full border shadow-2xs ${
+              remaining >= 0 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80' 
+                : 'bg-rose-50 text-rose-800 border-rose-200/80'
+            }`}>
               Net: ₺{(totalIncome - totalExpense).toLocaleString('tr-TR')}
             </span>
           </div>
-          <p className="hidden sm:block text-brand-ink/60 text-xs sm:text-sm mt-1">Sınav ve yayın bazlı gruplanmış gelir, harcama, borç takibi ve finansal özet</p>
         </div>
 
-        {/* Mobile Quick Toggles */}
+        {/* Mobile Quick Toggles & Active Segmented Control */}
         <div className="sm:hidden flex items-center justify-between w-full gap-2 pt-0.5">
           <button
             type="button"
             onClick={() => setIsMobileStatsOpen(!isMobileStatsOpen)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border shadow-2xs active:scale-95 ${
               isMobileStatsOpen 
-                ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-2xs' 
-                : 'bg-white text-[#5a5a40] border-brand-border/80 shadow-2xs'
+                ? 'bg-brand-ink text-white border-brand-ink' 
+                : 'bg-white text-brand-ink border-brand-border/80 hover:bg-[#FAF9F6]'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -462,14 +480,14 @@ export const BudgetView = () => {
             <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMobileStatsOpen ? 'rotate-180' : ''}`} />
           </button>
 
-          <div className="flex items-center bg-[#F5F4F0] p-1 rounded-xl border border-[#E6E2D3] gap-1 shadow-2xs">
+          <div className="flex items-center bg-[#F5F4F0] p-1 rounded-xl border border-brand-border/70 gap-1 shadow-2xs">
             <button
               type="button"
               onClick={() => setMobileBudgetTab('all')}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all active:scale-95 ${
                 mobileBudgetTab === 'all'
                   ? 'bg-white text-brand-ink shadow-2xs'
-                  : 'text-brand-ink/60'
+                  : 'text-brand-ink/60 hover:text-brand-ink'
               }`}
             >
               Tümü
@@ -477,10 +495,10 @@ export const BudgetView = () => {
             <button
               type="button"
               onClick={() => setMobileBudgetTab('incomes')}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all active:scale-95 ${
                 mobileBudgetTab === 'incomes'
                   ? 'bg-emerald-600 text-white shadow-2xs'
-                  : 'text-emerald-800'
+                  : 'text-emerald-700 hover:text-emerald-900'
               }`}
             >
               Gelir
@@ -488,10 +506,10 @@ export const BudgetView = () => {
             <button
               type="button"
               onClick={() => setMobileBudgetTab('expenses')}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all active:scale-95 ${
                 mobileBudgetTab === 'expenses'
                   ? 'bg-rose-600 text-white shadow-2xs'
-                  : 'text-rose-800'
+                  : 'text-rose-700 hover:text-rose-900'
               }`}
             >
               Gider
@@ -499,10 +517,10 @@ export const BudgetView = () => {
             <button
               type="button"
               onClick={() => setMobileBudgetTab('debts')}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all active:scale-95 ${
                 mobileBudgetTab === 'debts'
                   ? 'bg-amber-600 text-white shadow-2xs'
-                  : 'text-amber-800'
+                  : 'text-amber-700 hover:text-amber-900'
               }`}
             >
               Borç
@@ -515,125 +533,200 @@ export const BudgetView = () => {
           <button 
             type="button"
             onClick={() => setMobileBudgetTab(prev => prev === 'incomes' ? 'all' : 'incomes')}
-            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+            className={`p-2.5 sm:p-3.5 rounded-2xl border flex flex-col justify-between text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-2xs ${
               mobileBudgetTab === 'incomes'
-                ? 'bg-emerald-100 border-emerald-400 ring-2 ring-emerald-500/30'
-                : 'bg-emerald-50/80 border-emerald-200/80 hover:border-emerald-300'
+                ? 'bg-emerald-500/10 border-emerald-400 ring-2 ring-emerald-500/25'
+                : 'bg-white hover:bg-emerald-50/30 border-brand-border/70 hover:border-emerald-300'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-emerald-800/70 uppercase tracking-wider">Toplam Gelir</span>
-              {mobileBudgetTab === 'incomes' && <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <ArrowDownLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-emerald-950/70 uppercase tracking-wider truncate">
+                  Toplam Gelir
+                </span>
+              </div>
+              <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                mobileBudgetTab === 'incomes' ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-800'
+              }`}>
+                {mobileBudgetTab === 'incomes' ? 'Aktif' : `${incomes.length}`}
+              </span>
             </div>
-            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-emerald-800 mt-1">₺{totalIncome.toLocaleString('tr-TR')}</span>
+            <span className="text-base sm:text-xl font-bold font-sans tracking-tight text-emerald-700 mt-1.5 sm:mt-2">
+              ₺{totalIncome.toLocaleString('tr-TR')}
+            </span>
           </button>
           
           <button 
             type="button"
             onClick={() => setMobileBudgetTab(prev => prev === 'expenses' ? 'all' : 'expenses')}
-            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+            className={`p-2.5 sm:p-3.5 rounded-2xl border flex flex-col justify-between text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-2xs ${
               mobileBudgetTab === 'expenses'
-                ? 'bg-rose-100 border-rose-400 ring-2 ring-rose-500/30'
-                : 'bg-rose-50/80 border-rose-200/80 hover:border-rose-300'
+                ? 'bg-rose-500/10 border-rose-400 ring-2 ring-rose-500/25'
+                : 'bg-white hover:bg-rose-50/30 border-brand-border/70 hover:border-rose-300'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-rose-800/70 uppercase tracking-wider">Toplam Gider</span>
-              {mobileBudgetTab === 'expenses' && <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                  <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-rose-950/70 uppercase tracking-wider truncate">
+                  Toplam Gider
+                </span>
+              </div>
+              <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                mobileBudgetTab === 'expenses' ? 'bg-rose-600 text-white' : 'bg-rose-100 text-rose-800'
+              }`}>
+                {mobileBudgetTab === 'expenses' ? 'Aktif' : `${expenses.length}`}
+              </span>
             </div>
-            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-rose-800 mt-1">₺{totalExpense.toLocaleString('tr-TR')}</span>
+            <span className="text-base sm:text-xl font-bold font-sans tracking-tight text-rose-700 mt-1.5 sm:mt-2">
+              ₺{totalExpense.toLocaleString('tr-TR')}
+            </span>
           </button>
 
           <button 
             type="button"
             onClick={() => setMobileBudgetTab(prev => prev === 'debts' ? 'all' : 'debts')}
-            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
+            className={`p-2.5 sm:p-3.5 rounded-2xl border flex flex-col justify-between text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-2xs ${
               mobileBudgetTab === 'debts'
-                ? 'bg-amber-100 border-amber-400 ring-2 ring-amber-500/30'
-                : 'bg-amber-50/80 border-amber-200/80 hover:border-amber-300'
+                ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-500/25'
+                : 'bg-white hover:bg-amber-50/30 border-brand-border/70 hover:border-amber-300'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-amber-800/70 uppercase tracking-wider">Bekleyen Borç</span>
-              {mobileBudgetTab === 'debts' && <span className="text-[9px] bg-amber-600 text-white px-1.5 py-0.2 rounded font-bold">Aktif</span>}
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-amber-950/70 uppercase tracking-wider truncate">
+                  Bekleyen Borç
+                </span>
+              </div>
+              <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                mobileBudgetTab === 'debts' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {mobileBudgetTab === 'debts' ? 'Aktif' : `${debts.length + studentDebts.length}`}
+              </span>
             </div>
-            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-amber-800 mt-1">₺{totalDebt.toLocaleString('tr-TR')}</span>
+            <span className="text-base sm:text-xl font-bold font-sans tracking-tight text-amber-700 mt-1.5 sm:mt-2">
+              ₺{totalDebt.toLocaleString('tr-TR')}
+            </span>
           </button>
 
           <button 
             type="button"
             onClick={() => setMobileBudgetTab('all')}
-            className={`p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between text-left transition-all cursor-pointer active:scale-95 ${
-              remaining >= 0 ? 'bg-emerald-700 text-white border-emerald-800' : 'bg-rose-700 text-white border-rose-800'
-            } ${mobileBudgetTab === 'all' ? 'ring-2 ring-black/40' : ''}`}
+            className={`p-2.5 sm:p-3.5 rounded-2xl border flex flex-col justify-between text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-2xs ${
+              remaining >= 0 
+                ? 'bg-[#151618] text-white border-[#151618] hover:bg-[#222428]' 
+                : 'bg-rose-900 text-white border-rose-900 hover:bg-rose-950'
+            } ${mobileBudgetTab === 'all' ? 'ring-2 ring-brand-accent' : ''}`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Net Durum</span>
-              {mobileBudgetTab === 'all' && <span className="text-[9px] bg-black/30 text-white px-1.5 py-0.2 rounded font-bold">Tümü</span>}
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                  remaining >= 0 ? 'bg-white/10 text-emerald-400' : 'bg-white/10 text-rose-300'
+                }`}>
+                  <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider truncate">
+                  Net Durum
+                </span>
+              </div>
+              <span className="text-[9px] sm:text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-bold shrink-0">
+                {mobileBudgetTab === 'all' ? 'Tümü' : 'Görünüm'}
+              </span>
             </div>
-            <span className="text-base sm:text-lg font-sans font-bold tracking-tight text-white mt-1">₺{remaining.toLocaleString('tr-TR')}</span>
+            <span className={`text-base sm:text-xl font-bold font-sans tracking-tight mt-1.5 sm:mt-2 ${
+              remaining >= 0 ? 'text-emerald-300' : 'text-rose-200'
+            }`}>
+              ₺{remaining.toLocaleString('tr-TR')}
+            </span>
           </button>
         </div>
       </header>
 
-      {/* Desktop Tab Switcher for Tablets/Laptops */}
-      <div className="hidden sm:flex lg:hidden bg-[#f5f4f0] p-1 rounded-2xl border border-[#e6e2d3] gap-1 shrink-0">
+      {/* Desktop/Tablet Tab Switcher for Tablets/Laptops */}
+      <div className="hidden sm:flex lg:hidden bg-[#F5F4F0] p-1.5 rounded-2xl border border-brand-border/70 gap-1.5 shrink-0 shadow-2xs">
         <button
           type="button"
           onClick={() => setMobileBudgetTab('all')}
-          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+          className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
             mobileBudgetTab === 'all'
               ? 'bg-white text-brand-ink shadow-xs'
-              : 'text-brand-ink/60 hover:text-brand-ink'
+              : 'text-brand-ink/60 hover:text-brand-ink hover:bg-white/50'
           }`}
         >
-          Tümü
+          <Layers className="w-3.5 h-3.5" />
+          <span>Tümü (Tam Görünüm)</span>
         </button>
         <button
           type="button"
           onClick={() => setMobileBudgetTab('incomes')}
-          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
+          className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
             mobileBudgetTab === 'incomes'
               ? 'bg-emerald-600 text-white shadow-xs'
-              : 'text-emerald-800 hover:text-emerald-950'
+              : 'text-emerald-800 hover:text-emerald-950 hover:bg-emerald-50'
           }`}
         >
+          <ArrowDownLeft className="w-3.5 h-3.5" />
           <span>Gelirler</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+            mobileBudgetTab === 'incomes' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
+          }`}>
+            {incomes.length}
+          </span>
         </button>
         <button
           type="button"
           onClick={() => setMobileBudgetTab('expenses')}
-          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
+          className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
             mobileBudgetTab === 'expenses'
               ? 'bg-rose-600 text-white shadow-xs'
-              : 'text-rose-800 hover:text-rose-950'
+              : 'text-rose-800 hover:text-rose-950 hover:bg-rose-50'
           }`}
         >
+          <ArrowUpRight className="w-3.5 h-3.5" />
           <span>Giderler</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+            mobileBudgetTab === 'expenses' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'
+          }`}>
+            {expenses.length}
+          </span>
         </button>
         <button
           type="button"
           onClick={() => setMobileBudgetTab('debts')}
-          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
+          className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
             mobileBudgetTab === 'debts'
               ? 'bg-amber-600 text-white shadow-xs'
-              : 'text-amber-800 hover:text-amber-950'
+              : 'text-amber-800 hover:text-amber-950 hover:bg-amber-50'
           }`}
         >
+          <AlertTriangle className="w-3.5 h-3.5" />
           <span>Borçlar</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+            mobileBudgetTab === 'debts' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+          }`}>
+            {debts.length + studentDebts.length}
+          </span>
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl sm:rounded-[32px] p-2.5 sm:p-6 shadow-xs border border-[#e6e2d3] flex-1 overflow-hidden flex flex-col">
-        <div className="overflow-auto flex-1 pb-10">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-8 h-full">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 lg:p-6 shadow-xs border border-brand-border/70 flex-1 overflow-hidden flex flex-col">
+        <div className="overflow-auto flex-1 pb-6 pr-0.5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6 xl:gap-8 h-full">
             
             {/* Gelir Sütunu */}
             <div className={`flex flex-col ${
               mobileBudgetTab === 'all' || mobileBudgetTab === 'incomes' ? 'flex' : 'hidden lg:flex'
             }`}>
-              <div className="flex items-center justify-between mb-4 border-b border-[#e6e2d3] pb-2 shrink-0">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 border-b border-brand-border/70 shrink-0">
+                <div className="flex items-center space-x-2.5">
                   {incomes.length > 0 && (
                     <input
                       type="checkbox"
@@ -644,15 +737,23 @@ export const BudgetView = () => {
                         }
                       }}
                       onChange={toggleSelectAllIncomes}
-                      className="w-4 h-4 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer"
+                      className="w-4 h-4 rounded-md border-brand-border text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer"
                     />
                   )}
-                  <h3 className="text-sm font-bold text-[#8e8d82] uppercase tracking-wider">GELİR (TAHSİLATLAR)</h3>
+                  <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <ArrowDownLeft className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-xs sm:text-sm font-bold text-brand-ink uppercase tracking-wider">GELİR (TAHSİLATLAR)</h3>
+                    <span className="text-[10px] bg-emerald-50 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200/60">
+                      {incomes.length}
+                    </span>
+                  </div>
                 </div>
                 {isAnyIncomesSelected && (
                   <button
                     onClick={handleBulkDeleteIncomes}
-                    className="flex items-center space-x-1 text-xs font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition-all"
+                    className="flex items-center space-x-1 text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100/80 border border-rose-200/80 px-2.5 py-1 rounded-xl transition-all active:scale-95 shadow-2xs cursor-pointer"
                     title="Seçilen Gelirleri Toplu Sil"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -670,12 +771,12 @@ export const BudgetView = () => {
                    const isAnyGroupSelected = groupItemIds.some(id => selectedIncomeIds.includes(id));
 
                    return (
-                     <div key={group.examId} className="border border-[#e6e2d3] rounded-2xl overflow-hidden bg-white shadow-sm transition-all hover:shadow-md">
+                     <div key={group.examId} className="border border-emerald-100 rounded-2xl overflow-hidden bg-white shadow-2xs transition-all hover:shadow-xs hover:border-emerald-200">
                        <div
                          onClick={() => toggleIncomeGroup(group.examId)}
-                         className="flex items-center justify-between p-3 bg-emerald-50/50 hover:bg-emerald-100/40 cursor-pointer transition-colors"
+                         className="flex items-center justify-between p-3 bg-emerald-50/50 hover:bg-emerald-100/50 cursor-pointer transition-colors"
                        >
-                         <div className="flex items-center space-x-2.5 text-emerald-900 min-w-0">
+                         <div className="flex items-center space-x-2.5 text-emerald-950 min-w-0">
                            <input
                              type="checkbox"
                              checked={isAllGroupSelected}
@@ -684,27 +785,28 @@ export const BudgetView = () => {
                              }}
                              onClick={(e) => e.stopPropagation()}
                              onChange={(e) => toggleSelectIncomeGroup(group.items, e as any)}
-                             className="w-3.5 h-3.5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer shrink-0"
+                             className="w-3.5 h-3.5 rounded-md border-emerald-300 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer shrink-0"
                            />
                            {isExpanded ? (
                              <ChevronDown className="w-4 h-4 text-emerald-700 shrink-0" />
                            ) : (
                              <ChevronRight className="w-4 h-4 text-emerald-700 shrink-0" />
                            )}
-                           <span className="text-xs font-bold truncate">💸 {group.examName} Gelirleri</span>
-                           <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">
+                           <Calendar className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                           <span className="text-xs font-bold truncate">{group.examName} Gelirleri</span>
+                           <span className="text-[10px] bg-emerald-100/90 text-emerald-800 px-2 py-0.5 rounded-full font-bold shrink-0">
                              {group.items.length} Kalem
                            </span>
                          </div>
-                         <span className="text-sm font-bold text-emerald-800 shrink-0 ml-2">₺{group.totalAmount}</span>
+                         <span className="text-sm font-bold text-emerald-800 shrink-0 ml-2">₺{group.totalAmount.toLocaleString('tr-TR')}</span>
                        </div>
 
                        {isExpanded && (
-                         <div className="p-2 bg-emerald-50/10 border-t border-emerald-100 space-y-2 divide-y divide-emerald-100">
+                         <div className="p-2 bg-emerald-50/20 border-t border-emerald-100 space-y-1.5 divide-y divide-emerald-100/60">
                            {group.items.map((item, index) => {
                              const isSelected = selectedIncomeIds.includes(item.id);
                              return (
-                               <div key={item.id} className={`flex items-center group relative p-1 transition-all rounded-lg pl-8 ${isSelected ? 'bg-emerald-50/20' : 'hover:bg-white'}`}>
+                               <div key={item.id} className={`flex items-center group relative p-1.5 transition-all rounded-xl pl-8 ${isSelected ? 'bg-emerald-50/60 ring-1 ring-emerald-300' : 'hover:bg-white'}`}>
                                  <input
                                    type="checkbox"
                                    checked={isSelected}
@@ -713,27 +815,29 @@ export const BudgetView = () => {
                                        prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
                                      );
                                    }}
-                                   className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer"
+                                   className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-md border-brand-border text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer"
                                  />
-                                 <div className="w-6 text-center text-[10px] font-bold text-[#8e8d82] shrink-0">{index + 1}</div>
+                                 <div className="w-5 text-center text-[10px] font-mono font-bold text-brand-ink/40 shrink-0">{index + 1}</div>
                                  <input
                                    type="text"
                                    value={item.name}
                                    onChange={e => handleUpdate('incomes', item.id, 'name', e.target.value)}
-                                   className="flex-1 p-1 w-full min-w-0 text-xs font-medium bg-transparent focus:ring-0 border-none text-[#5a5a40]"
+                                   className="flex-1 px-2 py-1 w-full min-w-0 text-xs font-medium text-brand-ink bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-emerald-500/30 rounded-lg border-none"
                                    placeholder="Gelir Kalemi"
                                  />
-                                 <div className="font-bold text-[#5a5a40] flex items-center pr-2 shrink-0">
-                                   ₺<input
+                                 <div className="font-bold text-emerald-800 flex items-center pr-1 shrink-0">
+                                   <span className="text-xs">₺</span>
+                                   <input
                                      type="number"
                                      value={item.amount || ''}
                                      onChange={e => handleUpdate('incomes', item.id, 'amount', parseInt(e.target.value) || 0)}
-                                     className="w-16 sm:w-20 p-1 text-xs font-bold text-right bg-transparent focus:ring-0 border-none"
+                                     className="w-16 sm:w-20 px-1 py-1 text-xs font-bold text-right bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-emerald-500/30 rounded-lg border-none"
                                    />
                                  </div>
                                  <button
                                    onClick={() => handleRemove('incomes', item.id)}
-                                   className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                   className="w-7 h-7 rounded-lg flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 cursor-pointer active:scale-95"
+                                   title="Sil"
                                  >
                                    <Trash2 className="w-3.5 h-3.5" />
                                  </button>
@@ -750,7 +854,7 @@ export const BudgetView = () => {
                  {groupedIncomes.ungrouped.map((item, index) => {
                    const isSelected = selectedIncomeIds.includes(item.id);
                    return (
-                     <div key={item.id} className={`flex items-center group rounded-xl p-2 border transition-colors relative pl-9 ${isSelected ? 'bg-emerald-50/10 border-emerald-300' : 'bg-white border-[#e6e2d3] hover:border-[#5a5a40]/30'}`}>
+                     <div key={item.id} className={`flex items-center group rounded-xl p-2 border transition-all relative pl-9 ${isSelected ? 'bg-emerald-50/30 border-emerald-300 ring-1 ring-emerald-200' : 'bg-white border-brand-border/70 hover:border-emerald-300/80 shadow-2xs'}`}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -759,24 +863,28 @@ export const BudgetView = () => {
                               prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
                             );
                           }}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-md border-brand-border text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer"
                         />
-                        <div className="w-6 text-center text-xs font-bold text-[#8e8d82] shrink-0">{index + 1}</div>
-                        <input type="text" value={item.name} onChange={e => handleUpdate('incomes', item.id, 'name', e.target.value)} className="flex-1 min-w-0 p-2 text-sm font-medium bg-transparent focus:ring-0 border-none text-[#5a5a40]" placeholder="Gelir Kalemi" />
-                        <div className="font-bold text-[#5a5a40] flex items-center pr-2 shrink-0">
-                          ₺<input type="number" value={item.amount || ''} onChange={e => handleUpdate('incomes', item.id, 'amount', parseInt(e.target.value)||0)} className="w-16 sm:w-20 p-2 text-sm font-bold text-right bg-transparent focus:ring-0 border-none" />
+                        <div className="w-5 text-center text-xs font-mono font-bold text-brand-ink/40 shrink-0">{index + 1}</div>
+                        <input type="text" value={item.name} onChange={e => handleUpdate('incomes', item.id, 'name', e.target.value)} className="flex-1 min-w-0 px-2 py-1 text-xs sm:text-sm font-medium text-brand-ink bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-emerald-500/30 rounded-lg border-none" placeholder="Gelir Kalemi" />
+                        <div className="font-bold text-emerald-800 flex items-center pr-1 shrink-0">
+                          <span className="text-xs">₺</span>
+                          <input type="number" value={item.amount || ''} onChange={e => handleUpdate('incomes', item.id, 'amount', parseInt(e.target.value)||0)} className="w-16 sm:w-20 px-1 py-1 text-xs sm:text-sm font-bold text-right bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-emerald-500/30 rounded-lg border-none" />
                         </div>
-                        <button onClick={() => handleRemove('incomes', item.id)} className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                        <button onClick={() => handleRemove('incomes', item.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 cursor-pointer active:scale-95"><Trash2 className="w-3.5 h-3.5"/></button>
                      </div>
                    );
                  })}
 
-                 <button onClick={() => handleAdd('incomes')} className="w-full text-center py-3 text-sm text-[#5a5a40] hover:bg-[#f5f5f0] font-medium rounded-xl border border-dashed border-[#d6d2c3] mt-2">+ Gelir Ekle</button>
+                 <button onClick={() => handleAdd('incomes')} className="w-full flex items-center justify-center gap-1.5 py-2.5 sm:py-3 text-xs sm:text-sm text-brand-ink hover:text-black bg-[#FAF9F6] hover:bg-[#F2EFE9] font-bold rounded-xl border border-dashed border-brand-border hover:border-brand-accent/60 transition-all cursor-pointer active:scale-[0.99] mt-2.5 shadow-2xs">
+                   <Plus className="w-4 h-4 text-emerald-700" />
+                   <span>Gelir Kalemi Ekle</span>
+                 </button>
               </div>
               
-              <div className="mt-6 flex justify-between items-center py-4 border-t border-[#e6e2d3] shrink-0">
-                  <span className="text-sm font-bold text-[#8e8d82] uppercase tracking-wider">TOPLAM GELİR</span>
-                  <span className="text-lg xl:text-xl font-bold text-emerald-700">₺{totalIncome}</span>
+              <div className="mt-4 pt-3.5 pb-3 px-3.5 bg-emerald-50/60 rounded-xl border border-emerald-100/90 flex justify-between items-center shrink-0 shadow-2xs">
+                  <span className="text-xs font-bold text-emerald-950/70 uppercase tracking-wider">TOPLAM GELİR</span>
+                  <span className="text-base sm:text-lg font-bold text-emerald-700 tabular-nums">₺{totalIncome.toLocaleString('tr-TR')}</span>
               </div>
             </div>
 
@@ -784,8 +892,8 @@ export const BudgetView = () => {
             <div className={`flex flex-col ${
               mobileBudgetTab === 'all' || mobileBudgetTab === 'expenses' ? 'flex' : 'hidden lg:flex'
             }`}>
-              <div className="flex items-center justify-between mb-4 border-b border-[#e6e2d3] pb-2 shrink-0">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 border-b border-brand-border/70 shrink-0">
+                <div className="flex items-center space-x-2.5">
                   {expenses.length > 0 && (
                     <input
                       type="checkbox"
@@ -796,15 +904,23 @@ export const BudgetView = () => {
                         }
                       }}
                       onChange={toggleSelectAllExpenses}
-                      className="w-4 h-4 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer"
+                      className="w-4 h-4 rounded-md border-brand-border text-rose-600 focus:ring-rose-500 transition-colors cursor-pointer"
                     />
                   )}
-                  <h3 className="text-sm font-bold text-[#8e8d82] uppercase tracking-wider">GİDER (HARCAMALAR)</h3>
+                  <div className="w-6 h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-xs sm:text-sm font-bold text-brand-ink uppercase tracking-wider">GİDER (HARCAMALAR)</h3>
+                    <span className="text-[10px] bg-rose-50 text-rose-800 font-bold px-2 py-0.5 rounded-full border border-rose-200/60">
+                      {expenses.length}
+                    </span>
+                  </div>
                 </div>
                 {isAnyExpensesSelected && (
                   <button
                     onClick={handleBulkDeleteExpenses}
-                    className="flex items-center space-x-1 text-xs font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition-all"
+                    className="flex items-center space-x-1 text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100/80 border border-rose-200/80 px-2.5 py-1 rounded-xl transition-all active:scale-95 shadow-2xs cursor-pointer"
                     title="Seçilen Harcamaları Toplu Sil"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -822,12 +938,12 @@ export const BudgetView = () => {
                    const isAnyGroupSelected = groupItemIds.some(id => selectedExpenseIds.includes(id));
 
                    return (
-                     <div key={group.publisherName} className="border border-[#e6e2d3] rounded-2xl overflow-hidden bg-white shadow-sm transition-all hover:shadow-md">
+                     <div key={group.publisherName} className="border border-amber-100/90 rounded-2xl overflow-hidden bg-white shadow-2xs transition-all hover:shadow-xs hover:border-amber-200">
                        <div
                          onClick={() => toggleExpenseGroup(group.publisherName)}
-                         className="flex items-center justify-between p-3 bg-amber-50/70 hover:bg-amber-100/60 cursor-pointer transition-colors"
+                         className="flex items-center justify-between p-3 bg-amber-50/60 hover:bg-amber-100/50 cursor-pointer transition-colors"
                        >
-                         <div className="flex items-center space-x-2.5 text-amber-900 min-w-0">
+                         <div className="flex items-center space-x-2.5 text-amber-950 min-w-0">
                            <input
                              type="checkbox"
                              checked={isAllGroupSelected}
@@ -836,27 +952,28 @@ export const BudgetView = () => {
                              }}
                              onClick={(e) => e.stopPropagation()}
                              onChange={(e) => toggleSelectExpenseGroup(group.items, e as any)}
-                             className="w-3.5 h-3.5 rounded border-amber-300 text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer shrink-0"
+                             className="w-3.5 h-3.5 rounded-md border-amber-300 text-amber-700 focus:ring-amber-500 transition-colors cursor-pointer shrink-0"
                            />
                            {isExpanded ? (
                              <ChevronDown className="w-4 h-4 text-amber-700 shrink-0" />
                            ) : (
                              <ChevronRight className="w-4 h-4 text-amber-700 shrink-0" />
                            )}
-                           <span className="text-xs font-bold truncate">🏢 {group.publisherName} Harcamaları</span>
-                           <span className="text-[10px] bg-amber-100/80 text-amber-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">
+                           <Building2 className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                           <span className="text-xs font-bold truncate">{group.publisherName} Harcamaları</span>
+                           <span className="text-[10px] bg-amber-100/90 text-amber-800 px-2 py-0.5 rounded-full font-bold shrink-0">
                              {group.items.length} Kalem
                            </span>
                          </div>
-                         <span className="text-sm font-bold text-amber-800 shrink-0 ml-2">₺{group.totalAmount}</span>
+                         <span className="text-sm font-bold text-amber-800 shrink-0 ml-2">₺{group.totalAmount.toLocaleString('tr-TR')}</span>
                        </div>
 
                        {isExpanded && (
-                         <div className="p-2 bg-[#fcfbf7]/40 border-t border-[#e6e2d3] space-y-2 divide-y divide-[#f5f5f0]">
+                         <div className="p-2 bg-[#FCFBF7] border-t border-brand-border/70 space-y-1.5 divide-y divide-brand-border/40">
                            {group.items.map((item, index) => {
                              const isSelected = selectedExpenseIds.includes(item.id);
                              return (
-                               <div key={item.id} className={`flex items-center group relative p-1 transition-all rounded-lg pl-8 ${isSelected ? 'bg-amber-50/20' : 'hover:bg-white'}`}>
+                               <div key={item.id} className={`flex items-center group relative p-1.5 transition-all rounded-xl pl-8 ${isSelected ? 'bg-amber-50/40 ring-1 ring-amber-300' : 'hover:bg-white'}`}>
                                  <input
                                    type="checkbox"
                                    checked={isSelected}
@@ -865,29 +982,31 @@ export const BudgetView = () => {
                                        prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
                                      );
                                    }}
-                                   className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer"
+                                   className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-md border-brand-border text-rose-600 focus:ring-rose-500 transition-colors cursor-pointer"
                                  />
-                                 <div className="w-6 text-center text-[10px] font-bold text-[#8e8d82] shrink-0">{index + 1}</div>
+                                 <div className="w-5 text-center text-[10px] font-mono font-bold text-brand-ink/40 shrink-0">{index + 1}</div>
                                  <input
                                    type="text"
                                    value={item.name}
                                    onChange={e => handleUpdate('expenses', item.id, 'name', e.target.value)}
-                                   className="flex-1 p-1 w-full min-w-0 text-xs font-medium bg-transparent focus:ring-0 border-none text-[#5a5a40]"
+                                   className="flex-1 px-2 py-1 w-full min-w-0 text-xs font-medium text-brand-ink bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-rose-500/30 rounded-lg border-none"
                                    placeholder="Harcama Kalemi"
                                  />
-                                 <div className="font-bold text-[#5a5a40] flex items-center pr-2 shrink-0">
-                                   ₺<input
+                                 <div className="font-bold text-rose-800 flex items-center pr-1 shrink-0">
+                                   <span className="text-xs">₺</span>
+                                   <input
                                      type="number"
                                      value={item.amount || ''}
                                      onChange={e => handleUpdate('expenses', item.id, 'amount', parseInt(e.target.value) || 0)}
-                                     className="w-16 sm:w-20 p-1 text-xs font-bold text-right bg-transparent focus:ring-0 border-none"
+                                     className="w-16 sm:w-20 px-1 py-1 text-xs font-bold text-right bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-rose-500/30 rounded-lg border-none"
                                    />
                                  </div>
                                  <button
                                    onClick={() => handleRemove('expenses', item.id)}
-                                   className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                   className="w-7 h-7 rounded-lg flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 cursor-pointer active:scale-95"
+                                   title="Sil"
                                  >
-                                   <Trash2 className="w-3 h-3" />
+                                   <Trash2 className="w-3.5 h-3.5" />
                                  </button>
                                </div>
                              );
@@ -902,7 +1021,7 @@ export const BudgetView = () => {
                  {groupedExpenses.ungrouped.map((item, index) => {
                    const isSelected = selectedExpenseIds.includes(item.id);
                    return (
-                     <div key={item.id} className={`flex items-center group rounded-xl p-2 border transition-colors relative pl-9 ${isSelected ? 'bg-amber-50/10 border-amber-300' : 'bg-white border-[#e6e2d3] hover:border-[#5a5a40]/30'}`}>
+                     <div key={item.id} className={`flex items-center group rounded-xl p-2 border transition-all relative pl-9 ${isSelected ? 'bg-rose-50/30 border-rose-300 ring-1 ring-rose-200' : 'bg-white border-brand-border/70 hover:border-rose-300/80 shadow-2xs'}`}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -911,34 +1030,38 @@ export const BudgetView = () => {
                               prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
                             );
                           }}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-md border-brand-border text-rose-600 focus:ring-rose-500 transition-colors cursor-pointer"
                         />
-                        <div className="w-6 text-center text-xs font-bold text-[#8e8d82] shrink-0">{index + 1}</div>
-                        <input type="text" value={item.name} onChange={e => handleUpdate('expenses', item.id, 'name', e.target.value)} className="flex-1 min-w-0 p-2 text-sm font-medium bg-transparent focus:ring-0 border-none text-[#5a5a40]" placeholder="Harcama Kalemi" />
-                        <div className="font-bold text-[#5a5a40] flex items-center pr-2 shrink-0">
-                          ₺<input type="number" value={item.amount || ''} onChange={e => handleUpdate('expenses', item.id, 'amount', parseInt(e.target.value)||0)} className="w-16 sm:w-20 p-2 text-sm font-bold text-right bg-transparent focus:ring-0 border-none" />
+                        <div className="w-5 text-center text-xs font-mono font-bold text-brand-ink/40 shrink-0">{index + 1}</div>
+                        <input type="text" value={item.name} onChange={e => handleUpdate('expenses', item.id, 'name', e.target.value)} className="flex-1 min-w-0 px-2 py-1 text-xs sm:text-sm font-medium text-brand-ink bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-rose-500/30 rounded-lg border-none" placeholder="Harcama Kalemi" />
+                        <div className="font-bold text-rose-800 flex items-center pr-1 shrink-0">
+                          <span className="text-xs">₺</span>
+                          <input type="number" value={item.amount || ''} onChange={e => handleUpdate('expenses', item.id, 'amount', parseInt(e.target.value)||0)} className="w-16 sm:w-20 px-1 py-1 text-xs sm:text-sm font-bold text-right bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-rose-500/30 rounded-lg border-none" />
                         </div>
-                        <button onClick={() => handleRemove('expenses', item.id)} className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                        <button onClick={() => handleRemove('expenses', item.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 cursor-pointer active:scale-95"><Trash2 className="w-3.5 h-3.5"/></button>
                      </div>
                    );
                  })}
 
-                 <button onClick={() => handleAdd('expenses')} className="w-full text-center py-3 text-sm text-[#5a5a40] hover:bg-[#f5f5f0] font-medium rounded-xl border border-dashed border-[#d6d2c3] mt-2">+ Harcama Ekle</button>
+                 <button onClick={() => handleAdd('expenses')} className="w-full flex items-center justify-center gap-1.5 py-2.5 sm:py-3 text-xs sm:text-sm text-brand-ink hover:text-black bg-[#FAF9F6] hover:bg-[#F2EFE9] font-bold rounded-xl border border-dashed border-brand-border hover:border-rose-400/60 transition-all cursor-pointer active:scale-[0.99] mt-2.5 shadow-2xs">
+                   <Plus className="w-4 h-4 text-rose-700" />
+                   <span>Harcama Kalemi Ekle</span>
+                 </button>
               </div>
               
-              <div className="mt-6 flex justify-between items-center py-4 border-t border-[#e6e2d3] shrink-0">
-                  <span className="text-sm font-bold text-[#8e8d82] uppercase tracking-wider">TOPLAM HARCAMA</span>
-                  <span className="text-lg xl:text-xl font-bold text-[#5a5a40]">₺{totalExpense}</span>
+              <div className="mt-4 pt-3.5 pb-3 px-3.5 bg-rose-50/60 rounded-xl border border-rose-100/90 flex justify-between items-center shrink-0 shadow-2xs">
+                  <span className="text-xs font-bold text-rose-950/70 uppercase tracking-wider">TOPLAM HARCAMA</span>
+                  <span className="text-base sm:text-lg font-bold text-rose-700 tabular-nums">₺{totalExpense.toLocaleString('tr-TR')}</span>
               </div>
             </div>
 
             {/* Borç Sütunu */}
-            <div className={`flex flex-col space-y-6 ${
+            <div className={`flex flex-col space-y-5 ${
               mobileBudgetTab === 'all' || mobileBudgetTab === 'debts' ? 'flex' : 'hidden lg:flex'
             }`}>
                <div>
-                 <div className="flex items-center justify-between mb-4 border-b border-[#e6e2d3] pb-2 shrink-0">
-                    <div className="flex items-center space-x-2">
+                 <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 border-b border-brand-border/70 shrink-0">
+                    <div className="flex items-center space-x-2.5">
                       {debts.length > 0 && (
                         <input
                           type="checkbox"
@@ -949,24 +1072,32 @@ export const BudgetView = () => {
                             }
                           }}
                           onChange={toggleSelectAllDebts}
-                          className="w-4 h-4 rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] transition-colors cursor-pointer"
+                          className="w-4 h-4 rounded-md border-brand-border text-rose-600 focus:ring-rose-500 transition-colors cursor-pointer"
                         />
                       )}
-                      <h3 className="text-sm font-bold text-[#8e8d82] uppercase tracking-wider">BORÇ (GENEL)</h3>
+                      <div className="w-6 h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-xs sm:text-sm font-bold text-brand-ink uppercase tracking-wider">BORÇ (GENEL)</h3>
+                        <span className="text-[10px] bg-rose-50 text-rose-800 font-bold px-2 py-0.5 rounded-full border border-rose-200/60">
+                          {debts.length}
+                        </span>
+                      </div>
                     </div>
                     {isAnyDebtsSelected && (
                       <div className="flex items-center space-x-1.5">
                         <button
                           onClick={handleBulkPayDebts}
-                          className="flex items-center space-x-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-all"
+                          className="flex items-center space-x-1 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-200/80 px-2.5 py-1 rounded-xl transition-all active:scale-95 shadow-2xs cursor-pointer"
                           title="Seçilen Borçları Öde ve Giderlere Aktar"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Öde ({selectedDebtIds.length})</span>
                         </button>
                         <button
                           onClick={handleBulkDeleteDebts}
-                          className="flex items-center space-x-1 text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition-all"
+                          className="flex items-center space-x-1 text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100/80 border border-rose-200/80 px-2.5 py-1 rounded-xl transition-all active:scale-95 shadow-2xs cursor-pointer"
                           title="Seçilen Borçları Sil"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -980,7 +1111,7 @@ export const BudgetView = () => {
                    {debts.map(item => {
                      const isSelected = selectedDebtIds.includes(item.id);
                      return (
-                       <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center group rounded-xl p-2 border transition-colors relative gap-2 sm:gap-0 pl-10 ${isSelected ? 'bg-red-50/30 border-red-200' : 'bg-[#f5f5f0] border-[#e6e2d3] hover:border-red-300'}`}>
+                       <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center group rounded-xl p-2 border transition-all relative gap-2 sm:gap-0 pl-10 ${isSelected ? 'bg-rose-50/40 border-rose-300 ring-1 ring-rose-200' : 'bg-white border-brand-border/70 hover:border-rose-300/80 shadow-2xs'}`}>
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -989,36 +1120,40 @@ export const BudgetView = () => {
                                 prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
                               );
                             }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded border-[#e6e2d3] text-red-600 focus:ring-red-500 transition-colors cursor-pointer"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-md border-brand-border text-rose-600 focus:ring-rose-500 transition-colors cursor-pointer"
                           />
-                          <input type="text" value={item.name} onChange={e => handleUpdate('debts', item.id, 'name', e.target.value)} className="flex-1 min-w-0 p-2 text-sm font-medium bg-transparent focus:ring-0 border-none text-red-900" placeholder="Borç Kalemi" />
+                          <input type="text" value={item.name} onChange={e => handleUpdate('debts', item.id, 'name', e.target.value)} className="flex-1 min-w-0 px-2 py-1 text-xs sm:text-sm font-medium text-brand-ink bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-rose-500/30 rounded-lg border-none" placeholder="Borç Kalemi" />
                           
                           <div className="flex items-center justify-between sm:justify-end shrink-0 pl-2">
-                            <div className="font-bold text-red-700 flex items-center pr-2">
-                              ₺<input type="number" value={item.amount || ''} onChange={e => handleUpdate('debts', item.id, 'amount', parseInt(e.target.value)||0)} className="w-16 sm:w-20 p-2 text-sm font-bold text-right bg-transparent focus:ring-0 border-none" />
+                            <div className="font-bold text-rose-800 flex items-center pr-2">
+                              <span className="text-xs">₺</span>
+                              <input type="number" value={item.amount || ''} onChange={e => handleUpdate('debts', item.id, 'amount', parseInt(e.target.value)||0)} className="w-16 sm:w-20 px-1 py-1 text-xs sm:text-sm font-bold text-right bg-transparent hover:bg-white focus:bg-white focus:ring-1 focus:ring-rose-500/30 rounded-lg border-none" />
                             </div>
                             <button 
                               onClick={() => handlePayDebt(item)} 
-                              className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 p-1.5 rounded-lg flex items-center space-x-1 text-xs font-bold transition-colors ml-1"
+                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 px-2 py-1 rounded-lg flex items-center space-x-1 text-xs font-bold transition-all ml-1 shadow-2xs active:scale-95 cursor-pointer"
                               title="Ödendi İşaretle (Harcamalara Aktar)"
                             >
-                              <CheckCircle2 className="w-4 h-4" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                               <span className="hidden sm:inline">Öde</span>
                             </button>
                           </div>
 
-                          <button onClick={() => handleRemove('debts', item.id)} className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                          <button onClick={() => handleRemove('debts', item.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-brand-ink/40 hover:text-rose-600 hover:bg-rose-50 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 ml-1 cursor-pointer active:scale-95"><Trash2 className="w-3.5 h-3.5"/></button>
                        </div>
                      );
                    })}
-                   <button onClick={() => handleAdd('debts')} className="w-full text-center py-2.5 text-xs text-red-700 hover:bg-red-50 font-bold rounded-xl border border-dashed border-red-200 mt-2">+ Genel Borç Ekle</button>
+                   <button onClick={() => handleAdd('debts')} className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-brand-ink hover:text-black bg-[#FAF9F6] hover:bg-[#F2EFE9] font-bold rounded-xl border border-dashed border-brand-border hover:border-amber-400/60 transition-all cursor-pointer active:scale-[0.99] mt-2 shadow-2xs">
+                     <Plus className="w-3.5 h-3.5 text-amber-700" />
+                     <span>Genel Borç Ekle</span>
+                   </button>
                  </div>
                </div>
 
                {/* Öğrenci Sınav Borçları Listesi */}
                <div className="flex-1 flex flex-col min-h-[220px]">
-                 <div className="flex items-center justify-between mb-3 border-b border-[#e6e2d3] pb-1.5 shrink-0">
-                   <div className="flex items-center space-x-2">
+                 <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-brand-border/70 shrink-0">
+                   <div className="flex items-center space-x-2.5">
                      {studentDebts.length > 0 && (
                        <input
                          type="checkbox"
@@ -1029,18 +1164,25 @@ export const BudgetView = () => {
                            }
                          }}
                          onChange={toggleSelectAllStudentDebts}
-                         className="w-4 h-4 rounded border-red-300 text-red-600 focus:ring-red-500 transition-colors cursor-pointer"
+                         className="w-4 h-4 rounded-md border-brand-border text-amber-600 focus:ring-amber-500 transition-colors cursor-pointer"
                        />
                      )}
-                     <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider flex items-center">
-                       <AlertTriangle className="w-3.5 h-3.5 mr-1 text-red-600 shrink-0" />
-                       ÖĞRENCİ SINAV BORÇLARI ({studentDebts.length})
-                     </h4>
+                     <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                       <GraduationCap className="w-3.5 h-3.5" />
+                     </div>
+                     <div className="flex items-center gap-1.5">
+                       <h4 className="text-xs sm:text-sm font-bold text-brand-ink uppercase tracking-wider">
+                         ÖĞRENCİ SINAV BORÇLARI
+                       </h4>
+                       <span className="text-[10px] bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200/60">
+                         {studentDebts.length}
+                       </span>
+                     </div>
                    </div>
                    {isAnyStudentDebtsSelected && (
                      <button
                        onClick={handleBulkCollectStudentDebts}
-                       className="flex items-center space-x-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-all"
+                       className="flex items-center space-x-1 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-200/80 px-2.5 py-1 rounded-xl transition-all active:scale-95 shadow-2xs cursor-pointer"
                        title="Seçili Öğrencilerin Kayıt Ücretini Toplu Tahsil Et"
                      >
                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -1057,12 +1199,12 @@ export const BudgetView = () => {
                      const isAnyGroupSelected = groupKeys.some(key => selectedStudentDebtKeys.includes(key));
 
                      return (
-                       <div key={group.examId} className="border border-red-100 rounded-2xl overflow-hidden bg-white shadow-sm transition-all hover:shadow-md">
+                       <div key={group.examId} className="border border-amber-100/90 rounded-2xl overflow-hidden bg-white shadow-2xs transition-all hover:shadow-xs hover:border-amber-200">
                          <div
                            onClick={() => toggleStudentDebtGroup(group.examId)}
-                           className="flex items-center justify-between p-3 bg-red-50/75 hover:bg-red-100/60 cursor-pointer transition-colors"
+                           className="flex items-center justify-between p-3 bg-amber-50/60 hover:bg-amber-100/50 cursor-pointer transition-colors"
                          >
-                           <div className="flex items-center space-x-2 text-red-900 min-w-0">
+                           <div className="flex items-center space-x-2.5 text-amber-950 min-w-0">
                              <input
                                type="checkbox"
                                checked={isAllGroupSelected}
@@ -1071,28 +1213,29 @@ export const BudgetView = () => {
                                }}
                                onClick={(e) => e.stopPropagation()}
                                onChange={(e) => toggleSelectStudentDebtGroup(group.list, e as any)}
-                               className="w-3.5 h-3.5 rounded border-red-300 text-red-600 focus:ring-red-500 transition-colors cursor-pointer shrink-0"
+                               className="w-3.5 h-3.5 rounded-md border-amber-300 text-amber-700 focus:ring-amber-500 transition-colors cursor-pointer shrink-0"
                              />
                              {isExpanded ? (
-                               <ChevronDown className="w-4 h-4 text-red-700 shrink-0" />
+                               <ChevronDown className="w-4 h-4 text-amber-700 shrink-0" />
                              ) : (
-                               <ChevronRight className="w-4 h-4 text-red-700 shrink-0" />
+                               <ChevronRight className="w-4 h-4 text-amber-700 shrink-0" />
                              )}
-                             <span className="text-xs font-bold truncate">⚠️ {group.examName} Borçları</span>
-                             <span className="text-[10px] bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">
+                             <Calendar className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                             <span className="text-xs font-bold truncate">{group.examName} Borçları</span>
+                             <span className="text-[10px] bg-amber-100/90 text-amber-800 px-2 py-0.5 rounded-full font-bold shrink-0">
                                {group.list.length} Öğrenci
                              </span>
                            </div>
-                           <span className="text-sm font-bold text-red-800 shrink-0 ml-2">₺{group.totalFee}</span>
+                           <span className="text-sm font-bold text-amber-800 shrink-0 ml-2">₺{group.totalFee.toLocaleString('tr-TR')}</span>
                          </div>
                          
                          {isExpanded && (
-                           <div className="p-2 bg-red-50/10 border-t border-red-100 space-y-2 divide-y divide-red-100">
+                           <div className="p-2 bg-[#FCFBF7] border-t border-brand-border/70 space-y-1.5 divide-y divide-brand-border/40">
                              {group.list.map((item, idx) => {
                                const key = `${item.studentId}_${item.examId}`;
                                const isSelected = selectedStudentDebtKeys.includes(key);
                                return (
-                                 <div key={idx} className={`border border-red-50/40 rounded-xl p-2.5 flex items-center justify-between transition-all shadow-xs relative pl-9 ${isSelected ? 'bg-red-50/30' : 'bg-white/80 hover:bg-white'}`}>
+                                 <div key={idx} className={`rounded-xl p-2 flex items-center justify-between transition-all relative pl-8 ${isSelected ? 'bg-amber-50/70 ring-1 ring-amber-300' : 'hover:bg-white'}`}>
                                    <input
                                      type="checkbox"
                                      checked={isSelected}
@@ -1101,21 +1244,23 @@ export const BudgetView = () => {
                                          prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
                                        );
                                      }}
-                                     className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded border-red-200 text-red-600 focus:ring-red-500 transition-colors cursor-pointer"
+                                     className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-md border-brand-border text-amber-600 focus:ring-amber-500 transition-colors cursor-pointer"
                                    />
-                                   <div className="min-w-0">
-                                     <p className="text-xs font-bold text-[#5a5a40] truncate">{item.studentName}</p>
-                                     <p className="text-[10px] text-gray-500 font-semibold">{item.studentClass}</p>
+                                   <div className="min-w-0 pr-2">
+                                     <p className="text-xs font-bold text-brand-ink truncate">{item.studentName}</p>
+                                     <span className="text-[10px] text-brand-ink/60 font-semibold inline-block px-1.5 py-0.2 rounded-md bg-[#F5F4F0] border border-brand-border/40 mt-0.5">
+                                       {item.studentClass}
+                                     </span>
                                    </div>
                                    <div className="flex items-center space-x-2 shrink-0">
-                                     <span className="text-xs font-bold text-red-700">₺{item.fee}</span>
+                                     <span className="text-xs font-bold text-amber-900 font-sans">₺{item.fee.toLocaleString('tr-TR')}</span>
                                      <button
                                        onClick={() => handleCollectStudentDebt(item)}
-                                       className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center gap-0.5"
+                                       className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
                                        title="Kayıt ücretini tahsil et ve bütçeye kaydet"
                                      >
-                                       <CheckCircle2 className="w-3 h-3" />
-                                       Tahsil Et
+                                       <CheckCircle2 className="w-3.5 h-3.5" />
+                                       <span>Tahsil Et</span>
                                      </button>
                                    </div>
                                  </div>
@@ -1128,25 +1273,26 @@ export const BudgetView = () => {
                    })}
                    
                    {studentDebts.length === 0 && (
-                     <div className="text-center py-8 text-xs text-emerald-800 bg-emerald-50/50 rounded-xl border border-emerald-100 font-medium">
-                       Aktif ödenmemiş öğrenci sınav borcu bulunmuyor. Tebrikler! 🎉
+                     <div className="text-center py-6 text-xs text-emerald-800 bg-emerald-50/50 rounded-2xl border border-emerald-100 font-semibold flex flex-col items-center justify-center gap-1.5 shadow-2xs">
+                       <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                       <span>Aktif ödenmemiş öğrenci sınav borcu bulunmuyor.</span>
                      </div>
                    )}
                  </div>
                </div>
 
-               <div className="mt-6 pt-4 border-t border-[#e6e2d3] space-y-1.5 shrink-0">
-                  <div className="flex justify-between items-center text-xs font-semibold text-gray-500">
+               <div className="mt-4 pt-3.5 pb-3 px-3.5 bg-amber-50/60 rounded-xl border border-amber-100/90 space-y-1.5 shrink-0 shadow-2xs">
+                  <div className="flex justify-between items-center text-xs font-medium text-brand-ink/70">
                     <span>Kurumsal Borçlar:</span>
-                    <span>₺{totalCorporateDebt}</span>
+                    <span className="font-bold text-brand-ink">₺{totalCorporateDebt.toLocaleString('tr-TR')}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs font-semibold text-red-700">
+                  <div className="flex justify-between items-center text-xs font-medium text-amber-800">
                     <span>Öğrenci Sınav Borçları:</span>
-                    <span>₺{totalStudentDebt}</span>
+                    <span className="font-bold text-amber-900">₺{totalStudentDebt.toLocaleString('tr-TR')}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-1 border-t border-dashed border-[#e6e2d3]">
-                    <span className="text-sm font-bold text-[#5a5a40] uppercase tracking-wider">TOPLAM BORÇ</span>
-                    <span className="text-lg xl:text-xl font-bold text-red-700">₺{totalDebt}</span>
+                  <div className="flex justify-between items-center pt-2 border-t border-amber-200/60">
+                    <span className="text-xs font-bold text-amber-950 uppercase tracking-wider">TOPLAM BORÇ</span>
+                    <span className="text-base sm:text-lg font-bold text-amber-700 tabular-nums">₺{totalDebt.toLocaleString('tr-TR')}</span>
                   </div>
                </div>
             </div>
