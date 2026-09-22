@@ -52,12 +52,10 @@ export function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
-export function formatDateLong(dateStr: string | null | undefined): string {
-  if (!dateStr || typeof dateStr !== 'string') return '';
+export function parseDateObj(dateStr: string | null | undefined): Date | null {
+  if (!dateStr || typeof dateStr !== 'string') return null;
   const trimmed = dateStr.trim();
-  if (!trimmed) return '';
-
-  let dateObj: Date | null = null;
+  if (!trimmed) return null;
 
   // Try parsing DD.MM.YYYY, DD/MM/YYYY, or DD-MM-YYYY
   const delimiterMatch = trimmed.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
@@ -67,61 +65,77 @@ export function formatDateLong(dateStr: string | null | undefined): string {
     let year = parseInt(delimiterMatch[3], 10);
     if (year < 100) year += 2000;
     if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-      dateObj = new Date(year, month - 1, day);
+      const d = new Date(year, month - 1, day);
+      if (!isNaN(d.getTime())) return d;
     }
   }
 
   // Handle YYYY-MM-DD if starts with 4 digits
-  if (!dateObj || isNaN(dateObj.getTime())) {
-    const isoMatch = trimmed.match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
-    if (isoMatch) {
-      const year = parseInt(isoMatch[1], 10);
-      const month = parseInt(isoMatch[2], 10);
-      const day = parseInt(isoMatch[3], 10);
-      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-        dateObj = new Date(year, month - 1, day);
-      }
+  const isoMatch = trimmed.match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10);
+    const day = parseInt(isoMatch[3], 10);
+    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+      const d = new Date(year, month - 1, day);
+      if (!isNaN(d.getTime())) return d;
     }
   }
 
   // If not parsed yet, parse natural TR text like "12 Ekim 2025" or "12 Ekim 2025 Pazar"
-  if (!dateObj || isNaN(dateObj.getTime())) {
-    const monthsTR: Record<string, number> = {
-      'ocak': 0, 'şubat': 1, 'subat': 1, 'mart': 2, 'nisan': 3, 'mayıs': 4, 'mayis': 4,
-      'haziran': 5, 'temmuz': 6, 'ağustos': 7, 'agustos': 7, 'eylül': 8, 'eylul': 8,
-      'ekim': 9, 'kasım': 10, 'kasim': 10, 'aralık': 11, 'aralik': 11
-    };
-    const cleanStr = trimmed.toLowerCase().replace(/[^a-z0-9şğüöçı]/g, ' ');
-    const tokens = cleanStr.split(/\s+/).filter(Boolean);
-    let day = 1;
-    let month = -1;
-    let year = 0;
+  const monthsTR: Record<string, number> = {
+    'ocak': 0, 'şubat': 1, 'subat': 1, 'mart': 2, 'nisan': 3, 'mayıs': 4, 'mayis': 4,
+    'haziran': 5, 'temmuz': 6, 'ağustos': 7, 'agustos': 7, 'eylül': 8, 'eylul': 8,
+    'ekim': 9, 'kasım': 10, 'kasim': 10, 'aralık': 11, 'aralik': 11
+  };
+  const cleanStr = trimmed.toLowerCase().replace(/[^a-z0-9şğüöçı]/g, ' ');
+  const tokens = cleanStr.split(/\s+/).filter(Boolean);
+  let day = 1;
+  let month = -1;
+  let year = 0;
 
-    tokens.forEach(token => {
-      if (/^\d{1,2}$/.test(token) && parseInt(token, 10) <= 31 && day === 1) {
-        day = parseInt(token, 10);
-      } else if (/^\d{4}$/.test(token)) {
-        year = parseInt(token, 10);
-      } else if (monthsTR[token] !== undefined) {
-        month = monthsTR[token];
-      }
-    });
-
-    if (year > 0 && month >= 0) {
-      dateObj = new Date(year, month, day);
+  tokens.forEach(token => {
+    if (/^\d{1,2}$/.test(token) && parseInt(token, 10) <= 31 && day === 1) {
+      day = parseInt(token, 10);
+    } else if (/^\d{4}$/.test(token)) {
+      year = parseInt(token, 10);
+    } else if (monthsTR[token] !== undefined) {
+      month = monthsTR[token];
     }
+  });
+
+  if (year > 0 && month >= 0) {
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d;
   }
 
-  if (dateObj && !isNaN(dateObj.getTime())) {
-    return dateObj.toLocaleDateString('tr-TR', {
+  return null;
+}
+
+export function formatDateLong(dateStr: string | null | undefined): string {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const d = parseDateObj(dateStr);
+  if (d) {
+    return d.toLocaleDateString('tr-TR', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
       weekday: 'long'
     });
   }
+  return dateStr.trim();
+}
 
-  return trimmed;
+export function formatDateShort(dateStr: string | null | undefined): string {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const d = parseDateObj(dateStr);
+  if (d) {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}.${month}.${year}`;
+  }
+  return dateStr.trim();
 }
 
 export const calculateAtaLigPoints = (examScore: number, previousAverage: number, lessonsDetails: any, historyExams: any[] = [], team: string = '') => {
@@ -391,39 +405,8 @@ export function determineLeagueTeam(average: number): 'Kutup Yıldızları' | 'S
 
 export function parseDate(dateStr: string | undefined): Date {
   if (!dateStr) return new Date();
-  
-  if (dateStr.includes('.')) {
-    const parts = dateStr.split('.');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      let year = parseInt(parts[2], 10);
-      if (year < 100) year += 2000;
-      const parsed = new Date(year, month, day);
-      if (!isNaN(parsed.getTime())) return parsed;
-    }
-  } else if (dateStr.includes('/')) {
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      let year = parseInt(parts[2], 10);
-      if (year < 100) year += 2000;
-      const parsed = new Date(year, month, day);
-      if (!isNaN(parsed.getTime())) return parsed;
-    }
-  } else if (dateStr.includes('-')) {
-    const parts = dateStr.split('-');
-    if (parts.length === 3 && parts[0].length === 2) { // DD-MM-YYYY
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      let year = parseInt(parts[2], 10);
-      if (year < 100) year += 2000;
-      const parsed = new Date(year, month, day);
-      if (!isNaN(parsed.getTime())) return parsed;
-    }
-  }
-  
+  const parsed = parseDateObj(dateStr);
+  if (parsed) return parsed;
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? new Date() : d;
 }

@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Exam } from '../types';
-import { exportToExcel, importFromExcel, generateId, normalizeForSearch, formatDateLong } from '../lib/utils';
+import { exportToExcel, importFromExcel, generateId, normalizeForSearch, formatDateLong, formatDateShort } from '../lib/utils';
 import { 
   Upload, Download, Plus, Trash2, X, Calendar, DollarSign, Building, 
   Users, CheckSquare, Square, ExternalLink, Award, FileText, 
@@ -83,30 +83,11 @@ export const ExamsView = () => {
     );
   };
 
-  // Auto-format all exam dates into long format (e.g. 12 Ekim 2025 Pazar) if not already formatted
-  useEffect(() => {
-    if (!state.exams || state.exams.length === 0) return;
-    let hasChanges = false;
-    const updated = state.exams.map(e => {
-      if (e.date) {
-        const formatted = formatDateLong(e.date);
-        if (formatted && formatted !== e.date) {
-          hasChanges = true;
-          return { ...e, date: formatted };
-        }
-      }
-      return e;
-    });
-    if (hasChanges) {
-      setExams(updated);
-    }
-  }, [state.exams]);
-
   // Sync state when modal is opened
   useEffect(() => {
     if (editingExam) {
       setExamName(editingExam.name || '');
-      setExamDate(editingExam.date ? (formatDateLong(editingExam.date) || editingExam.date) : '');
+      setExamDate(editingExam.date ? (formatDateShort(editingExam.date) || editingExam.date) : '');
       setExamNo(editingExam.no || 0);
       setExamParticipantCount(editingExam.participantCount || 0);
       setExamPublisher(editingExam.publisher || '');
@@ -737,7 +718,7 @@ export const ExamsView = () => {
         return {
           ...e,
           no: examNo,
-          date: examDate,
+          date: formatDateShort(examDate) || examDate.trim(),
           name: newName,
           participantCount: examParticipantCount || examResults.length,
           publisher: examPublisher.trim(),
@@ -1321,13 +1302,13 @@ export const ExamsView = () => {
                         value={formatDateLong(exam.date) || exam.date} 
                         onChange={(e) => updateExam(exam.id, 'date', e.target.value)} 
                         onBlur={(e) => {
-                          const formatted = formatDateLong(e.target.value);
-                          if (formatted && formatted !== e.target.value) {
-                            updateExam(exam.id, 'date', formatted);
+                          const short = formatDateShort(e.target.value);
+                          if (short && short !== exam.date) {
+                            updateExam(exam.id, 'date', short);
                           }
                         }}
                         className="w-full bg-transparent border-none focus:ring-0 text-brand-ink focus:outline-none p-1 font-sans text-xs font-semibold" 
-                        placeholder="Örn: 12 Ekim 2025 Pazar"
+                        placeholder="10.10.2026"
                         title={formatDateLong(exam.date) || "Sınav Tarihi ve Günü"}
                       />
                     </td>
@@ -1590,17 +1571,17 @@ export const ExamsView = () => {
                             value={examDate} 
                             onChange={(e) => setExamDate(e.target.value)}
                             onBlur={(e) => {
-                              const formatted = formatDateLong(e.target.value);
-                              if (formatted && formatted !== e.target.value) {
-                                setExamDate(formatted);
+                              const short = formatDateShort(e.target.value);
+                              if (short && short !== e.target.value) {
+                                setExamDate(short);
                               }
                             }}
                             className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2 text-sm text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] font-medium"
-                            placeholder="Örn: 15.10.2026 veya 15 Ekim 2026 Cumartesi"
+                            placeholder="10.10.2026"
                           />
                           {examDate && formatDateLong(examDate) && (
-                            <div className="text-[11px] font-semibold text-brand-accent mt-1 flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
+                            <div className="text-[11px] font-semibold text-brand-accent mt-1 flex items-center gap-1.5 bg-[#fcfbf7] px-2 py-0.5 rounded-lg border border-[#e6e2d3]/80">
+                              <Calendar className="w-3 h-3 text-brand-accent shrink-0" />
                               <span>{formatDateLong(examDate)}</span>
                             </div>
                           )}
