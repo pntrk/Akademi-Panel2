@@ -1,7 +1,7 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Student } from '../types';
-import { exportToExcel, importFromExcel, generateId, normalizeForSearch } from '../lib/utils';
+import { exportToExcel, importFromExcel, generateId, normalizeForSearch, formatDateLong } from '../lib/utils';
 import { 
   Upload, Download, Edit2, Plus, Trash2, X, CheckSquare, Square, 
   Search, Calendar, DollarSign, Users, Award, Sparkles, BookOpen, 
@@ -1319,7 +1319,7 @@ export const StudentsView = () => {
                           }}
                           className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40]"
                         />
-                        <span className="text-sm font-semibold text-[#5a5a40]">{exam.name} {exam.date ? `(${exam.date})` : ''}</span>
+                        <span className="text-sm font-semibold text-[#5a5a40]">{exam.name} {exam.date ? `(${formatDateLong(exam.date)})` : ''}</span>
                       </label>
                     ))}
                   </div>
@@ -1734,7 +1734,7 @@ export const StudentsView = () => {
                                     }}
                                     className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] w-3.5 h-3.5"
                                   />
-                                  <span>{ex.name} {ex.date ? `(${ex.date})` : ''}</span>
+                                  <span>{ex.name} {ex.date ? `(${formatDateLong(ex.date)})` : ''}</span>
                                 </label>
                               ))}
                             </div>

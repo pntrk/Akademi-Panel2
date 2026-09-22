@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Exam } from '../types';
-import { exportToExcel, importFromExcel, generateId, normalizeForSearch } from '../lib/utils';
+import { exportToExcel, importFromExcel, generateId, normalizeForSearch, formatDateLong } from '../lib/utils';
 import { 
   Upload, Download, Plus, Trash2, X, Calendar, DollarSign, Building, 
   Users, CheckSquare, Square, ExternalLink, Award, FileText, 
@@ -83,11 +83,30 @@ export const ExamsView = () => {
     );
   };
 
+  // Auto-format all exam dates into long format (e.g. 12 Ekim 2025 Pazar) if not already formatted
+  useEffect(() => {
+    if (!state.exams || state.exams.length === 0) return;
+    let hasChanges = false;
+    const updated = state.exams.map(e => {
+      if (e.date) {
+        const formatted = formatDateLong(e.date);
+        if (formatted && formatted !== e.date) {
+          hasChanges = true;
+          return { ...e, date: formatted };
+        }
+      }
+      return e;
+    });
+    if (hasChanges) {
+      setExams(updated);
+    }
+  }, [state.exams]);
+
   // Sync state when modal is opened
   useEffect(() => {
     if (editingExam) {
       setExamName(editingExam.name || '');
-      setExamDate(editingExam.date || '');
+      setExamDate(editingExam.date ? (formatDateLong(editingExam.date) || editingExam.date) : '');
       setExamNo(editingExam.no || 0);
       setExamParticipantCount(editingExam.participantCount || 0);
       setExamPublisher(editingExam.publisher || '');
@@ -1267,7 +1286,7 @@ export const ExamsView = () => {
             <thead>
               <tr className="bg-[#FAF9F6] border-b-2 border-brand-ink">
                 <th width="80" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">SIRA NO</th>
-                <th width="140" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">TARİH</th>
+                <th width="210" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">TARİH</th>
                 <th className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV ADI</th>
                 <th width="190" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">YAYINCI</th>
                 <th width="120" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">KATILAN</th>
@@ -1296,13 +1315,20 @@ export const ExamsView = () => {
                         </span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4" data-label="TARİH">
+                    <td className="py-3.5 px-4 min-w-[220px]" data-label="TARİH">
                       <input 
                         type="text" 
-                        value={exam.date} 
+                        value={formatDateLong(exam.date) || exam.date} 
                         onChange={(e) => updateExam(exam.id, 'date', e.target.value)} 
-                        className="w-full bg-transparent border-none focus:ring-0 text-brand-ink focus:outline-none p-1 font-mono text-xs" 
-                        placeholder="GG.AA.YYYY"
+                        onBlur={(e) => {
+                          const formatted = formatDateLong(e.target.value);
+                          if (formatted && formatted !== e.target.value) {
+                            updateExam(exam.id, 'date', formatted);
+                          }
+                        }}
+                        className="w-full bg-transparent border-none focus:ring-0 text-brand-ink focus:outline-none p-1 font-sans text-xs font-semibold" 
+                        placeholder="Örn: 12 Ekim 2025 Pazar"
+                        title={formatDateLong(exam.date) || "Sınav Tarihi ve Günü"}
                       />
                     </td>
                     <td className="py-3.5 px-4 font-semibold" data-label="SINAV ADI">
@@ -1401,9 +1427,9 @@ export const ExamsView = () => {
                       >
                         {exam.name || '(İsimsiz Sınav)'}
                       </button>
-                      <div className="flex items-center gap-1 text-[11px] text-brand-ink/50 font-mono mt-0.5">
-                        <Calendar className="w-3 h-3 text-brand-ink/40 shrink-0" />
-                        <span>{exam.date || 'Tarih belirtilmedi'}</span>
+                      <div className="flex items-center gap-1.5 text-xs text-brand-ink/70 font-medium mt-0.5">
+                        <Calendar className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                        <span className="font-semibold text-brand-ink">{formatDateLong(exam.date) || exam.date || 'Tarih belirtilmedi'}</span>
                       </div>
                     </div>
                   </div>
@@ -1563,9 +1589,21 @@ export const ExamsView = () => {
                             type="text" 
                             value={examDate} 
                             onChange={(e) => setExamDate(e.target.value)}
-                            className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2 text-sm text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40]"
-                            placeholder="Örn: 15.10.2026"
+                            onBlur={(e) => {
+                              const formatted = formatDateLong(e.target.value);
+                              if (formatted && formatted !== e.target.value) {
+                                setExamDate(formatted);
+                              }
+                            }}
+                            className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2 text-sm text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] font-medium"
+                            placeholder="Örn: 15.10.2026 veya 15 Ekim 2026 Cumartesi"
                           />
+                          {examDate && formatDateLong(examDate) && (
+                            <div className="text-[11px] font-semibold text-brand-accent mt-1 flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{formatDateLong(examDate)}</span>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-[#8e8d82] mb-1">Yayıncı Bilgisi</label>

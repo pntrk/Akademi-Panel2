@@ -1,7 +1,7 @@
 import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ExamResult } from '../types';
-import { exportToExcel, importFromExcel, generateId, calculateAtaLigPoints, determineLeagueTeam, parseDate, normalizeForSearch } from '../lib/utils';
+import { exportToExcel, importFromExcel, generateId, calculateAtaLigPoints, determineLeagueTeam, parseDate, normalizeForSearch, formatDateLong } from '../lib/utils';
 import { Upload, Download, Trash2, Plus, BarChart3, ListFilter, CheckCircle2, XCircle, AlertCircle, Search, HelpCircle, X, Printer, FileText, ChevronDown, Award, TrendingUp, UserCheck, Layers, Calendar, CheckSquare, Square } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { StudentProgressCharts } from '../components/StudentProgressCharts';
@@ -1741,7 +1741,7 @@ export const ResultsView = () => {
               >
                 <option value="" disabled>Lütfen bir sınav seçin...</option>
                 {state.exams.map(ex => (
-                  <option key={ex.id} value={ex.id}>{ex.name} ({ex.date})</option>
+                  <option key={ex.id} value={ex.id}>{ex.name} {ex.date ? `(${formatDateLong(ex.date)})` : ''}</option>
                 ))}
               </select>
               

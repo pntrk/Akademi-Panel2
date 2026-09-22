@@ -52,6 +52,78 @@ export function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
+export function formatDateLong(dateStr: string | null | undefined): string {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const trimmed = dateStr.trim();
+  if (!trimmed) return '';
+
+  let dateObj: Date | null = null;
+
+  // Try parsing DD.MM.YYYY, DD/MM/YYYY, or DD-MM-YYYY
+  const delimiterMatch = trimmed.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
+  if (delimiterMatch) {
+    const day = parseInt(delimiterMatch[1], 10);
+    const month = parseInt(delimiterMatch[2], 10);
+    let year = parseInt(delimiterMatch[3], 10);
+    if (year < 100) year += 2000;
+    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+      dateObj = new Date(year, month - 1, day);
+    }
+  }
+
+  // Handle YYYY-MM-DD if starts with 4 digits
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    const isoMatch = trimmed.match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10);
+      const month = parseInt(isoMatch[2], 10);
+      const day = parseInt(isoMatch[3], 10);
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        dateObj = new Date(year, month - 1, day);
+      }
+    }
+  }
+
+  // If not parsed yet, parse natural TR text like "12 Ekim 2025" or "12 Ekim 2025 Pazar"
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    const monthsTR: Record<string, number> = {
+      'ocak': 0, 'şubat': 1, 'subat': 1, 'mart': 2, 'nisan': 3, 'mayıs': 4, 'mayis': 4,
+      'haziran': 5, 'temmuz': 6, 'ağustos': 7, 'agustos': 7, 'eylül': 8, 'eylul': 8,
+      'ekim': 9, 'kasım': 10, 'kasim': 10, 'aralık': 11, 'aralik': 11
+    };
+    const cleanStr = trimmed.toLowerCase().replace(/[^a-z0-9şğüöçı]/g, ' ');
+    const tokens = cleanStr.split(/\s+/).filter(Boolean);
+    let day = 1;
+    let month = -1;
+    let year = 0;
+
+    tokens.forEach(token => {
+      if (/^\d{1,2}$/.test(token) && parseInt(token, 10) <= 31 && day === 1) {
+        day = parseInt(token, 10);
+      } else if (/^\d{4}$/.test(token)) {
+        year = parseInt(token, 10);
+      } else if (monthsTR[token] !== undefined) {
+        month = monthsTR[token];
+      }
+    });
+
+    if (year > 0 && month >= 0) {
+      dateObj = new Date(year, month, day);
+    }
+  }
+
+  if (dateObj && !isNaN(dateObj.getTime())) {
+    return dateObj.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'long'
+    });
+  }
+
+  return trimmed;
+}
+
 export const calculateAtaLigPoints = (examScore: number, previousAverage: number, lessonsDetails: any, historyExams: any[] = [], team: string = '') => {
   let earnedLP = 0;
   const earnedBadges: string[] = [];
