@@ -21,7 +21,7 @@ try {
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 // Initialize Firestore stably using standard getFirestore (avoids IndexedDB lock assertions)
-export const db = getFirestore(app);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
 
@@ -37,13 +37,22 @@ export const loginWithGoogle = async () => {
   });
   
   try {
-    await signInWithPopup(auth, provider);
+    return await signInWithPopup(auth, provider);
   } catch (error: any) {
+    // If the domain is not authorized, popup was closed or cancelled, fail fast without useless redirect
+    if (
+      error?.code === 'auth/unauthorized-domain' ||
+      error?.code === 'auth/popup-closed-by-user' ||
+      error?.code === 'auth/cancelled-popup-request'
+    ) {
+      throw error;
+    }
+
     console.warn("Popup login failed or blocked, attempting redirect login:", error);
     try {
-      await signInWithRedirect(auth, provider);
+      return await signInWithRedirect(auth, provider);
     } catch (redirectError) {
-      console.error("Login failed completely:", redirectError);
+      console.error("Login redirect failed:", redirectError);
       throw redirectError;
     }
   }
@@ -51,6 +60,9 @@ export const loginWithGoogle = async () => {
 
 export const logout = async () => {
   try {
+    try {
+      sessionStorage.removeItem('akademi_preview_user');
+    } catch (e) {}
     await signOut(auth);
   } catch (error) {
     console.error("Logout failed:", error);

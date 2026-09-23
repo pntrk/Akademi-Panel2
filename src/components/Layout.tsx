@@ -17,6 +17,7 @@ interface LayoutProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogout?: () => void;
+  currentUser?: User | null;
 }
 
 const navItems = [
@@ -28,7 +29,7 @@ const navItems = [
   { id: 'budget', label: 'Bütçe Takibi', shortLabel: 'Bütçe', icon: DollarSign, colorClass: 'text-cyan-400', hoverColorClass: 'group-hover:text-cyan-400', activeClass: 'bg-cyan-500/15 border-cyan-400 border-l-2 pl-3.5 text-white font-semibold shadow-sm' },
 ];
 
-export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout, currentUser: propUser }) => {
   const { 
     userRole, 
     state, 
@@ -49,7 +50,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   const [isAppHubOpen, setIsAppHubOpen] = useState(false);
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(propUser || auth.currentUser);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,11 +58,21 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   }, [setActiveTab]);
 
   useEffect(() => {
+    if (propUser) {
+      setCurrentUser(propUser);
+    }
+  }, [propUser]);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
+      } else if (!propUser) {
+        setCurrentUser(null);
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [propUser]);
   
   const getRoleLabel = () => {
     if (currentUser?.email === 'kirklareliataturkortaokulu@gmail.com' || currentUser?.email === 'bahadirkumcu@gmail.com') return 'Süper Yönetici';
@@ -123,7 +134,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       leagueTeamPoints: state.leagueTeamPoints || {},
       approvedTransfers: state.approvedTransfers || [],
       admins: state.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
-      teachers: state.teachers || []
+      teachers: state.teachers || [],
+      examCalendarPrintSettings: (() => {
+        try {
+          const cfg = localStorage.getItem('akademi_exam_calendar_print_config');
+          return cfg ? JSON.parse(cfg) : undefined;
+        } catch {
+          return undefined;
+        }
+      })()
     };
 
     const stateStr = JSON.stringify(backupData, null, 2);

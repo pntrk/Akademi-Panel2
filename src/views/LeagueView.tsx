@@ -119,9 +119,10 @@ export const LeagueView = () => {
       let displayPoints = s.leaguePoints || 0;
       let displayBadges = s.badges || {};
       if (selectedMonth !== 'all') {
-         if (s.monthlyLeagueData && s.monthlyLeagueData[selectedMonth]) {
-           displayPoints = s.monthlyLeagueData[selectedMonth].points || 0;
-           displayBadges = s.monthlyLeagueData[selectedMonth].badges || {};
+         const monthlyData = (s as any).monthlyLeagueData;
+         if (monthlyData && monthlyData[selectedMonth]) {
+           displayPoints = monthlyData[selectedMonth].points || 0;
+           displayBadges = monthlyData[selectedMonth].badges || {};
          } else {
            displayPoints = 0;
            displayBadges = {};
@@ -173,7 +174,7 @@ export const LeagueView = () => {
 
   const pendingTransfers = useMemo(() => {
     return filteredStudents.filter(s => {
-      const pt = s.pendingTransfer;
+      const pt = (s as any).pendingTransfer;
       if (!pt) return false;
       if (selectedMonth === 'all') return true;
       if (pt.date) {

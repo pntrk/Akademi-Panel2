@@ -64,6 +64,7 @@ export default defineConfig(({ command }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         },
         devOptions: {
           enabled: true,
@@ -71,6 +72,18 @@ export default defineConfig(({ command }) => {
         },
       }),
     ],
+    build: {
+      chunkSizeWarningLimit: 2500,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('pdfmake')) {
+              return 'pdfmake';
+            }
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

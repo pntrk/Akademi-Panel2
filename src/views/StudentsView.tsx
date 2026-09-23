@@ -835,7 +835,7 @@ export const StudentsView = () => {
           <table className="w-full border-collapse text-left min-w-[800px]">
             <thead>
               <tr className="bg-[#FAF9F6] border-b-2 border-brand-ink">
-                <th width="50" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">
+                <th style={{ width: 50 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">
                   <button 
                     onClick={handleSelectAll}
                     className="p-1 rounded hover:bg-black/5 text-brand-ink transition-colors cursor-pointer"
@@ -848,12 +848,12 @@ export const StudentsView = () => {
                     )}
                   </button>
                 </th>
-                <th width="90" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">NO</th>
+                <th style={{ width: 90 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">NO</th>
                 <th className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">ADI SOYADI</th>
-                <th width="120" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINIFI</th>
-                <th width="180" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV SALONU</th>
+                <th style={{ width: 120 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINIFI</th>
+                <th style={{ width: 180 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV SALONU</th>
                 <th className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">KAYITLI SINAVLAR</th>
-                <th width="80" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İŞLEM</th>
+                <th style={{ width: 80 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İŞLEM</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -1815,7 +1815,7 @@ export const StudentsView = () => {
                                                 <span>Derslere Göre Net ve Karne Özeti</span>
                                               </h5>
                                               <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                                                Toplam Net: {Number(examDetail.totalNet || 0).toFixed(2).replace('.', ',')}
+                                                Toplam Net: {Number((examDetail as any).totalNet || 0).toFixed(2).replace('.', ',')}
                                               </span>
                                             </div>
                                             <table className="w-full text-left text-xs">
@@ -1966,7 +1966,7 @@ export const StudentsView = () => {
                                     {isExpanded && (
                                       <div className="mt-2 p-2.5 bg-[#fcfbf7] rounded-xl border border-[#e6e2d3] text-xs">
                                         <div className="font-bold text-blue-700 mb-1.5">
-                                          Toplam Net: {Number(examDetail.totalNet || 0).toFixed(2).replace('.', ',')}
+                                          Toplam Net: {Number((examDetail as any).totalNet || 0).toFixed(2).replace('.', ',')}
                                         </div>
                                         <div className="grid grid-cols-2 gap-1 text-[11px]">
                                           {Object.entries(examDetail.lessons).map(([name, data]: [string, any]) => (

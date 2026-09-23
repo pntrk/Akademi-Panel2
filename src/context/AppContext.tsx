@@ -870,6 +870,10 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
     setState(fullState);
     try {
       localStorage.setItem('okulYonetimState', JSON.stringify(fullState));
+      if (source.examCalendarPrintSettings) {
+        localStorage.setItem('akademi_exam_calendar_print_config', JSON.stringify(source.examCalendarPrintSettings));
+        window.dispatchEvent(new CustomEvent('exam-calendar-settings-restored', { detail: source.examCalendarPrintSettings }));
+      }
     } catch (e) {
       console.warn('LocalStorage save error:', e);
     }
@@ -982,7 +986,15 @@ export const AppProvider = ({ children, user }: { children: ReactNode, user: Use
           leagueTeamPoints: s.leagueTeamPoints || {},
           approvedTransfers: s.approvedTransfers || [],
           admins: s.admins || ['kirklareliataturkortaokulu@gmail.com', 'bahadirkumcu@gmail.com'],
-          teachers: s.teachers || []
+          teachers: s.teachers || [],
+          examCalendarPrintSettings: (() => {
+            try {
+              const cfg = localStorage.getItem('akademi_exam_calendar_print_config');
+              return cfg ? JSON.parse(cfg) : undefined;
+            } catch {
+              return undefined;
+            }
+          })()
         },
         note: note?.trim() || undefined
       };

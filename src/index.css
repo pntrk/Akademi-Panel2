@@ -27,6 +27,12 @@ body {
 }
 
 @media print {
+  html, body, #root, main {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    background: #ffffff !important;
+  }
   body * {
     visibility: hidden;
   }
@@ -49,6 +55,20 @@ body {
     padding: 0 !important;
     background: white;
     box-sizing: border-box;
+  }
+  #print-area-takvim.single-page-mode {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  #print-area-takvim.single-page-mode .takvim-table-wrapper {
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
   }
 }
 

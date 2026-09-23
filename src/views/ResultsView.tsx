@@ -426,6 +426,7 @@ export const ResultsView = () => {
                     leagueTeam: newLeagueTeam,
                     lastTransfer: updatedLastTransfer,
                     badges: {
+                        ...(s.badges || {}),
                         kalkan: (s.badges?.kalkan || 0) + badgeCounts.kalkan,
                         ivme: (s.badges?.ivme || 0) + badgeCounts.ivme,
                         zirve: (s.badges?.zirve || 0) + badgeCounts.zirve,
@@ -436,7 +437,7 @@ export const ResultsView = () => {
                         barajYikici: (s.badges?.barajYikici || 0) + (badgeCounts.barajYikici || 0),
                         stratejiMuhendisi: (s.badges?.stratejiMuhendisi || 0) + (badgeCounts.stratejiMuhendisi || 0),
                         istikrarElcisi: (s.badges?.istikrarElcisi || 0) + (badgeCounts.istikrarElcisi || 0)
-                    }
+                    } as any
                 };
             }
           }
@@ -1445,7 +1446,7 @@ export const ResultsView = () => {
                     </div>
 
                     <div className="flex items-center gap-1 max-w-[60%] overflow-x-auto no-scrollbar">
-                      {renderBadges(matchedStudent?.badges || result.badges, matchedStudent?.leagueTeam)}
+                      {renderBadges(matchedStudent?.badges || (result as any).badges, matchedStudent?.leagueTeam)}
                     </div>
                   </div>
                 </div>
@@ -1712,7 +1713,7 @@ export const ResultsView = () => {
                                   nVal = typeof l === 'number' ? l : (l.N ?? l.n ?? l.net ?? (parseFloat(l.N || l.n || l.net || '0') || 0));
                                 }
                               } else {
-                                const l = examDetail.lessons[lesson];
+                                const l = examDetail.lessons[lesson] as any;
                                 if (l) {
                                   nVal = l.N ?? l.n ?? l.net ?? (parseFloat(l.N || l.n || l.net || '0') || 0);
                                 }

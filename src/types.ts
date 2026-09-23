@@ -137,6 +137,7 @@ export interface FullBackupData {
   approvedTransfers?: { studentNo: number; examName: string; toTeam: string }[];
   admins?: string[];
   teachers?: string[];
+  examCalendarPrintSettings?: any;
 }
 
 export interface CloudBackupRecord {

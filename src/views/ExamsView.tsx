@@ -1,4 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { useAppContext } from '../context/AppContext';
 import { Exam } from '../types';
 import { exportToExcel, importFromExcel, generateId, normalizeForSearch, formatDateLong, formatDateShort } from '../lib/utils';
@@ -6,23 +8,132 @@ import {
   Upload, Download, Plus, Trash2, X, Calendar, DollarSign, Building, 
   Users, CheckSquare, Square, ExternalLink, Award, FileText, 
   MapPin, HelpCircle, Activity, TrendingUp, Sparkles, BookOpen, AlertCircle, Settings,
-  Search, Filter, ChevronDown, Package, Layers, DoorOpen, Printer, Edit3, Check, Bell
+  Search, Filter, ChevronDown, Package, Layers, DoorOpen, Printer, Edit3, Check, Bell,
+  FileJson, RotateCcw, Type, Palette, Sliders, CheckCircle2, ZoomIn, ZoomOut, Maximize2
 } from 'lucide-react';
 
-const COLOR_OPTIONS = [
-  { label: 'Varsayılan (Gri)', value: 'bg-gray-100' },
-  { label: 'Sarı', value: 'bg-yellow-100' },
-  { label: 'Turuncu', value: 'bg-orange-100' },
-  { label: 'Kırmızı', value: 'bg-red-100' },
-  { label: 'Pembe', value: 'bg-rose-100' },
-  { label: 'Mor', value: 'bg-purple-100' },
-  { label: 'Mavi', value: 'bg-blue-100' },
-  { label: 'Camgöbeği', value: 'bg-cyan-100' },
-  { label: 'Turkuaz', value: 'bg-teal-100' },
-  { label: 'Zümrüt', value: 'bg-emerald-100' },
-  { label: 'Yeşil', value: 'bg-green-100' },
-  { label: 'Açık Yeşil', value: 'bg-lime-100' },
+// Setup pdfMake Turkish fonts
+if (typeof window !== 'undefined') {
+  (pdfMake as any).vfs = (pdfFonts as any).pdfMake?.vfs || pdfFonts;
+}
+
+export interface PaletteColor {
+  id: string;
+  label: string;
+  bgClass: string;
+  hex: string;
+  borderHex: string;
+  textHex: string;
+}
+
+export const PUBLISHER_COLOR_PALETTE: PaletteColor[] = [
+  { id: 'gray', label: 'Gri (Standart)', bgClass: 'bg-gray-100', hex: '#f3f4f6', borderHex: '#d1d5db', textHex: '#374151' },
+  { id: 'amber', label: 'Kehribar', bgClass: 'bg-amber-100', hex: '#fef3c7', borderHex: '#fcd34d', textHex: '#92400e' },
+  { id: 'orange', label: 'Turuncu', bgClass: 'bg-orange-100', hex: '#ffedd5', borderHex: '#fdba74', textHex: '#9a3412' },
+  { id: 'yellow', label: 'Sarı', bgClass: 'bg-yellow-100', hex: '#fef9c3', borderHex: '#fde047', textHex: '#854d0e' },
+  { id: 'lime', label: 'Açık Yeşil', bgClass: 'bg-lime-100', hex: '#ecfccb', borderHex: '#bef264', textHex: '#3f6212' },
+  { id: 'green', label: 'Yeşil', bgClass: 'bg-green-100', hex: '#dcfce7', borderHex: '#86efac', textHex: '#166534' },
+  { id: 'emerald', label: 'Zümrüt', bgClass: 'bg-emerald-100', hex: '#d1fae5', borderHex: '#6ee7b7', textHex: '#065f46' },
+  { id: 'teal', label: 'Turkuaz', bgClass: 'bg-teal-100', hex: '#ccfbf1', borderHex: '#5eead4', textHex: '#115e59' },
+  { id: 'cyan', label: 'Camgöbeği', bgClass: 'bg-cyan-100', hex: '#cffafe', borderHex: '#67e8f9', textHex: '#155e75' },
+  { id: 'sky', label: 'Gök Mavisi', bgClass: 'bg-sky-100', hex: '#e0f2fe', borderHex: '#7dd3fc', textHex: '#0369a1' },
+  { id: 'blue', label: 'Mavi', bgClass: 'bg-blue-100', hex: '#dbeafe', borderHex: '#93c5fd', textHex: '#1e40af' },
+  { id: 'indigo', label: 'İndigo', bgClass: 'bg-indigo-100', hex: '#e0e7ff', borderHex: '#a5b4fc', textHex: '#3730a3' },
+  { id: 'purple', label: 'Mor', bgClass: 'bg-purple-100', hex: '#f3e8ff', borderHex: '#d8b4fe', textHex: '#6b21a8' },
+  { id: 'fuchsia', label: 'Fuşya', bgClass: 'bg-fuchsia-100', hex: '#fae8ff', borderHex: '#f0abfc', textHex: '#86198f' },
+  { id: 'pink', label: 'Pembe', bgClass: 'bg-pink-100', hex: '#fce7f3', borderHex: '#f472b6', textHex: '#9d174d' },
+  { id: 'rose', label: 'Gül Kurusu', bgClass: 'bg-rose-100', hex: '#ffe4e6', borderHex: '#fda4af', textHex: '#9f1239' },
 ];
+
+export const COLOR_OPTIONS = PUBLISHER_COLOR_PALETTE.map(p => ({
+  label: p.label,
+  value: p.hex,
+}));
+
+export const getPublisherColorInfo = (
+  pubName: string | undefined, 
+  customColors: Record<string, string> = {}
+): PaletteColor => {
+  const clean = (pubName || '').trim();
+  const selectedVal = clean ? customColors[clean] : '';
+
+  if (selectedVal) {
+    const found = PUBLISHER_COLOR_PALETTE.find(
+      p => p.id === selectedVal || p.bgClass === selectedVal || p.hex.toLowerCase() === selectedVal.toLowerCase()
+    );
+    if (found) return found;
+
+    if (selectedVal.startsWith('#')) {
+      return {
+        id: 'custom',
+        label: 'Özel Renk',
+        bgClass: '',
+        hex: selectedVal,
+        borderHex: selectedVal,
+        textHex: '#111827',
+      };
+    }
+  }
+
+  // Predefined keyword matching
+  const p = clean.toLowerCase();
+  if (p.includes('işler')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'orange')!;
+  if (p.includes('çınar')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'green')!;
+  if (p.includes('arı')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'yellow')!;
+  if (p.includes('mozaik')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'amber')!;
+  if (p.includes('okyanus')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'blue')!;
+  if (p.includes('palme')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'cyan')!;
+  if (p.includes('ulti')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'purple')!;
+  if (p.includes('işleyen zeka')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'rose')!;
+  if (p.includes('sinan kuzucu')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'pink')!;
+  if (p.includes('nartest')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'emerald')!;
+  if (p.includes('hız')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'fuchsia')!;
+  if (p.includes('sadık uygun')) return PUBLISHER_COLOR_PALETTE.find(x => x.id === 'indigo')!;
+
+  // Stable hash fallback among diverse palette colors
+  if (clean) {
+    let hash = 0;
+    for (let i = 0; i < clean.length; i++) hash = clean.charCodeAt(i) + ((hash << 5) - hash);
+    const candidateColors = PUBLISHER_COLOR_PALETTE.filter(c => c.id !== 'gray');
+    return candidateColors[Math.abs(hash) % candidateColors.length];
+  }
+
+  return PUBLISHER_COLOR_PALETTE[0]; // gray
+};
+
+export interface PrintSettingsConfig {
+  showPublisher: boolean;
+  showParticipants: boolean;
+  showOrderQuantity: boolean;
+  showHalls: boolean;
+  orientation: 'portrait' | 'landscape';
+  pageCount: '1' | '2' | 'auto';
+  fontFamily: 'sans' | 'serif' | 'mono';
+  fontScale: 'auto' | 'compact' | 'normal' | 'spacious';
+  fontWeight: 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
+  tableDensity: 'compact' | 'normal' | 'comfortable';
+  showFooter: boolean;
+  footerText: string;
+  colorMode: 'nameCell' | 'fullRow';
+  tableScale: number; // Yüzde olarak ölçek: 70 - 150 (varsayılan 100)
+}
+
+const DEFAULT_PRINT_SETTINGS: PrintSettingsConfig = {
+  showPublisher: false,
+  showParticipants: true,
+  showOrderQuantity: false,
+  showHalls: false,
+  orientation: 'portrait',
+  pageCount: '1',
+  fontFamily: 'sans',
+  fontScale: 'auto',
+  fontWeight: 'normal',
+  tableDensity: 'compact',
+  showFooter: true,
+  footerText: 'Kırklareli Atatürk Ortaokulu Sınav Koordinatörlüğü',
+  colorMode: 'nameCell',
+  tableScale: 100,
+};
 
 export const ExamsView = () => {
   const { state, setExams, setResults, setExamHalls, updateBudget, setStudents, userRole, openNotificationModal } = useAppContext();
@@ -58,20 +169,16 @@ export const ExamsView = () => {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'layout' | 'typography' | 'content' | 'colors'>('layout');
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   
   // Takvim yazdırma başlıkları (elle düzenlenebilir ve kaydedilebilir)
   const [printMainTitle, setPrintMainTitle] = useState('KIRKLARELİ ATATÜRK ORTAOKULU');
   const [printSubTitle, setPrintSubTitle] = useState('2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ');
 
-  const [printSettings, setPrintSettings] = useState({
-    showPublisher: false,
-    showParticipants: true,
-    showOrderQuantity: false,
-    showHalls: false,
-    orientation: 'portrait' as 'portrait' | 'landscape',
-    pageCount: '1' as '1' | '2' | 'auto',
-  });
+  const [printSettings, setPrintSettings] = useState<PrintSettingsConfig>(DEFAULT_PRINT_SETTINGS);
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   
   const [publisherColors, setPublisherColors] = useState<Record<string, string>>({});
 
@@ -92,15 +199,63 @@ export const ExamsView = () => {
         }
         if (parsed.printMainTitle) setPrintMainTitle(parsed.printMainTitle);
         if (parsed.printSubTitle) setPrintSubTitle(parsed.printSubTitle);
-        if (parsed.printSettings) setPrintSettings(parsed.printSettings);
+        if (parsed.printSettings) {
+          setPrintSettings(prev => ({
+            ...DEFAULT_PRINT_SETTINGS,
+            ...prev,
+            ...parsed.printSettings,
+          }));
+        }
         if (parsed.publisherColors) setPublisherColors(parsed.publisherColors);
       }
     } catch (e) {
       console.warn('Yazdırma ayarları okunamadı:', e);
     }
+
+    // Uygulama genel yedek geri yüklendiğinde ayarları otomatik eşitle
+    const handleSettingsRestored = (e: any) => {
+      try {
+        const data = e.detail;
+        if (!data) return;
+        if (data.printMainTitle) setPrintMainTitle(data.printMainTitle);
+        if (data.printSubTitle) setPrintSubTitle(data.printSubTitle);
+        if (Array.isArray(data.selectedGrades) && data.selectedGrades.length > 0) {
+          setSelectedGrades(data.selectedGrades);
+        }
+        if (data.printSettings) {
+          setPrintSettings(prev => ({ ...DEFAULT_PRINT_SETTINGS, ...prev, ...data.printSettings }));
+        }
+        if (data.publisherColors) setPublisherColors(data.publisherColors);
+        setSaveFeedback('✓ Sınav takvimi ayarları uygulama yedeğinden geri yüklendi.');
+        setTimeout(() => setSaveFeedback(null), 3500);
+      } catch (err) {
+        console.warn('Yedek senkron hatası:', err);
+      }
+    };
+
+    window.addEventListener('exam-calendar-settings-restored', handleSettingsRestored);
+    return () => {
+      window.removeEventListener('exam-calendar-settings-restored', handleSettingsRestored);
+    };
   }, []);
 
-  // Yazdırma ayarlarını kalıcı olarak localStorage'a kaydetme fonksiyonu
+  // Yazdırma ayarlarını uygulama yedeği ve yerel depolamaya otomatik kaydet
+  useEffect(() => {
+    try {
+      const config = {
+        selectedGrades,
+        printMainTitle,
+        printSubTitle,
+        printSettings,
+        publisherColors,
+      };
+      localStorage.setItem('akademi_exam_calendar_print_config', JSON.stringify(config));
+    } catch (e) {
+      console.warn('Yazdırma ayarları kaydedilemedi:', e);
+    }
+  }, [selectedGrades, printMainTitle, printSubTitle, printSettings, publisherColors]);
+
+  // Yazdırma ayarlarını manuel kaydetme
   const handleSavePrintSettings = () => {
     try {
       const config = {
@@ -111,11 +266,42 @@ export const ExamsView = () => {
         publisherColors,
       };
       localStorage.setItem('akademi_exam_calendar_print_config', JSON.stringify(config));
-      setSaveFeedback('✓ Sınav takvimi ve yazdırma ayarları cihazınıza başarıyla kaydedildi!');
-      setTimeout(() => setSaveFeedback(null), 3500);
+      setSaveFeedback('✓ Sınav takvimi yazdırma ayarları uygulama yedeğine kaydedildi!');
+      setTimeout(() => setSaveFeedback(null), 3000);
     } catch (e) {
       console.warn('Yazdırma ayarları kaydedilemedi:', e);
     }
+  };
+
+  // Yazdırma ayarlarını varsayılana sıfırla
+  const handleResetPrintSettings = () => {
+    setPrintSettings(DEFAULT_PRINT_SETTINGS);
+    setPrintMainTitle('KIRKLARELİ ATATÜRK ORTAOKULU');
+    updateSubTitleForGrades(selectedGrades);
+    setPublisherColors({});
+    setSaveFeedback('✓ Yazdırma ayarları ve renkler varsayılan değerlere sıfırlandı.');
+    setTimeout(() => setSaveFeedback(null), 3000);
+  };
+
+  // Tüm yayıncılara benzersiz şık pastel renkleri otomatik ata
+  const handleAutoDistributeColors = () => {
+    const newColors: Record<string, string> = {};
+    const palette = PUBLISHER_COLOR_PALETTE.filter(p => p.id !== 'gray');
+    uniquePublishers.forEach((pub, idx) => {
+      const pubName = pub || 'Bilinmiyor';
+      const assigned = palette[idx % palette.length];
+      newColors[pubName] = assigned.hex;
+    });
+    setPublisherColors(prev => ({ ...prev, ...newColors }));
+    setSaveFeedback('✓ Tüm yayıncılara benzersiz pastel renkler otomatik atandı.');
+    setTimeout(() => setSaveFeedback(null), 3000);
+  };
+
+  // Sadece yayıncı renklerini sıfırla
+  const handleResetPublisherColors = () => {
+    setPublisherColors({});
+    setSaveFeedback('✓ Yayıncı renkleri varsayılan değerlere sıfırlandı.');
+    setTimeout(() => setSaveFeedback(null), 3000);
   };
 
   // Seçili sınıflara göre alt başlığı akıllı güncelle
@@ -374,261 +560,765 @@ export const ExamsView = () => {
   // Dinamik takvim yazdırma ve önizleme ölçü hesaplamaları (otomatik senkronize)
   const examCount = filteredAndSortedExams.length;
   const isLandscape = printSettings.orientation === 'landscape';
+  const isSinglePage = printSettings.pageCount === '1';
   const targetPages = printSettings.pageCount === 'auto' ? 'auto' : parseInt(printSettings.pageCount, 10);
 
-  // A4 kullanılabilir alan hesaplaması (daraltılmış başlık ve sıkı satır aralıkları ile)
-  // A4 Portrait yükseklik: 297mm - 10mm kenar boşluğu = 287mm. Başlık: ~8mm. Kullanılabilir tablo: ~274mm
-  // A4 Landscape yükseklik: 210mm - 10mm kenar boşluğu = 200mm. Başlık: ~8mm. Kullanılabilir tablo: ~188mm
-  const usablePageHeightMm = isLandscape ? 186 : 272;
-  const totalTableAreaMm = targetPages === 'auto' 
-    ? examCount * (isLandscape ? 8.5 : 10) 
-    : usablePageHeightMm * (typeof targetPages === 'number' ? targetPages : 1);
+  // Yazı tipi ailesi CSS değeri
+  const fontFamilyCss = useMemo(() => {
+    switch (printSettings.fontFamily) {
+      case 'serif':
+        return '"Times New Roman", Times, Georgia, "Cambria", serif';
+      case 'mono':
+        return 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+      case 'sans':
+      default:
+        return '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+    }
+  }, [printSettings.fontFamily]);
 
-  const optimalRowHeightMm = examCount > 0 
-    ? Math.min(isLandscape ? 14 : 18, Math.max(5.5, Math.floor((totalTableAreaMm / Math.max(examCount, 1)) * 10) / 10)) 
-    : 10;
+  const fontWeightCss = useMemo(() => {
+    switch (printSettings.fontWeight) {
+      case 'light':
+        return '300';
+      case 'medium':
+        return '500';
+      case 'semibold':
+        return '600';
+      case 'bold':
+        return '700';
+      case 'normal':
+      default:
+        return '400';
+    }
+  }, [printSettings.fontWeight]);
 
-  const optimalFontSizePt = examCount <= 12 
-    ? (isLandscape ? '10pt' : '10.5pt') 
-    : examCount <= 16 
-    ? (isLandscape ? '9pt' : '9.5pt') 
-    : examCount <= 24 
-    ? '8.5pt' 
-    : '7.5pt';
+  // A4 kullanılabilir sayfa yüksekliği (A4: 297mm dikey, 210mm yatay; 4mm üst-alt marjinler ile)
+  // Dikey: 297 - 8 = 289mm
+  // Yatay: 210 - 8 = 202mm
+  const pageHeightMm = isLandscape ? 202 : 289;
 
-  const optimalHeaderFontSizePt = examCount <= 16 ? (isLandscape ? '9.5pt' : '10pt') : '8.5pt';
-  const maxPageHeightPx = isLandscape ? 730 : 1060;
+  // Başlık yükseklik ve punto hesaplaması (1 sayfa seçeneğinde otomatik optimize edilir)
+  const headerLayout = useMemo(() => {
+    if (!isSinglePage) {
+      return {
+        mainTitlePt: isLandscape ? '12.5pt' : '13.5pt',
+        subTitlePt: isLandscape ? '9pt' : '9.5pt',
+        headerHeightMm: isLandscape ? 12 : 14,
+        paddingY: '2px',
+        marginBottom: '4px',
+      };
+    }
+    // 1 sayfa seçeneğinde sınav sayısına göre dinamik ölçekleme
+    if (examCount > 32) {
+      return {
+        mainTitlePt: isLandscape ? '10pt' : '11pt',
+        subTitlePt: isLandscape ? '7.5pt' : '8pt',
+        headerHeightMm: isLandscape ? 8 : 9,
+        paddingY: '1px',
+        marginBottom: '2px',
+      };
+    }
+    if (examCount > 22) {
+      return {
+        mainTitlePt: isLandscape ? '11pt' : '12pt',
+        subTitlePt: isLandscape ? '8pt' : '8.5pt',
+        headerHeightMm: isLandscape ? 9 : 10,
+        paddingY: '1.5px',
+        marginBottom: '2.5px',
+      };
+    }
+    if (examCount > 12) {
+      return {
+        mainTitlePt: isLandscape ? '12pt' : '13pt',
+        subTitlePt: isLandscape ? '8.5pt' : '9pt',
+        headerHeightMm: isLandscape ? 10 : 12,
+        paddingY: '2px',
+        marginBottom: '3px',
+      };
+    }
+    return {
+      mainTitlePt: isLandscape ? '13pt' : '14.5pt',
+      subTitlePt: isLandscape ? '9pt' : '10pt',
+      headerHeightMm: isLandscape ? 12 : 14,
+      paddingY: '2.5px',
+      marginBottom: '4px',
+    };
+  }, [isSinglePage, examCount, isLandscape]);
+
+  // Alt bilgi (Footer) yükseklik ve punto
+  const footerLayout = useMemo(() => {
+    if (!printSettings.showFooter) return { footerHeightMm: 0, fontSizePt: '6pt' };
+    if (isSinglePage && examCount > 28) {
+      return { footerHeightMm: 4, fontSizePt: '6.5pt' };
+    }
+    return { footerHeightMm: 5.5, fontSizePt: '7pt' };
+  }, [printSettings.showFooter, isSinglePage, examCount]);
+
+  // Tablo başlığı (thead) yükseklik ve punto
+  const theadLayout = useMemo(() => {
+    if (isSinglePage && examCount > 25) {
+      return { theadHeightMm: 5, theadFontSizePt: '7.5pt', paddingY: '1px' };
+    }
+    if (isSinglePage && examCount > 16) {
+      return { theadHeightMm: 5.5, theadFontSizePt: '8pt', paddingY: '1.5px' };
+    }
+    return { theadHeightMm: 6.5, theadFontSizePt: isLandscape ? '8.5pt' : '9pt', paddingY: '2px' };
+  }, [isSinglePage, examCount, isLandscape]);
+
+  // Kullanılabilir tbody alanı ve optimum satır yüksekliği & punto hesaplaması (30 deneme 1 sayfayı tam dolduracak hassas kalibrasyon)
+  const { optimalRowHeightMm, optimalFontSizePt, cellPaddingY, cellPaddingX } = useMemo(() => {
+    let baseRowHeight: number;
+    let baseFontSizePt: string;
+    let padY = '1.8px';
+    let padX = '3px';
+    const scaleMultiplier = (printSettings.tableScale || 100) / 100;
+
+    if (isSinglePage) {
+      const nonTbodyHeight = headerLayout.headerHeightMm + footerLayout.footerHeightMm + theadLayout.theadHeightMm + 2.5;
+      const availableTbodyMm = Math.max(50, pageHeightMm - nonTbodyHeight);
+      
+      // 30 deneme sınavında A4 dikey (289mm) sayfayı boşluksuz tam doldurması için satır yüksekliği:
+      const rawRowHeight = examCount > 0 ? (availableTbodyMm / examCount) : 10;
+      baseRowHeight = Math.max(3.8, Math.min(isLandscape ? 14 : 18, Math.round(rawRowHeight * 100) / 100));
+
+      if (rawRowHeight >= 12) {
+        baseFontSizePt = isLandscape ? '9.5pt' : '10pt';
+        padY = '2.5px';
+        padX = '4px';
+      } else if (rawRowHeight >= 8.4) {
+        // 30 sınav burada yer alır (~8.9mm): ferah 8.6pt yazı boyutu ve dengeli dolgu
+        baseFontSizePt = isLandscape ? '8.2pt' : '8.6pt';
+        padY = '2px';
+        padX = '3.5px';
+      } else if (rawRowHeight >= 6.8) {
+        baseFontSizePt = '7.6pt';
+        padY = '1.2px';
+        padX = '2.5px';
+      } else {
+        baseFontSizePt = '6.6pt';
+        padY = '0.8px';
+        padX = '2px';
+      }
+    } else {
+      // 2 Sayfa veya Otomatik
+      baseRowHeight = isLandscape ? 8.5 : 10;
+      baseFontSizePt = isLandscape ? '9pt' : '9.5pt';
+      padY = '2px';
+      padX = '4px';
+    }
+
+    // Kullanıcı elle fontScale seçtiyse hafif ölçekle
+    if (printSettings.fontScale === 'compact') {
+      const num = parseFloat(baseFontSizePt);
+      baseFontSizePt = `${Math.max(5.5, Math.round((num - 0.7) * 10) / 10)}pt`;
+      padY = '1px';
+    } else if (printSettings.fontScale === 'spacious') {
+      const num = parseFloat(baseFontSizePt);
+      baseFontSizePt = `${Math.min(14, Math.round((num + 0.8) * 10) / 10)}pt`;
+      padY = '3px';
+    }
+
+    // Kullanıcı Tablo Büyütme / Küçültme (tableScale) çarpanını uygula:
+    const scaledRowHeight = Math.max(3.5, Math.round(baseRowHeight * scaleMultiplier * 100) / 100);
+    const scaledFontSizeNum = Math.max(5, Math.min(16, Math.round(parseFloat(baseFontSizePt) * scaleMultiplier * 10) / 10));
+    const scaledPadYNum = Math.max(0.5, Math.min(8, Math.round(parseFloat(padY) * scaleMultiplier * 10) / 10));
+
+    return {
+      optimalRowHeightMm: scaledRowHeight,
+      optimalFontSizePt: `${scaledFontSizeNum}pt`,
+      cellPaddingY: `${scaledPadYNum}px`,
+      cellPaddingX: padX,
+    };
+  }, [isSinglePage, examCount, pageHeightMm, headerLayout, footerLayout, theadLayout, isLandscape, printSettings.fontScale, printSettings.tableScale]);
+
+  const maxPageHeightPx = isLandscape ? 740 : 1070;
+
+  const handleDownloadPdf = async () => {
+    setIsPdfGenerating(true);
+    try {
+      const scaleMultiplier = (printSettings.tableScale || 100) / 100;
+      const dateColWidth = isLandscape 
+        ? Math.max(132, Math.round(136 * scaleMultiplier)) 
+        : Math.max(124, Math.round(126 * scaleMultiplier));
+
+      const widths: any[] = [];
+      widths.push(isLandscape ? 40 : 36); // ÖLÇME (Genişletilmiş ve ferah)
+      widths.push(dateColWidth); // TARİH (En büyük puntoda bile tek satırda taşmadan gösterilir)
+      widths.push('*'); // SINAV ADI
+      if (printSettings.showOrderQuantity) widths.push(42);
+      if (printSettings.showHalls) widths.push(75);
+      if (printSettings.showParticipants) widths.push(48);
+
+      let tableFontSize = isLandscape ? 8.5 : 8.5;
+      let headerFontSize = isLandscape ? 9 : 9.0;
+      let cellPadV = 3.5;
+
+      if (isSinglePage) {
+        // A4 dikey (842pt) veya yatay (595pt) toplam alanı 30 sınavda 1 sayfayı tam dolduracak şekilde dağıt
+        const totalPagePt = isLandscape ? 595 : 842;
+        const pageMarginV = examCount > 25 ? 24 : 32;
+        const headerFooterPt = (printSettings.showFooter ? 24 : 10) + (isLandscape ? 36 : 46);
+        const availableTablePt = totalPagePt - pageMarginV - headerFooterPt;
+        const targetRowHeightPt = examCount > 0 ? (availableTablePt / (examCount + 1)) : 22;
+
+        if (targetRowHeightPt >= 22) {
+          // 30 sınav burada yer alır: ~24.5pt hedef satır yüksekliğiyle sayfayı tam doldurur
+          tableFontSize = isLandscape ? 8.2 : 8.6;
+          headerFontSize = isLandscape ? 8.8 : 9.2;
+          cellPadV = Math.max(2, Math.round(((targetRowHeightPt - tableFontSize * 1.15) / 2 - 0.4) * 10) / 10);
+        } else if (targetRowHeightPt >= 17) {
+          tableFontSize = 7.8;
+          headerFontSize = 8.4;
+          cellPadV = Math.max(1.8, Math.round(((targetRowHeightPt - tableFontSize * 1.15) / 2 - 0.4) * 10) / 10);
+        } else if (targetRowHeightPt >= 13) {
+          tableFontSize = 7.2;
+          headerFontSize = 7.8;
+          cellPadV = Math.max(1.2, Math.round(((targetRowHeightPt - tableFontSize * 1.15) / 2 - 0.3) * 10) / 10);
+        } else {
+          tableFontSize = 6.2;
+          headerFontSize = 6.8;
+          cellPadV = Math.max(0.6, Math.round(((targetRowHeightPt - tableFontSize * 1.15) / 2 - 0.3) * 10) / 10);
+        }
+      }
+
+      if (printSettings.fontScale === 'compact') {
+        tableFontSize = Math.max(5.5, tableFontSize - 0.7);
+        headerFontSize = Math.max(6, headerFontSize - 0.7);
+      } else if (printSettings.fontScale === 'spacious') {
+        tableFontSize = Math.min(13, tableFontSize + 0.8);
+        headerFontSize = Math.min(13.5, headerFontSize + 0.8);
+      }
+
+      // Tablo Büyütme / Küçültme (tableScale: 60 - 160) çarpanını uygula
+      tableFontSize = Math.max(5, Math.min(15, Math.round(tableFontSize * scaleMultiplier * 10) / 10));
+      headerFontSize = Math.max(5.5, Math.min(16, Math.round(headerFontSize * scaleMultiplier * 10) / 10));
+      cellPadV = Math.max(0.6, Math.min(14, Math.round(cellPadV * scaleMultiplier * 10) / 10));
+
+      const isLightMode = printSettings.fontWeight === 'light';
+      const isBoldMode = printSettings.fontWeight === 'bold' || printSettings.fontWeight === 'semibold';
+
+      const headerRow: any[] = [
+        { text: 'ÖLÇME', style: 'tableHeader', fontSize: headerFontSize },
+        { text: 'TARİH', style: 'tableHeader', fontSize: headerFontSize },
+        { text: 'SINAV ADI / YAYIN', style: 'tableHeader', fontSize: headerFontSize, alignment: 'left' },
+      ];
+      if (printSettings.showOrderQuantity) {
+        headerRow.push({ text: 'SİPARİŞ', style: 'tableHeader', fontSize: headerFontSize });
+      }
+      if (printSettings.showHalls) {
+        headerRow.push({ text: 'SALONLAR', style: 'tableHeader', fontSize: headerFontSize });
+      }
+      if (printSettings.showParticipants) {
+        headerRow.push({ text: 'KATILAN', style: 'tableHeader', fontSize: headerFontSize });
+      }
+
+      const tableBody: any[][] = [headerRow];
+
+      filteredAndSortedExams.forEach((exam, idx) => {
+        const pubName = (exam.publisher || '').trim();
+        const colorInfo = getPublisherColorInfo(pubName, publisherColors);
+        const fillHex = colorInfo.hex;
+        const isFullRow = printSettings.colorMode === 'fullRow';
+
+        const row: any[] = [];
+
+        // Col 1: Ölçme No
+        row.push({
+          text: String(exam.no || (idx + 1)),
+          alignment: 'center',
+          bold: !isLightMode,
+          fontSize: tableFontSize,
+          fillColor: isFullRow ? fillHex : '#ffffff',
+        });
+
+        // Col 2: Tarih
+        const formattedDate = exam.date ? (formatDateLong(exam.date) || exam.date) : '-';
+        row.push({
+          text: formattedDate,
+          alignment: 'center',
+          bold: !isLightMode,
+          fontSize: tableFontSize,
+          fillColor: isFullRow ? fillHex : '#ffffff',
+          noWrap: true,
+        });
+
+        // Col 3: Sınav Adı + Yayıncı (Seçilen yayıncı rengi tam uygulanır)
+        const nameParts: any[] = [
+          { text: (exam.name || 'Deneme Sınavı'), bold: !isLightMode, color: '#111827' }
+        ];
+        if (printSettings.showPublisher && exam.publisher) {
+          nameParts.push({ text: ` [${exam.publisher}]`, bold: false, color: '#4b5563' });
+        }
+        row.push({
+          text: nameParts,
+          alignment: 'left',
+          fontSize: tableFontSize,
+          fillColor: fillHex,
+        });
+
+        // Col 4: Sipariş
+        if (printSettings.showOrderQuantity) {
+          row.push({
+            text: String(exam.orderQuantity || 0),
+            alignment: 'center',
+            bold: !isLightMode,
+            fontSize: tableFontSize,
+            fillColor: isFullRow ? fillHex : '#ffffff',
+          });
+        }
+
+        // Col 5: Salonlar
+        if (printSettings.showHalls) {
+          const hallCount = exam.assignedHalls?.length || 0;
+          const hallText = hallCount > 0 ? `${hallCount} Salon` : 'Tüm Salonlar';
+          row.push({
+            text: hallText,
+            alignment: 'center',
+            fontSize: Math.max(6, tableFontSize - 1),
+            fillColor: isFullRow ? fillHex : '#ffffff',
+          });
+        }
+
+        // Col 6: Katılan
+        if (printSettings.showParticipants) {
+          row.push({
+            text: String(exam.participantCount || 0),
+            alignment: 'center',
+            bold: true,
+            fontSize: tableFontSize,
+            fillColor: '#dc2626',
+            color: '#ffffff',
+          });
+        }
+
+        tableBody.push(row);
+      });
+
+      const docDefinition: any = {
+        pageSize: 'A4',
+        pageOrientation: isLandscape ? 'landscape' : 'portrait',
+        pageMargins: isSinglePage 
+          ? (examCount > 25 ? [15, 12, 15, 12] : [20, 16, 20, 16]) 
+          : [25, 20, 25, 20],
+        content: [
+          {
+            text: (printMainTitle || 'KIRKLARELİ ATATÜRK ORTAOKULU').toLocaleUpperCase('tr-TR'),
+            style: 'docHeaderMain',
+            alignment: 'center',
+            fontSize: isSinglePage ? (examCount > 25 ? 12 : 14) : 15,
+          },
+          {
+            text: (printSubTitle || '2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ').toLocaleUpperCase('tr-TR'),
+            style: 'docHeaderSub',
+            alignment: 'center',
+            fontSize: isSinglePage ? (examCount > 25 ? 8 : 9.5) : 10.5,
+            margin: [0, 2, 0, isSinglePage && examCount > 25 ? 4 : 8],
+          },
+          {
+            table: {
+              headerRows: 1,
+              dontBreakRows: isSinglePage,
+              widths,
+              body: tableBody,
+            },
+            layout: {
+              hLineWidth: () => 0.8,
+              vLineWidth: () => 0.8,
+              hLineColor: () => '#000000',
+              vLineColor: () => '#000000',
+              paddingLeft: () => 3,
+              paddingRight: () => 3,
+              paddingTop: () => cellPadV,
+              paddingBottom: () => cellPadV,
+            },
+          },
+        ],
+        footer: printSettings.showFooter ? (currentPage: number, pageCountTotal: number) => ({
+          text: `${printSettings.footerText || printMainTitle || 'Kırklareli Atatürk Ortaokulu Sınav Koordinatörlüğü'} • Toplam ${examCount} Sınav • Basım Tarihi: ${new Date().toLocaleDateString('tr-TR')} • Sayfa ${currentPage} / ${pageCountTotal}`,
+          alignment: 'center',
+          fontSize: 7,
+          color: '#4b5563',
+          margin: [0, 4, 0, 0],
+        }) : undefined,
+        styles: {
+          docHeaderMain: {
+            bold: true,
+            color: '#111827',
+            lineHeight: 1.1,
+          },
+          docHeaderSub: {
+            bold: true,
+            color: '#374151',
+            lineHeight: 1.1,
+          },
+          tableHeader: {
+            bold: true,
+            fillColor: '#e5e7eb',
+            color: '#000000',
+            lineHeight: 1.1,
+          },
+        },
+        defaultStyle: {
+          font: 'Roboto',
+        },
+      };
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      const cleanSchool = (printMainTitle || 'Sinav')
+        .replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, '_')
+        .replace(/_+/g, '_');
+      const fileName = `${cleanSchool}_Sinav_Takvimi_${dateStr}.pdf`;
+      pdfMake.createPdf(docDefinition).download(fileName);
+      setSaveFeedback('✓ Aranabilir Türkçe PDF başarıyla indirildi!');
+      setTimeout(() => setSaveFeedback(null), 3000);
+    } catch (err) {
+      console.error('PDF export error:', err);
+      setSaveFeedback('❌ PDF oluşturulurken hata oluştu.');
+      setTimeout(() => setSaveFeedback(null), 3000);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   const handlePrint = () => {
+    setIsPrinting(true);
+
+    const isInIframe = (() => {
+      try {
+        return window.self !== window.top;
+      } catch {
+        return true;
+      }
+    })();
+
+    // In sandboxed iframe environments (like AI Studio preview), browser security blocks modal dialogs (print, alert)
+    // Always provide the print-ready PDF directly so printing never fails.
+    if (isInIframe) {
+      setSaveFeedback('✓ Önizleme ortamı kısıtlaması nedeniyle takvim baskıya hazır PDF olarak indirildi. Dosyayı açıp doğrudan yazdırabilirsiniz.');
+      handleDownloadPdf();
+      try {
+        window.print();
+      } catch {}
+      setIsPrinting(false);
+      setTimeout(() => setSaveFeedback(null), 5000);
+      return;
+    }
+
+    setSaveFeedback('✓ Yazdırma sayfası hazırlanıyor...');
+
     const printContent = document.getElementById('print-area-takvim');
     if (!printContent) {
-      window.print();
+      try {
+        window.print();
+      } catch {
+        handleDownloadPdf();
+      }
+      setIsPrinting(false);
       return;
     }
     
     try {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <title>Deneme Sınavları Takvimi - Kırklareli Atatürk Ortaokulu</title>
-              <style>
-                @page {
-                  size: A4 ${isLandscape ? 'landscape' : 'portrait'};
-                  margin: 5mm 5mm 5mm 5mm;
-                }
-                * {
-                  box-sizing: border-box;
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-                html, body {
-                  margin: 0;
-                  padding: 0;
-                  width: 100%;
-                  height: 100%;
-                  background-color: #ffffff;
-                  color: #000000;
-                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                }
-                .takvim-page-wrapper {
-                  width: 100%;
-                  ${targetPages === 1 ? `height: ${isLandscape ? '198mm' : '286mm'}; max-height: ${isLandscape ? '198mm' : '286mm'};` : ''}
-                  margin: 0 auto;
-                  padding: 0;
-                  display: flex;
-                  flex-direction: column;
-                  justify-content: flex-start;
-                  box-sizing: border-box;
-                  ${targetPages === 1 ? 'page-break-inside: avoid; break-inside: avoid; overflow: hidden;' : ''}
-                }
-                .takvim-header {
-                  flex-shrink: 0;
-                  text-align: center;
-                  margin-bottom: 2px;
-                  padding-bottom: 2px;
-                  border-bottom: 1.5px solid #000000;
-                }
-                .takvim-title-main {
-                  font-size: ${isLandscape ? '12pt' : '13pt'};
-                  font-weight: 900;
-                  text-transform: uppercase;
-                  margin: 0 0 1px 0;
-                  line-height: 1.15;
-                  letter-spacing: 0.3px;
-                  color: #111827;
-                }
-                .takvim-title-sub {
-                  font-size: ${isLandscape ? '9pt' : '9.5pt'};
-                  font-weight: 800;
-                  text-transform: uppercase;
-                  color: #374151;
-                  line-height: 1.15;
-                  margin: 0;
-                }
-                .takvim-table-wrapper {
-                  flex: 1;
-                  display: flex;
-                  flex-direction: column;
-                  width: 100%;
-                  ${targetPages === 1 ? 'height: 100%; min-height: 0;' : ''}
-                }
-                table.takvim-table {
-                  width: 100%;
-                  ${targetPages === 1 ? 'height: 100%; flex: 1;' : ''}
-                  border-collapse: collapse;
-                  border: 1.5px solid #000000;
-                  table-layout: fixed;
-                }
-                table.takvim-table thead tr {
-                  height: 24px;
-                }
-                table.takvim-table th {
-                  border: 1.5px solid #000000;
-                  background-color: #e5e7eb !important;
-                  font-weight: 800;
-                  font-size: ${optimalHeaderFontSizePt};
-                  line-height: 1.1;
-                  padding: 2px 3px;
-                  text-align: center;
-                  vertical-align: middle;
-                }
-                table.takvim-table tbody {
-                  ${targetPages === 1 ? 'height: calc(100% - 24px);' : ''}
-                }
-                table.takvim-table tbody tr {
-                  height: ${optimalRowHeightMm}mm;
-                  min-height: ${optimalRowHeightMm}mm;
-                }
-                table.takvim-table td {
-                  border: 1.5px solid #000000;
-                  padding: 1.5px 4px;
-                  text-align: center;
-                  vertical-align: middle;
-                  font-size: ${optimalFontSizePt};
-                  line-height: 1.15;
-                }
-                td.col-no {
-                  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                  font-weight: 900;
-                  font-size: ${optimalFontSizePt};
-                  width: ${isLandscape ? '40px' : '44px'};
-                }
-                td.col-date {
-                  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                  font-weight: 700;
-                  font-size: ${optimalFontSizePt};
-                  white-space: nowrap;
-                  width: ${isLandscape ? '145px' : '155px'};
-                  padding: 1.5px 3px;
-                }
-                td.col-name {
-                  text-align: left;
-                  padding-left: 6px;
-                  padding-right: 4px;
-                  font-weight: 700;
-                  font-size: ${optimalFontSizePt};
-                  line-height: 1.2;
-                  color: #1e1b4b;
-                }
-                td.col-order {
-                  font-weight: 800;
-                  font-size: ${optimalFontSizePt};
-                  width: ${isLandscape ? '46px' : '50px'};
-                }
-                td.col-halls {
-                  font-size: 8pt;
-                  line-height: 1.1;
-                  width: ${isLandscape ? '95px' : '105px'};
-                }
-                td.col-participants {
-                  background-color: #dc2626 !important;
-                  color: #ffffff !important;
-                  font-weight: 900;
-                  font-size: ${optimalFontSizePt};
-                  width: ${isLandscape ? '55px' : '60px'};
-                }
-                
-                /* Publisher Background Colors */
-                .bg-gray-100 { background-color: #f3f4f6 !important; }
-                .bg-yellow-100 { background-color: #fef9c3 !important; }
-                .bg-orange-100 { background-color: #ffedd5 !important; }
-                .bg-red-100 { background-color: #fee2e2 !important; }
-                .bg-rose-100 { background-color: #ffe4e6 !important; }
-                .bg-purple-100 { background-color: #f3e8ff !important; }
-                .bg-blue-100 { background-color: #dbeafe !important; }
-                .bg-cyan-100 { background-color: #cffafe !important; }
-                .bg-teal-100 { background-color: #ccfbf1 !important; }
-                .bg-emerald-100 { background-color: #d1fae5 !important; }
-                .bg-green-100 { background-color: #dcfce7 !important; }
-                .bg-lime-100 { background-color: #ecfccb !important; }
-                .bg-amber-100 { background-color: #fef3c7 !important; }
-                .bg-indigo-100 { background-color: #e0e7ff !important; }
-                .bg-fuchsia-100 { background-color: #fae8ff !important; }
-                
-                @media print {
-                  body {
-                    margin: 0;
-                    padding: 0;
-                  }
-                  ${targetPages === 1 ? `
-                  .takvim-page-wrapper {
-                    height: ${isLandscape ? '198mm' : '286mm'};
-                    max-height: ${isLandscape ? '198mm' : '286mm'};
-                  }
-                  ` : ''}
-                  tr {
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                  }
-                }
-              </style>
-            </head>
-            <body>
-              <div id="takvim-print-wrapper" class="takvim-page-wrapper">
-                <div class="takvim-header">
-                  <h2 class="takvim-title-main">${printMainTitle || 'KIRKLARELİ ATATÜRK ORTAOKULU'}</h2>
-                  <p class="takvim-title-sub">${printSubTitle || '2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ'}</p>
-                </div>
-                <div class="takvim-table-wrapper">
-                  ${document.querySelector('#print-area-takvim .takvim-table-wrapper')?.innerHTML || ''}
-                </div>
-              </div>
-              <script>
-                function ensureFit() {
-                  const wrapper = document.getElementById('takvim-print-wrapper');
-                  if (!wrapper) return;
-                  const isOnePage = ${targetPages === 1};
-                  if (isOnePage) {
-                    const maxPageHeight = ${maxPageHeightPx};
-                    const currentHeight = wrapper.offsetHeight || wrapper.scrollHeight;
-                    if (currentHeight > maxPageHeight) {
-                      const ratio = Math.floor((maxPageHeight / currentHeight) * 100) / 100;
-                      wrapper.style.transform = 'scale(' + Math.max(0.60, ratio) + ')';
-                      wrapper.style.transformOrigin = 'top center';
-                    }
-                  }
-                }
-                window.onload = function() {
-                  ensureFit();
-                  setTimeout(function() {
-                    window.print();
-                    window.close();
-                  }, 250);
-                };
-              </script>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-      } else {
-        window.print();
+      // Offscreen rendered iframe (opacity: 0 and real dimensions prevent Chromium from ignoring print() on unrendered frame)
+      let printFrame = document.getElementById('takvim-print-iframe') as HTMLIFrameElement | null;
+      if (printFrame) {
+        try {
+          printFrame.remove();
+        } catch {}
       }
-    } catch (e) {
-      alert("Yazdırma işlemi önizlemede engellenmiş olabilir. Lütfen uygulamayı yeni sekmede açarak deneyin.");
+      printFrame = document.createElement('iframe');
+      printFrame.id = 'takvim-print-iframe';
+      printFrame.style.position = 'fixed';
+      printFrame.style.left = '-99999px';
+      printFrame.style.top = '0';
+      printFrame.style.width = isLandscape ? '297mm' : '210mm';
+      printFrame.style.height = isLandscape ? '210mm' : '297mm';
+      printFrame.style.border = 'none';
+      printFrame.style.opacity = '0';
+      printFrame.style.pointerEvents = 'none';
+      printFrame.style.zIndex = '-99999';
+      document.body.appendChild(printFrame);
+
+      const frameDoc = printFrame.contentDocument || printFrame.contentWindow?.document;
+      if (!frameDoc) {
+        try {
+          window.print();
+        } catch {
+          handleDownloadPdf();
+        }
+        setIsPrinting(false);
+        return;
+      }
+
+      const tableHtml = document.querySelector('#print-area-takvim .takvim-table-wrapper')?.innerHTML || '';
+
+      frameDoc.open();
+      frameDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Deneme Sınavları Takvimi - ${printMainTitle || 'Kırklareli Atatürk Ortaokulu'}</title>
+            <style>
+              @page {
+                size: A4 ${isLandscape ? 'landscape' : 'portrait'};
+                margin: 4mm 6mm;
+              }
+              * {
+                box-sizing: border-box;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                ${isSinglePage ? 'height: 100%; max-height: 100vh; overflow: hidden;' : ''}
+                background-color: #ffffff;
+                color: #000000;
+                font-family: ${fontFamilyCss};
+              }
+              .takvim-page-wrapper {
+                width: 100%;
+                ${isSinglePage ? `height: ${isLandscape ? '202mm' : '289mm'}; max-height: ${isLandscape ? '202mm' : '289mm'}; overflow: hidden; page-break-inside: avoid; break-inside: avoid; justify-content: space-between;` : ''}
+                margin: 0 auto;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+              }
+              .takvim-header {
+                flex-shrink: 0;
+                text-align: center;
+                margin-bottom: ${headerLayout.marginBottom};
+                padding-bottom: ${headerLayout.paddingY};
+                border-bottom: 1.5px solid #000000;
+              }
+              .takvim-title-main {
+                font-size: ${headerLayout.mainTitlePt};
+                font-weight: 900;
+                text-transform: uppercase;
+                margin: 0 0 1px 0;
+                line-height: 1.15;
+                letter-spacing: 0.3px;
+                color: #111827;
+              }
+              .takvim-title-sub {
+                font-size: ${headerLayout.subTitlePt};
+                font-weight: 800;
+                text-transform: uppercase;
+                color: #374151;
+                line-height: 1.15;
+                margin: 0;
+              }
+              .takvim-table-wrapper {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                ${isSinglePage ? 'height: 100%; min-height: 0; overflow: hidden;' : ''}
+              }
+              table.takvim-table {
+                width: 100%;
+                ${isSinglePage ? 'height: 100%;' : ''}
+                border-collapse: collapse;
+                border: 1.5px solid #000000;
+                table-layout: fixed;
+              }
+              table.takvim-table thead tr {
+                height: ${theadLayout.theadHeightMm}mm;
+              }
+              table.takvim-table th {
+                border: 1.5px solid #000000;
+                background-color: #e5e7eb !important;
+                font-weight: ${printSettings.fontWeight === 'light' ? '600' : '800'};
+                font-size: ${theadLayout.theadFontSizePt};
+                line-height: 1.1;
+                padding: ${theadLayout.paddingY} 3px;
+                text-align: center;
+                vertical-align: middle;
+              }
+              table.takvim-table tbody {
+                ${isSinglePage ? 'height: calc(100% - 24px);' : ''}
+              }
+              table.takvim-table tbody tr {
+                height: ${optimalRowHeightMm}mm;
+                min-height: ${optimalRowHeightMm}mm;
+                ${isSinglePage ? 'page-break-inside: avoid; break-inside: avoid;' : ''}
+              }
+              table.takvim-table td {
+                border: 1.5px solid #000000;
+                padding: ${cellPaddingY} ${cellPaddingX};
+                text-align: center;
+                vertical-align: middle;
+                font-size: ${optimalFontSizePt};
+                font-weight: ${fontWeightCss};
+                line-height: 1.15;
+              }
+              td.col-no {
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                font-weight: ${printSettings.fontWeight === 'light' ? '500' : '700'};
+                font-size: ${optimalFontSizePt};
+                width: ${isLandscape ? '40px' : '44px'};
+              }
+              td.col-date {
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                font-weight: ${printSettings.fontWeight === 'light' ? '400' : '600'};
+                font-size: ${optimalFontSizePt};
+                white-space: nowrap;
+                width: ${isLandscape ? '145px' : '155px'};
+                padding: ${cellPaddingY} 3px;
+              }
+              td.col-name {
+                text-align: left;
+                padding-left: 6px;
+                padding-right: 4px;
+                font-weight: ${printSettings.fontWeight === 'light' ? '400' : printSettings.fontWeight === 'normal' ? '500' : printSettings.fontWeight === 'medium' ? '600' : '700'};
+                font-size: ${optimalFontSizePt};
+                line-height: 1.2;
+                color: #1e1b4b;
+              }
+              td.col-order {
+                font-weight: ${printSettings.fontWeight === 'light' ? '500' : '700'};
+                font-size: ${optimalFontSizePt};
+                width: ${isLandscape ? '46px' : '50px'};
+              }
+              td.col-halls {
+                font-size: ${optimalFontSizePt};
+                line-height: 1.1;
+                width: ${isLandscape ? '95px' : '105px'};
+              }
+              td.col-participants {
+                background-color: #dc2626 !important;
+                color: #ffffff !important;
+                font-weight: 800;
+                font-size: ${optimalFontSizePt};
+                width: ${isLandscape ? '55px' : '60px'};
+              }
+              .takvim-footer {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-top: 1.5px;
+                margin-top: 2px;
+                border-top: 1px solid #000000;
+                font-size: ${footerLayout.fontSizePt};
+                font-weight: ${fontWeightCss};
+                color: #374151;
+              }
+              
+              /* Publisher Background Colors */
+              .bg-gray-100 { background-color: #f3f4f6 !important; }
+              .bg-yellow-100 { background-color: #fef9c3 !important; }
+              .bg-orange-100 { background-color: #ffedd5 !important; }
+              .bg-red-100 { background-color: #fee2e2 !important; }
+              .bg-rose-100 { background-color: #ffe4e6 !important; }
+              .bg-purple-100 { background-color: #f3e8ff !important; }
+              .bg-blue-100 { background-color: #dbeafe !important; }
+              .bg-cyan-100 { background-color: #cffafe !important; }
+              .bg-teal-100 { background-color: #ccfbf1 !important; }
+              .bg-emerald-100 { background-color: #d1fae5 !important; }
+              .bg-green-100 { background-color: #dcfce7 !important; }
+              .bg-lime-100 { background-color: #ecfccb !important; }
+              .bg-amber-100 { background-color: #fef3c7 !important; }
+              .bg-indigo-100 { background-color: #e0e7ff !important; }
+              .bg-fuchsia-100 { background-color: #fae8ff !important; }
+              
+              @media print {
+                body {
+                  margin: 0;
+                  padding: 0;
+                }
+                ${isSinglePage ? `
+                .takvim-page-wrapper {
+                  height: ${isLandscape ? '202mm' : '289mm'};
+                  max-height: ${isLandscape ? '202mm' : '289mm'};
+                  overflow: hidden !important;
+                }
+                ` : ''}
+                tr {
+                  page-break-inside: avoid;
+                  break-inside: avoid;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div id="takvim-print-wrapper" class="takvim-page-wrapper">
+              <div class="takvim-header">
+                <h2 class="takvim-title-main">${printMainTitle || 'KIRKLARELİ ATATÜRK ORTAOKULU'}</h2>
+                <p class="takvim-title-sub">${printSubTitle || '2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ'}</p>
+              </div>
+              <div class="takvim-table-wrapper">
+                ${tableHtml}
+              </div>
+              ${printSettings.showFooter ? `
+              <div class="takvim-footer">
+                <span>${printSettings.footerText || (printMainTitle ? `${printMainTitle} Sınav Koordinatörlüğü` : 'Kırklareli Atatürk Ortaokulu Sınav Koordinatörlüğü')}</span>
+                <span>Basım Tarihi: ${new Date().toLocaleDateString('tr-TR')} • Toplam: ${examCount} Sınav</span>
+              </div>
+              ` : ''}
+            </div>
+            <script>
+              function ensureFit() {
+                var wrapper = document.getElementById('takvim-print-wrapper');
+                if (!wrapper) return;
+                var isOnePage = ${isSinglePage};
+                if (isOnePage) {
+                  var maxHeightPx = ${maxPageHeightPx};
+                  var currentHeight = wrapper.offsetHeight || wrapper.scrollHeight;
+                  if (currentHeight > maxHeightPx) {
+                    var ratio = Math.floor((maxHeightPx / currentHeight) * 100) / 100;
+                    wrapper.style.transform = 'scale(' + Math.max(0.65, ratio) + ')';
+                    wrapper.style.transformOrigin = 'top center';
+                  }
+                }
+              }
+              window.onload = function() {
+                ensureFit();
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      frameDoc.close();
+
+      setTimeout(() => {
+        setIsPrinting(false);
+        let triggered = false;
+        try {
+          if (printFrame?.contentWindow) {
+            printFrame.contentWindow.focus();
+            printFrame.contentWindow.print();
+            triggered = true;
+            setSaveFeedback('✓ Yazdırma iletişim kutusu açıldı.');
+            setTimeout(() => setSaveFeedback(null), 3000);
+          }
+        } catch (err) {
+          console.warn('Iframe print error:', err);
+        }
+
+        if (!triggered) {
+          try {
+            window.print();
+            setSaveFeedback('✓ Yazdırma başlatıldı.');
+            setTimeout(() => setSaveFeedback(null), 3000);
+          } catch (err2) {
+            console.warn('Window print error, falling back to PDF:', err2);
+            setSaveFeedback('ℹ️ Tarayıcı kısıtlaması nedeniyle takvim PDF olarak indiriliyor...');
+            handleDownloadPdf();
+          }
+        }
+      }, 300);
+    } catch (err) {
+      console.warn('Print process failed:', err);
+      setIsPrinting(false);
+      try {
+        window.print();
+      } catch {
+        setSaveFeedback('ℹ️ Yazdırma açılamadı, PDF olarak indiriliyor...');
+        handleDownloadPdf();
+      }
     }
   };
 
@@ -1359,12 +2049,12 @@ export const ExamsView = () => {
           <table className="w-full border-collapse text-left min-w-[800px]">
             <thead>
               <tr className="bg-[#FAF9F6] border-b-2 border-brand-ink">
-                <th width="80" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">SIRA NO</th>
-                <th width="210" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">TARİH</th>
+                <th style={{ width: 80 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">SIRA NO</th>
+                <th style={{ width: 210 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">TARİH</th>
                 <th className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">SINAV ADI</th>
-                <th width="190" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">YAYINCI</th>
-                <th width="120" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">KATILAN</th>
-                <th width="110" className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İŞLEMLER</th>
+                <th style={{ width: 190 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider sticky top-0 bg-[#FAF9F6]">YAYINCI</th>
+                <th style={{ width: 120 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">KATILAN</th>
+                <th style={{ width: 110 }} className="py-3.5 px-4 font-mono text-[0.7rem] text-brand-ink/60 uppercase tracking-wider text-center sticky top-0 bg-[#FAF9F6]">İŞLEMLER</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -2160,36 +2850,79 @@ export const ExamsView = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {/* Tablo Büyüt / Küçült (Zoom / Ölçek) */}
+                <div className="flex items-center bg-[#f0ece1] border border-[#e6e2d3] rounded-full px-1 py-0.5 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: Math.max(60, (prev.tableScale || 100) - 5) }))}
+                    className="p-1 text-[#5a5a40] hover:bg-white rounded-full transition-all cursor-pointer active:scale-90"
+                    title="Tabloyu Küçült (-%5)"
+                  >
+                    <ZoomOut className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: 100 }))}
+                    className="px-2 py-0.5 text-[11px] font-black text-[#5a5a40] hover:bg-white rounded-full transition-all cursor-pointer tracking-tight"
+                    title="Varsayılan Boyuta Sıfırla (%100 - 30 Sınavı 1 Sayfaya Tam Doldur)"
+                  >
+                    %{printSettings.tableScale || 100}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: Math.min(160, (prev.tableScale || 100) + 5) }))}
+                    className="p-1 text-[#5a5a40] hover:bg-white rounded-full transition-all cursor-pointer active:scale-90"
+                    title="Tabloyu Büyüt (+%5)"
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* PDF İndir */}
                 <button
-                  onClick={handleSavePrintSettings}
-                  className="flex items-center px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
-                  title="Sınav takvimi filtre, başlık ve yazdırma ayarlarını hafızaya kaydet"
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={isPdfGenerating}
+                  className="flex items-center px-3.5 py-1.5 bg-rose-700 hover:bg-rose-800 disabled:opacity-50 text-white rounded-full text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+                  title="Aranabilir Türkçe PDF formatında takvim indir"
                 >
-                  <Check className="h-3.5 w-3.5 mr-1.5" />
-                  Ayarları Kaydet
+                  <Download className="h-3.5 w-3.5 mr-1 text-white" />
+                  {isPdfGenerating ? 'PDF Hazırlanıyor...' : 'PDF İndir'}
                 </button>
+
+                {/* Yazdır */}
                 <button
+                  type="button"
+                  onClick={handlePrint}
+                  disabled={isPrinting || isPdfGenerating}
+                  className="flex items-center px-4 py-1.5 bg-[#5a5a40] text-white rounded-full text-xs font-bold shadow-xs hover:bg-[#43423b] disabled:opacity-75 transition-all cursor-pointer active:scale-95"
+                  title="Sınav takvimini doğrudan yazdır"
+                >
+                  <Printer className="h-3.5 w-3.5 mr-1" />
+                  {isPrinting || isPdfGenerating ? 'Hazırlanıyor...' : 'Yazdır'}
+                </button>
+
+                {/* Ayarlar Aç/Kapa */}
+                <button
+                  type="button"
                   onClick={() => setShowPrintSettings(!showPrintSettings)}
-                  className={`flex items-center px-4 py-2 rounded-full text-xs sm:text-sm font-bold shadow-sm transition-colors border cursor-pointer ${
+                  className={`flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold shadow-xs transition-colors border cursor-pointer ${
                     showPrintSettings 
                       ? 'bg-[#e6e2d3] text-[#5a5a40] border-[#d4d19d]' 
                       : 'bg-white text-[#5a5a40] border-[#e6e2d3] hover:bg-[#fcfbf7]'
                   }`}
+                  title="Yazdırma, font, sütun ve sayfa ayarları"
                 >
-                  <Settings className="h-4 w-4 mr-1.5" />
+                  <Settings className="h-3.5 w-3.5 mr-1" />
                   Ayarlar
                 </button>
+
+                {/* Kapat */}
                 <button
-                  onClick={handlePrint}
-                  className="flex items-center px-4 py-2 bg-[#5a5a40] text-white rounded-full text-xs sm:text-sm font-bold shadow-sm hover:bg-[#43423b] transition-colors cursor-pointer"
-                >
-                  <FileText className="h-4 w-4 mr-1.5" />
-                  Yazdır
-                </button>
-                <button
+                  type="button"
                   onClick={() => setIsPrintModalOpen(false)}
-                  className="p-2 text-[#8e8d82] hover:text-[#5a5a40] hover:bg-[#f5f5f0] rounded-full transition-all border border-transparent hover:border-[#e6e2d3] cursor-pointer"
+                  className="p-1.5 text-[#8e8d82] hover:text-[#5a5a40] hover:bg-[#f5f5f0] rounded-full transition-all border border-transparent hover:border-[#e6e2d3] cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -2205,7 +2938,7 @@ export const ExamsView = () => {
                 </div>
                 <button 
                   onClick={() => setSaveFeedback(null)}
-                  className="text-emerald-700 hover:text-emerald-900 text-[10px] font-bold underline"
+                  className="text-emerald-700 hover:text-emerald-900 text-[10px] font-bold underline cursor-pointer"
                 >
                   Kapat
                 </button>
@@ -2214,316 +2947,848 @@ export const ExamsView = () => {
 
             {/* Print Settings Panel (Hidden in Print) */}
             {showPrintSettings && (
-              <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-5 print:hidden max-h-[50vh] overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                  {/* 1. Sınıf Seviyesi Filtresi (Çoklu Seçim Destekli) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-[#5a5a40]" />
-                        Sınıf Seviyesi Filtresi
-                      </h4>
-                      {!selectedGrades.includes('Tümü') && (
-                        <button
-                          type="button"
-                          onClick={() => handleGradeToggle('Tümü')}
-                          className="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer"
-                        >
-                          Tümünü Sıfırla
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-[#8e8d82] leading-tight">
-                      Çoklu seçim yapabilirsiniz. Birden fazla sınıfa tıklayarak ortak takvim oluşturun:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5 bg-white p-2.5 rounded-2xl border border-[#e6e2d3]">
-                      <button
-                        type="button"
-                        onClick={() => handleGradeToggle('Tümü')}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          selectedGrades.includes('Tümü')
-                            ? 'bg-[#5a5a40] text-white shadow-sm'
-                            : 'bg-[#fcfbf7] text-[#5a5a40] hover:bg-[#f0ede4] border border-[#e6e2d3]/80'
-                        }`}
-                      >
-                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-black ${
-                          selectedGrades.includes('Tümü') ? 'bg-white text-[#5a5a40] border-white' : 'border-[#8e8d82] text-transparent'
-                        }`}>✓</span>
-                        <span>Tüm Sınıflar</span>
-                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                          selectedGrades.includes('Tümü') ? 'bg-white/25 text-white' : 'bg-[#e6e2d3] text-[#5a5a40]'
-                        }`}>
-                          {state.exams.length}
-                        </span>
-                      </button>
+              <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-4 sm:p-5 print:hidden max-h-[60vh] overflow-y-auto">
+                {/* Header of settings panel */}
+                <div className="flex flex-wrap items-center justify-between pb-3 mb-4 border-b border-[#e6e2d3] gap-2">
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-[#5a5a40]" />
+                    <span className="text-xs font-black text-[#5a5a40] uppercase tracking-wider">
+                      Yazdırma ve Belge Yapılandırması
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Canlı Önizleme &amp; Otomatik Kayıt
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetPrintSettings}
+                    className="flex items-center gap-1.5 text-[11px] text-[#8e8d82] hover:text-[#5a5a40] font-bold px-2.5 py-1 rounded-lg hover:bg-white border border-transparent hover:border-[#e6e2d3] transition-all cursor-pointer"
+                    title="Tüm ayarları varsayılanlara sıfırla"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Varsayılana Sıfırla</span>
+                  </button>
+                </div>
 
-                      {availableGradeLevels.map(lvl => {
-                        const isSelected = selectedGrades.includes(lvl);
-                        // Count exams that include this grade level
-                        const count = state.exams.filter(e => {
-                          const grades = e.participatingClasses || [];
-                          if (grades.length > 0) return grades.includes(lvl);
-                          if (e.name) {
-                            const norm = e.name.toLowerCase();
-                            return norm.includes(`${lvl}. sınıf`) || norm.includes(`${lvl}.sınıf`) || norm.includes(`${lvl}/`);
-                          }
-                          return false;
-                        }).length;
+                {/* Header & Tabs Navigation */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b border-[#e6e2d3]">
+                  {/* Segmented Tab Controls */}
+                  <div className="flex flex-wrap items-center gap-1 p-1 bg-[#f0ece1] rounded-2xl border border-[#e6e2d3]">
+                    <button
+                      type="button"
+                      onClick={() => setSettingsTab('layout')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        settingsTab === 'layout'
+                          ? 'bg-white text-[#5a5a40] shadow-xs'
+                          : 'text-[#8e8d82] hover:text-[#5a5a40] hover:bg-white/50'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Sayfa &amp; Düzen</span>
+                    </button>
 
-                        return (
+                    <button
+                      type="button"
+                      onClick={() => setSettingsTab('typography')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        settingsTab === 'typography'
+                          ? 'bg-white text-[#5a5a40] shadow-xs'
+                          : 'text-[#8e8d82] hover:text-[#5a5a40] hover:bg-white/50'
+                      }`}
+                    >
+                      <Type className="w-3.5 h-3.5" />
+                      <span>Tipografi &amp; Sütunlar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsTab('content')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        settingsTab === 'content'
+                          ? 'bg-white text-[#5a5a40] shadow-xs'
+                          : 'text-[#8e8d82] hover:text-[#5a5a40] hover:bg-white/50'
+                      }`}
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Başlıklar &amp; Alt Bilgi</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsTab('colors')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        settingsTab === 'colors'
+                          ? 'bg-white text-[#5a5a40] shadow-xs ring-1 ring-amber-300'
+                          : 'text-[#8e8d82] hover:text-[#5a5a40] hover:bg-white/50'
+                      }`}
+                    >
+                      <Palette className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Yayıncı Renk Paleti</span>
+                      <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-black px-1.5 py-0.2 rounded-full">
+                        {uniquePublishers.length}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Actions on top right */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 hidden sm:inline-block">
+                      ✓ Canlı Önizleme &amp; Otomatik Kayıt
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleResetPrintSettings}
+                      className="flex items-center gap-1.5 text-xs text-[#8e8d82] hover:text-[#5a5a40] font-bold px-2.5 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-[#e6e2d3] transition-all cursor-pointer"
+                      title="Tüm ayarları ve renkleri varsayılana sıfırla"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Varsayılana Sıfırla</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tab 1: Sayfa & Düzen */}
+                {settingsTab === 'layout' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Sınıf Seviyeleri (Çoklu Seçim) */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-[#5a5a40]" />
+                            Sınıf Seviyesi Filtresi
+                          </h4>
+                          {!selectedGrades.includes('Tümü') && (
+                            <button
+                              type="button"
+                              onClick={() => handleGradeToggle('Tümü')}
+                              className="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer"
+                            >
+                              Tümünü Seç
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#8e8d82] mb-3">
+                          Birden fazla sınıf seçebilirsiniz. Başlık seçime göre otomatik uyarlanır.
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
                           <button
-                            key={lvl}
                             type="button"
-                            onClick={() => handleGradeToggle(lvl)}
+                            onClick={() => handleGradeToggle('Tümü')}
                             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-200'
-                                : 'bg-[#fcfbf7] text-[#5a5a40] hover:bg-[#f0ede4] border border-[#e6e2d3]/80'
+                              selectedGrades.includes('Tümü')
+                                ? 'bg-[#5a5a40] text-white shadow-xs'
+                                : 'bg-[#fcfbf7] text-[#5a5a40] hover:bg-[#f0ede4] border border-[#e6e2d3]'
                             }`}
                           >
-                            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-black ${
-                              isSelected ? 'bg-white text-indigo-600 border-white' : 'border-[#8e8d82] text-transparent'
-                            }`}>✓</span>
-                            <span>{lvl === 'Diğer' ? 'Diğer' : `${lvl}. Sınıf`}</span>
+                            <span>Tümü</span>
                             <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                              isSelected ? 'bg-white/25 text-white' : 'bg-[#e6e2d3] text-[#5a5a40]'
+                              selectedGrades.includes('Tümü') ? 'bg-white/25 text-white' : 'bg-[#e6e2d3] text-[#5a5a40]'
                             }`}>
-                              {count}
+                              {state.exams.length}
                             </span>
                           </button>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  {/* 2. Başlıkları Özelleştir (Elle Doldurulabilir) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
-                        <Edit3 className="w-3.5 h-3.5 text-[#5a5a40]" />
-                        Başlıkları Düzenle
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPrintMainTitle('KIRKLARELİ ATATÜRK ORTAOKULU');
-                          updateSubTitleForGrades(selectedGrades);
-                        }}
-                        className="text-[10px] text-[#8e8d82] hover:text-[#5a5a40] font-bold underline"
-                        title="Varsayılan başlıklara dön"
-                      >
-                        Sıfırla
-                      </button>
-                    </div>
-                    <div className="space-y-2 bg-white p-2.5 rounded-2xl border border-[#e6e2d3]">
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#8e8d82] uppercase mb-1">
-                          Ana Başlık (Okul / Kurum Adı)
-                        </label>
-                        <input
-                          type="text"
-                          value={printMainTitle}
-                          onChange={(e) => setPrintMainTitle(e.target.value)}
-                          placeholder="Örn: KIRKLARELİ ATATÜRK ORTAOKULU"
-                          className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-[#8e8d82] uppercase mb-1">
-                          Alt Başlık (Dönem &amp; Açıklama)
-                        </label>
-                        <input
-                          type="text"
-                          value={printSubTitle}
-                          onChange={(e) => setPrintSubTitle(e.target.value)}
-                          placeholder="Örn: 2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ"
-                          className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-[#5a5a40] focus:ring-1 focus:ring-[#5a5a40] outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. Sayfa Yönü ve Sayfa Sayısı */}
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-2">Sayfa Yönü</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPrintSettings(prev => ({ ...prev, orientation: 'portrait' }))}
-                          className={`flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl border text-xs font-bold transition-all ${
-                            printSettings.orientation === 'portrait'
-                              ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-sm'
-                              : 'bg-white text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
-                          }`}
-                        >
-                          <span className="w-3 h-4 border-2 border-current rounded-sm inline-block"></span>
-                          Dikey
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPrintSettings(prev => ({ ...prev, orientation: 'landscape' }))}
-                          className={`flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl border text-xs font-bold transition-all ${
-                            printSettings.orientation === 'landscape'
-                              ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-sm'
-                              : 'bg-white text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
-                          }`}
-                        >
-                          <span className="w-4 h-3 border-2 border-current rounded-sm inline-block"></span>
-                          Yatay
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-2">Sayfa Sayısı &amp; Sığdırma</h4>
-                      <div className="grid grid-cols-3 gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setPrintSettings(prev => ({ ...prev, pageCount: '1' }))}
-                          className={`py-1.5 px-1.5 rounded-xl border text-[11px] font-bold text-center transition-all ${
-                            printSettings.pageCount === '1'
-                              ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-sm'
-                              : 'bg-white text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
-                          }`}
-                        >
-                          1 Sayfa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPrintSettings(prev => ({ ...prev, pageCount: '2' }))}
-                          className={`py-1.5 px-1.5 rounded-xl border text-[11px] font-bold text-center transition-all ${
-                            printSettings.pageCount === '2'
-                              ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-sm'
-                              : 'bg-white text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
-                          }`}
-                        >
-                          2 Sayfa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPrintSettings(prev => ({ ...prev, pageCount: 'auto' }))}
-                          className={`py-1.5 px-1.5 rounded-xl border text-[11px] font-bold text-center transition-all ${
-                            printSettings.pageCount === 'auto'
-                              ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-sm'
-                              : 'bg-white text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
-                          }`}
-                        >
-                          Oto
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 4. Sütunlar & Yayıncı Renkleri */}
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-1.5">Görünecek Sütunlar</h4>
-                      <div className="grid grid-cols-2 gap-1.5 bg-white p-2 rounded-2xl border border-[#e6e2d3]">
-                        <label className="flex items-center space-x-1.5 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={printSettings.showParticipants}
-                            onChange={(e) => setPrintSettings({...printSettings, showParticipants: e.target.checked})}
-                            className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40]"
-                          />
-                          <span className="text-[11px] font-bold text-[#5a5a40]">Katılımcı</span>
-                        </label>
-                        <label className="flex items-center space-x-1.5 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={printSettings.showPublisher}
-                            onChange={(e) => setPrintSettings({...printSettings, showPublisher: e.target.checked})}
-                            className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40]"
-                          />
-                          <span className="text-[11px] font-bold text-[#5a5a40]">Yayıncı</span>
-                        </label>
-                        <label className="flex items-center space-x-1.5 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={printSettings.showOrderQuantity}
-                            onChange={(e) => setPrintSettings({...printSettings, showOrderQuantity: e.target.checked})}
-                            className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40]"
-                          />
-                          <span className="text-[11px] font-bold text-[#5a5a40]">Sipariş</span>
-                        </label>
-                        <label className="flex items-center space-x-1.5 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={printSettings.showHalls}
-                            onChange={(e) => setPrintSettings({...printSettings, showHalls: e.target.checked})}
-                            className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40]"
-                          />
-                          <span className="text-[11px] font-bold text-[#5a5a40]">Salonlar</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-1.5">Yayıncı Renkleri</h4>
-                      {uniquePublishers.length === 0 ? (
-                        <p className="text-[10px] text-[#8e8d82] italic">Yayıncı bulunmuyor.</p>
-                      ) : (
-                        <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                          {uniquePublishers.map(pub => {
-                            const pubName = pub || 'Bilinmiyor';
-                            let currentColor = publisherColors[pubName];
-                            if (!currentColor) {
-                              const p = pubName.toLowerCase();
-                              if (p.includes('işler')) currentColor = 'bg-orange-100';
-                              else if (p.includes('çınar')) currentColor = 'bg-green-100';
-                              else if (p.includes('arı')) currentColor = 'bg-yellow-100';
-                              else if (p.includes('mozaik')) currentColor = 'bg-amber-100';
-                              else if (p.includes('okyanus')) currentColor = 'bg-blue-100';
-                              else if (p.includes('palme')) currentColor = 'bg-cyan-100';
-                              else if (p.includes('ulti')) currentColor = 'bg-purple-100';
-                              else if (p.includes('işleyen zeka')) currentColor = 'bg-rose-100';
-                              else if (p.includes('sinan kuzucu')) currentColor = 'bg-red-100';
-                              else if (p.includes('nartest')) currentColor = 'bg-emerald-100';
-                              else if (p.includes('hız')) currentColor = 'bg-fuchsia-100';
-                              else if (p.includes('sadık uygun')) currentColor = 'bg-indigo-100';
-                              else {
-                                let hash = 0;
-                                for (let i = 0; i < p.length; i++) hash = p.charCodeAt(i) + ((hash << 5) - hash);
-                                const colors = ['bg-amber-100', 'bg-blue-100', 'bg-emerald-100', 'bg-rose-100', 'bg-purple-100', 'bg-cyan-100'];
-                                currentColor = colors[Math.abs(hash) % colors.length];
+                          {availableGradeLevels.map(lvl => {
+                            const isSelected = selectedGrades.includes(lvl);
+                            const count = state.exams.filter(e => {
+                              const grades = e.participatingClasses || [];
+                              if (grades.length > 0) return grades.includes(lvl);
+                              if (e.name) {
+                                const norm = e.name.toLowerCase();
+                                return norm.includes(`${lvl}. sınıf`) || norm.includes(`${lvl}.sınıf`) || norm.includes(`${lvl}/`);
                               }
-                            }
+                              return false;
+                            }).length;
 
                             return (
-                              <div key={pub} className="flex items-center space-x-1.5 bg-white p-1 rounded-lg border border-[#e6e2d3]">
-                                <div className={`w-3 h-3 rounded-full border border-black/10 shrink-0 ${currentColor}`}></div>
-                                <span className="text-[11px] font-bold text-[#5a5a40] flex-1 truncate" title={pubName}>{pubName}</span>
-                                <select 
-                                  value={currentColor}
-                                  onChange={(e) => setPublisherColors(prev => ({ ...prev, [pubName]: e.target.value }))}
-                                  className="text-[10px] border-[#e6e2d3] rounded py-0.5 pl-1 pr-4 focus:ring-[#5a5a40] bg-[#fcfbf7] font-semibold text-[#5a5a40]"
-                                >
-                                  {COLOR_OPTIONS.map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                  ))}
-                                </select>
-                              </div>
+                              <button
+                                key={lvl}
+                                type="button"
+                                onClick={() => handleGradeToggle(lvl)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-indigo-300'
+                                    : 'bg-[#fcfbf7] text-[#5a5a40] hover:bg-[#f0ede4] border border-[#e6e2d3]'
+                                }`}
+                              >
+                                <span>{lvl === 'Diğer' ? 'Diğer' : `${lvl}. Sınıf`}</span>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                                  isSelected ? 'bg-white/25 text-white' : 'bg-[#e6e2d3] text-[#5a5a40]'
+                                }`}>
+                                  {count}
+                                </span>
+                              </button>
                             );
                           })}
                         </div>
-                      )}
+                      </div>
+                    </div>
+
+                    {/* Sayfa Yönlendirme */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-[#5a5a40]" />
+                            Sayfa Yönlendirme
+                          </h4>
+                          <span className="text-[10px] text-[#8e8d82] font-semibold">A4 Standart</span>
+                        </div>
+                        <p className="text-[11px] text-[#8e8d82] mb-3">
+                          Yazdırma ve PDF belgesinin kağıt yerleşimini belirleyin.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, orientation: 'portrait' }))}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                              printSettings.orientation === 'portrait'
+                                ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-xs'
+                                : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                            }`}
+                          >
+                            <span className="w-5 h-7 border-2 border-current rounded-xs mb-1.5 inline-block"></span>
+                            <span>Dikey (Portrait)</span>
+                            <span className="text-[10px] opacity-75 font-normal mt-0.5">Klasik Pano İlanı</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, orientation: 'landscape' }))}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                              printSettings.orientation === 'landscape'
+                                ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-xs'
+                                : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                            }`}
+                          >
+                            <span className="w-7 h-5 border-2 border-current rounded-xs mb-1.5 inline-block"></span>
+                            <span>Yatay (Landscape)</span>
+                            <span className="text-[10px] opacity-75 font-normal mt-0.5">Geniş Tablo Düzeni</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sayfa Sığdırma & Sayfa Sayısı */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-[#5a5a40]" />
+                            Sayfa Sığdırma (Fit)
+                          </h4>
+                          {isSinglePage && (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              ★ 1 Sayfa Fit
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#8e8d82] mb-3">
+                          Tüm sınavları tek bir sayfaya sığdırın veya sayfalara bölün.
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['1', '2', 'auto'] as const).map(pc => (
+                            <button
+                              key={pc}
+                              type="button"
+                              onClick={() => setPrintSettings(prev => ({ ...prev, pageCount: pc }))}
+                              className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                                printSettings.pageCount === pc
+                                  ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-xs'
+                                  : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                              }`}
+                            >
+                              <div className="text-xs font-black">
+                                {pc === '1' ? '1 Sayfa' : pc === '2' ? '2 Sayfa' : 'Otomatik'}
+                              </div>
+                              <div className="text-[9px] opacity-75 mt-0.5">
+                                {pc === '1' ? 'Tam Sığdır' : pc === '2' ? 'Genişletilmiş' : 'Standart'}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tablo Ölçeği & Büyütme / Küçültme (Zoom) */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
+                            <ZoomIn className="w-3.5 h-3.5 text-[#5a5a40]" />
+                            Tablo Boyutu &amp; Zoom
+                          </h4>
+                          <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                            %{printSettings.tableScale || 100}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#8e8d82] mb-2.5">
+                          Tüm tablonun (satır yüksekliği, punto, boşluklar) boyutunu orantılı ayarlayın.
+                        </p>
+
+                        <div className="flex items-center gap-1.5 mb-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: Math.max(60, (prev.tableScale || 100) - 5) }))}
+                            className="p-1.5 bg-[#fcfbf7] border border-[#e6e2d3] hover:bg-[#f0ede4] rounded-lg text-[#5a5a40] cursor-pointer"
+                            title="Küçült (-%5)"
+                          >
+                            <ZoomOut className="w-3.5 h-3.5" />
+                          </button>
+                          <input
+                            type="range"
+                            min="65"
+                            max="145"
+                            step="5"
+                            value={printSettings.tableScale || 100}
+                            onChange={(e) => setPrintSettings(prev => ({ ...prev, tableScale: Number(e.target.value) }))}
+                            className="flex-1 accent-[#5a5a40] cursor-pointer"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: Math.min(160, (prev.tableScale || 100) + 5) }))}
+                            className="p-1.5 bg-[#fcfbf7] border border-[#e6e2d3] hover:bg-[#f0ede4] rounded-lg text-[#5a5a40] cursor-pointer"
+                            title="Büyüt (+%5)"
+                          >
+                            <ZoomIn className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: 85 }))}
+                            className={`px-1.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer text-center ${
+                              printSettings.tableScale === 85
+                                ? 'bg-[#5a5a40] text-white border-[#5a5a40]'
+                                : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                            }`}
+                          >
+                            %85 Kompakt
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: 100 }))}
+                            className={`px-1.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer text-center ${
+                              (printSettings.tableScale || 100) === 100
+                                ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                            }`}
+                          >
+                            ★ %100 Tam Doldur
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, tableScale: 115 }))}
+                            className={`px-1.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer text-center ${
+                              printSettings.tableScale === 115
+                                ? 'bg-[#5a5a40] text-white border-[#5a5a40]'
+                                : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                            }`}
+                          >
+                            %115 Geniş
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] font-medium text-emerald-700 bg-emerald-50 p-1.5 rounded-lg border border-emerald-200/80 flex items-center gap-1 mt-2">
+                        <CheckCircle2 className="w-3 h-3 shrink-0" />
+                        <span>30 deneme sınavı A4 dikey 1 sayfayı tam dolduracak şekilde kalibre edilmiştir.</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Tab 2: Tipografi & Sütunlar */}
+                {settingsTab === 'typography' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Yazı Tipi Ailesi */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Type className="w-3.5 h-3.5 text-[#5a5a40]" />
+                          Yazı Tipi (Font)
+                        </h4>
+                        <p className="text-[11px] text-[#8e8d82] mb-3">Rapor tipografisini seçin.</p>
+                        <div className="space-y-1.5">
+                          {[
+                            { id: 'sans', label: 'Modern (Sans-Serif)', sample: 'Atatürk Ortaokulu 2026' },
+                            { id: 'serif', label: 'Resmi / Klasik (Serif)', sample: 'Atatürk Ortaokulu 2026', fontClass: 'font-serif' },
+                            { id: 'mono', label: 'Teknik / Tablo (Mono)', sample: 'Atatürk Ortaokulu 2026', fontClass: 'font-mono' },
+                          ].map(font => (
+                            <button
+                              key={font.id}
+                              type="button"
+                              onClick={() => setPrintSettings(prev => ({ ...prev, fontFamily: font.id as any }))}
+                              className={`w-full text-left p-2 rounded-xl border transition-all cursor-pointer ${
+                                printSettings.fontFamily === font.id
+                                  ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-xs'
+                                  : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                              }`}
+                            >
+                              <div className="text-xs font-bold">{font.label}</div>
+                              <div className={`text-[10px] opacity-80 ${font.fontClass || ''}`}>{font.sample}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Yazı Büyüklüğü */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Sliders className="w-3.5 h-3.5 text-[#5a5a40]" />
+                          Yazı Büyüklüğü
+                        </h4>
+                        <p className="text-[11px] text-[#8e8d82] mb-3">Tablo yazı puntosu ölçeği.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 'auto', label: 'Otomatik', sub: 'Akıllı Fit' },
+                            { id: 'compact', label: 'Kompakt', sub: 'Küçük Punto' },
+                            { id: 'normal', label: 'Standart', sub: 'Dengeli' },
+                            { id: 'spacious', label: 'Geniş', sub: 'Büyük Punto' },
+                          ].map(scale => (
+                            <button
+                              key={scale.id}
+                              type="button"
+                              onClick={() => setPrintSettings(prev => ({ ...prev, fontScale: scale.id as any }))}
+                              className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                                printSettings.fontScale === scale.id
+                                  ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-xs'
+                                  : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                              }`}
+                            >
+                              <div className="text-xs font-bold">{scale.label}</div>
+                              <div className="text-[9px] opacity-75">{scale.sub}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Yazı Kalınlığı */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Type className="w-3.5 h-3.5 text-[#5a5a40]" />
+                          Yazı Kalınlığı
+                        </h4>
+                        <p className="text-[11px] text-[#8e8d82] mb-3">Metin ağırlık derecesi.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 'light', label: 'İnce (Light)', cls: 'font-normal' },
+                            { id: 'normal', label: 'Normal (Regular)', cls: 'font-medium' },
+                            { id: 'medium', label: 'Orta (Medium)', cls: 'font-semibold' },
+                            { id: 'bold', label: 'Kalın (Bold)', cls: 'font-black' },
+                          ].map(w => (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => setPrintSettings(prev => ({ ...prev, fontWeight: w.id as any }))}
+                              className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${w.cls} ${
+                                printSettings.fontWeight === w.id
+                                  ? 'bg-[#5a5a40] text-white border-[#5a5a40] shadow-xs'
+                                  : 'bg-[#fcfbf7] text-[#5a5a40] border-[#e6e2d3] hover:bg-[#f0ede4]'
+                              }`}
+                            >
+                              <div className="text-xs">{w.label}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Görünecek Sütunlar */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-[#5a5a40]" />
+                          Görünecek Sütunlar
+                        </h4>
+                        <p className="text-[11px] text-[#8e8d82] mb-3">Tabloda yer alacak veriler.</p>
+                        <div className="space-y-1.5">
+                          <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcfbf7] border border-[#e6e2d3] cursor-pointer hover:bg-[#f0ede4] transition-colors">
+                            <span className="text-xs font-bold text-[#5a5a40]">Katılımcı Sayısı (Katılan)</span>
+                            <input 
+                              type="checkbox" 
+                              checked={printSettings.showParticipants}
+                              onChange={(e) => setPrintSettings(prev => ({ ...prev, showParticipants: e.target.checked }))}
+                              className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] h-4 w-4"
+                            />
+                          </label>
+                          <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcfbf7] border border-[#e6e2d3] cursor-pointer hover:bg-[#f0ede4] transition-colors">
+                            <span className="text-xs font-bold text-[#5a5a40]">Yayıncı Adı [Yayıncı]</span>
+                            <input 
+                              type="checkbox" 
+                              checked={printSettings.showPublisher}
+                              onChange={(e) => setPrintSettings(prev => ({ ...prev, showPublisher: e.target.checked }))}
+                              className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] h-4 w-4"
+                            />
+                          </label>
+                          <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcfbf7] border border-[#e6e2d3] cursor-pointer hover:bg-[#f0ede4] transition-colors">
+                            <span className="text-xs font-bold text-[#5a5a40]">Sipariş Miktarı</span>
+                            <input 
+                              type="checkbox" 
+                              checked={printSettings.showOrderQuantity}
+                              onChange={(e) => setPrintSettings(prev => ({ ...prev, showOrderQuantity: e.target.checked }))}
+                              className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] h-4 w-4"
+                            />
+                          </label>
+                          <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcfbf7] border border-[#e6e2d3] cursor-pointer hover:bg-[#f0ede4] transition-colors">
+                            <span className="text-xs font-bold text-[#5a5a40]">Sınav Salonları</span>
+                            <input 
+                              type="checkbox" 
+                              checked={printSettings.showHalls}
+                              onChange={(e) => setPrintSettings(prev => ({ ...prev, showHalls: e.target.checked }))}
+                              className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] h-4 w-4"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 3: Başlıklar & Alt Bilgi */}
+                {settingsTab === 'content' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Başlık Metinleri */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
+                          <Edit3 className="w-3.5 h-3.5 text-[#5a5a40]" />
+                          Belge Başlıkları
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPrintMainTitle('KIRKLARELİ ATATÜRK ORTAOKULU');
+                            updateSubTitleForGrades(selectedGrades);
+                          }}
+                          className="text-xs text-[#8e8d82] hover:text-[#5a5a40] font-bold underline cursor-pointer"
+                        >
+                          Varsayılana Dön
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold text-[#5a5a40] mb-1">
+                            Ana Başlık (Kurum / Okul Adı)
+                          </label>
+                          <input
+                            type="text"
+                            value={printMainTitle}
+                            onChange={(e) => setPrintMainTitle(e.target.value)}
+                            placeholder="Örn: KIRKLARELİ ATATÜRK ORTAOKULU"
+                            className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2 text-xs font-bold text-[#5a5a40] focus:ring-2 focus:ring-[#5a5a40] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-bold text-[#5a5a40]">
+                              Alt Başlık (Dönem &amp; Takvim Adı)
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => updateSubTitleForGrades(selectedGrades)}
+                              className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold underline cursor-pointer"
+                            >
+                              Sınıfa Göre Başlık Üret
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={printSubTitle}
+                            onChange={(e) => setPrintSubTitle(e.target.value)}
+                            placeholder="Örn: 2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ"
+                            className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2 text-xs font-semibold text-[#5a5a40] focus:ring-2 focus:ring-[#5a5a40] outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Alt Bilgi (Footer) Yapılandırması */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-[#5a5a40]" />
+                          Alt Bilgi (Footer) Ayarları
+                        </h4>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="flex items-center space-x-2 bg-[#fcfbf7] p-2.5 rounded-xl border border-[#e6e2d3] cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={printSettings.showFooter}
+                            onChange={(e) => setPrintSettings(prev => ({ ...prev, showFooter: e.target.checked }))}
+                            className="rounded border-[#e6e2d3] text-[#5a5a40] focus:ring-[#5a5a40] h-4 w-4"
+                          />
+                          <span className="text-xs font-bold text-[#5a5a40]">Sayfa Alt Bilgisini (Footer) Yazdır</span>
+                        </label>
+
+                        {printSettings.showFooter && (
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-[#5a5a40]">
+                              Alt Bilgi Metni
+                            </label>
+                            <input 
+                              type="text"
+                              value={printSettings.footerText}
+                              onChange={(e) => setPrintSettings(prev => ({ ...prev, footerText: e.target.value }))}
+                              placeholder="Örn: Kırklareli Atatürk Ortaokulu Sınav Koordinatörlüğü"
+                              className="w-full bg-[#fcfbf7] border border-[#e6e2d3] rounded-xl px-3 py-2 text-xs font-semibold text-[#5a5a40] focus:ring-2 focus:ring-[#5a5a40] outline-none"
+                            />
+                            <p className="text-[11px] text-[#8e8d82]">
+                              ℹ Sayfa numarası, toplam sınav adedi ve basım tarihi PDF çıktısında otomatik eklenir.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 4: Yayıncı Renk Paleti (Canlı Eşitleme & PDF Desteği) */}
+                {settingsTab === 'colors' && (
+                  <div className="space-y-4">
+                    {/* Üst Yönetim Çubuğu */}
+                    <div className="bg-white p-4 rounded-2xl border border-[#e6e2d3] shadow-xs flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-2">
+                          <Palette className="w-4 h-4 text-amber-600" />
+                          Yayıncı Renk Yönetim Merkezi
+                        </h4>
+                        <p className="text-xs text-[#8e8d82] mt-0.5">
+                          Belirlediğiniz renkler ekrandaki takvimde, PDF indirmesinde ve baskıda %100 birebir aynı tonda uygulanır.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Renklendirme Stili (Sadece Sınav Adı vs Tüm Satır) */}
+                        <div className="flex items-center gap-1 bg-[#fcfbf7] p-1 rounded-xl border border-[#e6e2d3]">
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, colorMode: 'nameCell' }))}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              printSettings.colorMode !== 'fullRow'
+                                ? 'bg-[#5a5a40] text-white shadow-xs'
+                                : 'text-[#8e8d82] hover:text-[#5a5a40]'
+                            }`}
+                          >
+                            Sadece Sınav Adı
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPrintSettings(prev => ({ ...prev, colorMode: 'fullRow' }))}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              printSettings.colorMode === 'fullRow'
+                                ? 'bg-[#5a5a40] text-white shadow-xs'
+                                : 'text-[#8e8d82] hover:text-[#5a5a40]'
+                            }`}
+                          >
+                            Tüm Satır
+                          </button>
+                        </div>
+
+                        {/* Otomatik Renk Dağıt */}
+                        <button
+                          type="button"
+                          onClick={handleAutoDistributeColors}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold hover:bg-amber-100 transition-all cursor-pointer shadow-xs"
+                          title="Tüm yayıncılara çakışmayan estetik pastel renkler ata"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Renkleri Otomatik Dağıt</span>
+                        </button>
+
+                        {/* Renkleri Sıfırla */}
+                        <button
+                          type="button"
+                          onClick={handleResetPublisherColors}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fcfbf7] text-[#8e8d82] hover:text-[#5a5a40] border border-[#e6e2d3] rounded-xl text-xs font-bold hover:bg-white transition-all cursor-pointer"
+                          title="Tüm yayıncı renklerini varsayılana sıfırla"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Renkleri Sıfırla</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Yayıncı Renk Kartları */}
+                    {uniquePublishers.length === 0 ? (
+                      <div className="bg-white p-8 rounded-2xl border border-[#e6e2d3] text-center text-[#8e8d82]">
+                        <BookOpen className="w-8 h-8 mx-auto mb-2 text-[#8e8d82]/60" />
+                        <p className="text-xs font-bold">Listelenen sınavlarda tanımlı yayıncı bulunmuyor.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {uniquePublishers.map(pub => {
+                          const pubName = pub || 'Bilinmiyor';
+                          const colorInfo = getPublisherColorInfo(pubName, publisherColors);
+                          const examCountForPub = state.exams.filter(e => (e.publisher || '').trim() === pubName).length;
+
+                          return (
+                            <div 
+                              key={pub} 
+                              className="bg-white p-3.5 rounded-2xl border border-[#e6e2d3] shadow-xs hover:border-[#5a5a40]/30 transition-all"
+                            >
+                              {/* Kart Başlığı */}
+                              <div className="flex items-center justify-between mb-2.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div 
+                                    className="w-4 h-4 rounded-full border border-black/20 shrink-0 shadow-xs"
+                                    style={{ backgroundColor: colorInfo.hex }}
+                                  />
+                                  <span className="text-xs font-black text-[#5a5a40] truncate" title={pubName}>
+                                    {pubName}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[10px] bg-[#f0ece1] text-[#5a5a40] font-bold px-2 py-0.5 rounded-full">
+                                    {examCountForPub} Sınav
+                                  </span>
+                                  <span 
+                                    className="text-[10px] font-bold px-1.5 py-0.2 rounded border"
+                                    style={{ 
+                                      backgroundColor: colorInfo.hex, 
+                                      borderColor: colorInfo.borderHex,
+                                      color: colorInfo.textHex 
+                                    }}
+                                  >
+                                    {colorInfo.hex}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 16 Renkli Hızlı Pastel Palet Seçici */}
+                              <div className="space-y-2 pt-1 border-t border-[#e6e2d3]/60">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {PUBLISHER_COLOR_PALETTE.map(opt => {
+                                    const isCurrent = colorInfo.hex.toLowerCase() === opt.hex.toLowerCase();
+                                    return (
+                                      <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={() => setPublisherColors(prev => ({ ...prev, [pubName]: opt.hex }))}
+                                        className={`w-6 h-6 rounded-lg transition-transform hover:scale-110 flex items-center justify-center cursor-pointer border ${
+                                          isCurrent 
+                                            ? 'ring-2 ring-[#5a5a40] ring-offset-1 scale-105 border-black/30' 
+                                            : 'border-black/10 hover:border-black/30'
+                                        }`}
+                                        style={{ backgroundColor: opt.hex }}
+                                        title={`${opt.label} (${opt.hex})`}
+                                      >
+                                        {isCurrent && (
+                                          <Check className="w-3 h-3 text-[#111827] stroke-[3]" />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Özel Renk Damlalığı ve Sıfırlama */}
+                                <div className="flex items-center justify-between pt-1">
+                                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#8e8d82] hover:text-[#5a5a40] cursor-pointer">
+                                    <input
+                                      type="color"
+                                      value={colorInfo.hex}
+                                      onChange={(e) => setPublisherColors(prev => ({ ...prev, [pubName]: e.target.value }))}
+                                      className="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent"
+                                      title="Özel Renk Seç"
+                                    />
+                                    <span>Özel Renk Seç</span>
+                                  </label>
+
+                                  {publisherColors[pubName] && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPublisherColors(prev => {
+                                          const next = { ...prev };
+                                          delete next[pubName];
+                                          return next;
+                                        });
+                                      }}
+                                      className="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer"
+                                      title="Bu yayıncının rengini varsayılana döndür"
+                                    >
+                                      Sıfırla
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
             {/* Print Body */}
-            <div id="print-area-takvim" className="flex-1 overflow-y-auto p-3 md:p-4 bg-white print:p-0 print:overflow-visible flex flex-col justify-start max-w-full">
-              <div className="takvim-header text-center mb-1.5 pb-1 border-b-[1.5px] border-black group">
+            <div 
+              id="print-area-takvim" 
+              className={`flex-1 overflow-y-auto p-3 md:p-4 bg-white print:p-0 print:overflow-visible flex flex-col justify-start max-w-full ${
+                isSinglePage ? 'single-page-mode print:justify-between' : ''
+              }`}
+              style={{ fontFamily: fontFamilyCss }}
+            >
+              {/* Native Print Page Orientation Stylesheet */}
+              <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                  @page {
+                    size: A4 ${isLandscape ? 'landscape' : 'portrait'};
+                    margin: 4mm 6mm;
+                  }
+                  #print-area-takvim {
+                    font-family: ${fontFamilyCss} !important;
+                    height: ${isSinglePage ? (isLandscape ? '202mm' : '289mm') : 'auto'} !important;
+                    max-height: ${isSinglePage ? (isLandscape ? '202mm' : '289mm') : 'none'} !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: ${isSinglePage ? 'space-between' : 'flex-start'} !important;
+                  }
+                  .takvim-table-wrapper {
+                    flex: ${isSinglePage ? '1 1 auto' : 'none'} !important;
+                  }
+                  .takvim-table {
+                    height: ${isSinglePage ? '100%' : 'auto'} !important;
+                  }
+                  .col-no {
+                    width: ${isLandscape ? '16mm' : '15mm'} !important;
+                    min-width: ${isLandscape ? '16mm' : '15mm'} !important;
+                    white-space: nowrap !important;
+                  }
+                  .col-date {
+                    width: ${isLandscape ? '46mm' : '44mm'} !important;
+                    min-width: ${isLandscape ? '46mm' : '44mm'} !important;
+                    white-space: nowrap !important;
+                  }
+                }
+              `}} />
+
+              {/* Takvim Header (Başlıklar dahil optimize edilir) */}
+              <div 
+                className="takvim-header text-center border-b-[1.5px] border-black group"
+                style={{ 
+                  marginBottom: headerLayout.marginBottom, 
+                  paddingBottom: headerLayout.paddingY 
+                }}
+              >
                 <div className="flex items-center justify-center relative">
                   <input
                     type="text"
                     value={printMainTitle}
                     onChange={(e) => setPrintMainTitle(e.target.value)}
                     placeholder="OKUL / KURUM ADI"
-                    className="takvim-title-main text-center text-base md:text-lg font-black uppercase tracking-wide text-gray-900 w-full bg-transparent hover:bg-amber-50/60 focus:bg-amber-50/90 focus:ring-1 focus:ring-amber-400 rounded-lg px-2 py-0.5 outline-none transition-all cursor-text leading-tight"
+                    style={{ fontSize: headerLayout.mainTitlePt }}
+                    className="takvim-title-main text-center font-black uppercase tracking-wide text-gray-900 w-full bg-transparent hover:bg-amber-50/60 focus:bg-amber-50/90 focus:ring-1 focus:ring-amber-400 rounded-lg px-2 py-0.5 outline-none transition-all cursor-text leading-tight"
                     title="Okul adını doğrudan düzenlemek için tıklayın (Elle doldurulabilir)"
                   />
                 </div>
@@ -2533,70 +3798,104 @@ export const ExamsView = () => {
                     value={printSubTitle}
                     onChange={(e) => setPrintSubTitle(e.target.value)}
                     placeholder="DENEME SINAVLARI TAKVİMİ BAŞLIĞI"
-                    className="takvim-title-sub text-center text-xs md:text-sm font-extrabold text-gray-700 uppercase w-full bg-transparent hover:bg-amber-50/60 focus:bg-amber-50/90 focus:ring-1 focus:ring-amber-400 rounded-lg px-2 py-0.5 outline-none transition-all cursor-text leading-tight"
+                    style={{ fontSize: headerLayout.subTitlePt }}
+                    className="takvim-title-sub text-center font-extrabold text-gray-700 uppercase w-full bg-transparent hover:bg-amber-50/60 focus:bg-amber-50/90 focus:ring-1 focus:ring-amber-400 rounded-lg px-2 py-0.5 outline-none transition-all cursor-text leading-tight"
                     title="Takvim başlığını doğrudan düzenlemek için tıklayın (Elle doldurulabilir)"
                   />
                 </div>
               </div>
 
+              {/* Takvim Table */}
               <div className="takvim-table-wrapper flex-1 overflow-x-auto">
                 <table className="takvim-table w-full border-collapse border-[1.5px] border-black text-center text-xs">
                   <thead>
-                    <tr className="h-6">
-                      <th className="border-[1.5px] border-black bg-gray-200 py-1 px-1 font-extrabold w-11 text-center text-[11px] leading-none">
+                    <tr style={{ height: `${theadLayout.theadHeightMm}mm` }}>
+                      <th 
+                        className="col-no border-[1.5px] border-black bg-gray-200 px-1.5 text-center leading-none whitespace-nowrap"
+                        style={{ 
+                          width: isLandscape ? '60px' : '56px',
+                          minWidth: isLandscape ? '60px' : '56px',
+                          fontSize: theadLayout.theadFontSizePt, 
+                          fontWeight: printSettings.fontWeight === 'light' ? 600 : 800,
+                          paddingTop: theadLayout.paddingY, 
+                          paddingBottom: theadLayout.paddingY 
+                        }}
+                      >
                         ÖLÇME
                       </th>
-                      <th className="border-[1.5px] border-black bg-gray-200 py-1 px-1.5 font-extrabold w-36 text-center text-[11px] leading-none">
+                      <th 
+                        className="col-date border-[1.5px] border-black bg-gray-200 px-2 text-center leading-none whitespace-nowrap"
+                        style={{ 
+                          width: isLandscape ? '180px' : '168px',
+                          minWidth: isLandscape ? '180px' : '168px',
+                          fontSize: theadLayout.theadFontSizePt, 
+                          fontWeight: printSettings.fontWeight === 'light' ? 600 : 800,
+                          paddingTop: theadLayout.paddingY, 
+                          paddingBottom: theadLayout.paddingY 
+                        }}
+                      >
                         TARİH
                       </th>
-                      <th className="border-[1.5px] border-black bg-gray-200 py-1 px-2 font-extrabold text-left text-[11px] leading-none">
+                      <th 
+                        className="border-[1.5px] border-black bg-gray-200 px-2 text-left leading-none"
+                        style={{ 
+                          fontSize: theadLayout.theadFontSizePt, 
+                          fontWeight: printSettings.fontWeight === 'light' ? 600 : 800,
+                          paddingTop: theadLayout.paddingY, 
+                          paddingBottom: theadLayout.paddingY 
+                        }}
+                      >
                         {!selectedGrades.includes('Tümü') && selectedGrades.length > 0
                           ? selectedGrades.sort((a,b) => a.localeCompare(b, 'tr', {numeric: true})).map(g => g === 'Diğer' ? 'DİĞER' : `${g}. SINIF`).join(', ')
                           : 'SINAV ADI'}
                       </th>
                       {printSettings.showOrderQuantity && (
-                        <th className="border-[1.5px] border-black bg-gray-200 py-1 px-1 font-extrabold w-14 text-center text-[11px] leading-none">
+                        <th 
+                          className="border-[1.5px] border-black bg-gray-200 px-1 w-14 text-center leading-none"
+                          style={{ 
+                            fontSize: theadLayout.theadFontSizePt, 
+                            fontWeight: printSettings.fontWeight === 'light' ? 600 : 800,
+                            paddingTop: theadLayout.paddingY, 
+                            paddingBottom: theadLayout.paddingY 
+                          }}
+                        >
                           SİPARİŞ
                         </th>
                       )}
                       {printSettings.showHalls && (
-                        <th className="border-[1.5px] border-black bg-gray-200 py-1 px-1 font-extrabold w-24 text-center text-[11px] leading-none">
+                        <th 
+                          className="border-[1.5px] border-black bg-gray-200 px-1 w-24 text-center leading-none"
+                          style={{ 
+                            fontSize: theadLayout.theadFontSizePt, 
+                            fontWeight: printSettings.fontWeight === 'light' ? 600 : 800,
+                            paddingTop: theadLayout.paddingY, 
+                            paddingBottom: theadLayout.paddingY 
+                          }}
+                        >
                           SALONLAR
                         </th>
                       )}
                       {printSettings.showParticipants && (
-                        <th className="border-[1.5px] border-black bg-gray-200 py-1 px-1 font-extrabold w-16 text-center text-[11px] leading-none">
+                        <th 
+                          className="border-[1.5px] border-black bg-gray-200 px-1 w-16 text-center leading-none"
+                          style={{ 
+                            fontSize: theadLayout.theadFontSizePt, 
+                            fontWeight: printSettings.fontWeight === 'light' ? 600 : 800,
+                            paddingTop: theadLayout.paddingY, 
+                            paddingBottom: theadLayout.paddingY 
+                          }}
+                        >
                           KATILAN KİŞİ
                         </th>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="font-semibold">
+                  <tbody style={{ fontWeight: fontWeightCss }}>
                     {filteredAndSortedExams.map((exam, index) => {
                       const pubName = (exam.publisher || 'Bilinmiyor').trim();
-                      
-                      let bgColor = publisherColors[pubName];
-                      if (!bgColor) {
-                        const pub = pubName.toLowerCase();
-                        if (pub.includes('işler')) bgColor = 'bg-orange-100';
-                        else if (pub.includes('çınar')) bgColor = 'bg-green-100';
-                        else if (pub.includes('arı')) bgColor = 'bg-yellow-100';
-                        else if (pub.includes('mozaik')) bgColor = 'bg-amber-100';
-                        else if (pub.includes('okyanus')) bgColor = 'bg-blue-100';
-                        else if (pub.includes('palme')) bgColor = 'bg-cyan-100';
-                        else if (pub.includes('ulti')) bgColor = 'bg-purple-100';
-                        else if (pub.includes('işleyen zeka')) bgColor = 'bg-rose-100';
-                        else if (pub.includes('sinan kuzucu')) bgColor = 'bg-red-100';
-                        else if (pub.includes('nartest')) bgColor = 'bg-emerald-100';
-                        else if (pub.includes('hız')) bgColor = 'bg-fuchsia-100';
-                        else if (pub.includes('sadık uygun')) bgColor = 'bg-indigo-100';
-                        else {
-                          let hash = 0;
-                          for (let i = 0; i < pub.length; i++) hash = pub.charCodeAt(i) + ((hash << 5) - hash);
-                          const colors = ['bg-amber-100', 'bg-blue-100', 'bg-emerald-100', 'bg-rose-100', 'bg-purple-100', 'bg-cyan-100'];
-                          bgColor = colors[Math.abs(hash) % colors.length];
-                        }
-                      }
+                      const colorInfo = getPublisherColorInfo(pubName, publisherColors);
+                      const isFullRow = printSettings.colorMode === 'fullRow';
+                      const rowBgHex = isFullRow ? colorInfo.hex : undefined;
                       
                       const registeredCount = state.students.filter(s => s.examRegistrations?.some(r => r.examId === exam.id)).length;
                       const assignedHallsText = exam.assignedHalls && exam.assignedHalls.length > 0
@@ -2604,29 +3903,116 @@ export const ExamsView = () => {
                         : 'Atanmadı';
 
                       return (
-                        <tr key={exam.id} className="border-b border-black" style={{ height: `${optimalRowHeightMm}mm` }}>
-                          <td className="col-no border-[1.5px] border-black py-0.5 px-1 text-xs font-bold font-mono">
+                        <tr 
+                          key={exam.id} 
+                          className="border-b border-black" 
+                          style={{ height: `${optimalRowHeightMm}mm`, minHeight: `${optimalRowHeightMm}mm` }}
+                        >
+                          <td 
+                            className="col-no border-[1.5px] border-black font-mono text-center whitespace-nowrap"
+                            style={{ 
+                              width: isLandscape ? '60px' : '56px',
+                              minWidth: isLandscape ? '60px' : '56px',
+                              whiteSpace: 'nowrap',
+                              backgroundColor: rowBgHex,
+                              WebkitPrintColorAdjust: 'exact',
+                              printColorAdjust: 'exact',
+                              fontSize: optimalFontSizePt, 
+                              fontWeight: printSettings.fontWeight === 'light' ? 500 : 700,
+                              paddingTop: cellPaddingY, 
+                              paddingBottom: cellPaddingY, 
+                              paddingLeft: cellPaddingX, 
+                              paddingRight: cellPaddingX 
+                            }}
+                          >
                             {exam.no !== undefined && exam.no > 0 ? exam.no : index + 1}
                           </td>
-                          <td className="col-date border-[1.5px] border-black py-0.5 px-1.5 font-mono font-bold text-xs">
+                          <td 
+                            className="col-date border-[1.5px] border-black font-mono text-center whitespace-nowrap"
+                            style={{ 
+                              width: isLandscape ? '180px' : '168px',
+                              minWidth: isLandscape ? '180px' : '168px',
+                              whiteSpace: 'nowrap',
+                              backgroundColor: rowBgHex,
+                              WebkitPrintColorAdjust: 'exact',
+                              printColorAdjust: 'exact',
+                              fontSize: optimalFontSizePt, 
+                              fontWeight: printSettings.fontWeight === 'light' ? 400 : 600,
+                              paddingTop: cellPaddingY, 
+                              paddingBottom: cellPaddingY, 
+                              paddingLeft: cellPaddingX, 
+                              paddingRight: cellPaddingX 
+                            }}
+                          >
                             {formatDateLong(exam.date)}
                           </td>
-                          <td className={`col-name border-[1.5px] border-black py-0.5 px-2 text-left font-bold text-indigo-950 ${bgColor} print:exact-colors leading-snug`} style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                          <td 
+                            className="col-name border-[1.5px] border-black text-left text-gray-900 print:exact-colors leading-snug" 
+                            style={{ 
+                              backgroundColor: colorInfo.hex,
+                              WebkitPrintColorAdjust: 'exact', 
+                              printColorAdjust: 'exact',
+                              fontSize: optimalFontSizePt, 
+                              fontWeight: printSettings.fontWeight === 'light' ? 400 : printSettings.fontWeight === 'normal' ? 500 : printSettings.fontWeight === 'medium' ? 600 : 700,
+                              paddingTop: cellPaddingY, 
+                              paddingBottom: cellPaddingY, 
+                              paddingLeft: '6px', 
+                              paddingRight: '4px' 
+                            }}
+                          >
                             {exam.name} {printSettings.showPublisher && exam.publisher ? `(${exam.publisher})` : ''}
                           </td>
                           {printSettings.showOrderQuantity && (
-                            <td className="col-order border-[1.5px] border-black py-0.5 px-1 font-bold text-xs">
+                            <td 
+                              className="col-order border-[1.5px] border-black text-center"
+                              style={{ 
+                                backgroundColor: rowBgHex,
+                                WebkitPrintColorAdjust: 'exact',
+                                printColorAdjust: 'exact',
+                                fontSize: optimalFontSizePt, 
+                                fontWeight: printSettings.fontWeight === 'light' ? 500 : 700,
+                                paddingTop: cellPaddingY, 
+                                paddingBottom: cellPaddingY, 
+                                paddingLeft: cellPaddingX, 
+                                paddingRight: cellPaddingX 
+                              }}
+                            >
                               {exam.orderQuantity || 0}
                             </td>
                           )}
                           {printSettings.showHalls && (
-                            <td className="col-halls border-[1.5px] border-black py-0.5 px-1 text-[10px] leading-tight">
+                            <td 
+                              className="col-halls border-[1.5px] border-black leading-tight text-center"
+                              style={{ 
+                                backgroundColor: rowBgHex,
+                                WebkitPrintColorAdjust: 'exact',
+                                printColorAdjust: 'exact',
+                                fontSize: optimalFontSizePt, 
+                                fontWeight: printSettings.fontWeight === 'light' ? 400 : 500,
+                                paddingTop: cellPaddingY, 
+                                paddingBottom: cellPaddingY, 
+                                paddingLeft: cellPaddingX, 
+                                paddingRight: cellPaddingX 
+                              }}
+                            >
                               {assignedHallsText}
                             </td>
                           )}
                           {printSettings.showParticipants && (
-                            <td className="col-participants border-[1.5px] border-black py-0.5 px-1 bg-red-600 text-white font-black text-xs print:exact-colors" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-                              {registeredCount > 0 ? registeredCount : exam.participantCount || ''}
+                            <td 
+                              className="col-participants border-[1.5px] border-black bg-red-600 text-white print:exact-colors text-center" 
+                              style={{ 
+                                WebkitPrintColorAdjust: 'exact', 
+                                printColorAdjust: 'exact',
+                                fontSize: optimalFontSizePt, 
+                                fontWeight: printSettings.fontWeight === 'light' ? 600 : 800,
+                                paddingTop: cellPaddingY, 
+                                paddingBottom: cellPaddingY, 
+                                paddingLeft: cellPaddingX, 
+                                paddingRight: cellPaddingX 
+                              }}
+                            >
+                              {registeredCount > 0 ? registeredCount : (exam.participantCount || 0)}
                             </td>
                           )}
                         </tr>
@@ -2642,6 +4028,20 @@ export const ExamsView = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Kurumsal Alt Bilgi / Footer */}
+              {printSettings.showFooter && (
+                <div 
+                  className="takvim-footer flex items-center justify-between pt-1 mt-1 border-t border-black text-gray-700"
+                  style={{ 
+                    fontSize: footerLayout.fontSizePt,
+                    fontWeight: fontWeightCss
+                  }}
+                >
+                  <span className="truncate max-w-[65%]">{printSettings.footerText || (printMainTitle ? `${printMainTitle} Sınav Koordinatörlüğü` : 'Kırklareli Atatürk Ortaokulu Sınav Koordinatörlüğü')}</span>
+                  <span className="shrink-0 text-right">Yazdırma Tarihi: {new Date().toLocaleDateString('tr-TR')} • Toplam: {examCount} Sınav</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
