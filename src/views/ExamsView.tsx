@@ -49,17 +49,18 @@ export const ExamsView = () => {
   const [manualStudentId, setManualStudentId] = useState('');
   const [manualStudentScore, setManualStudentScore] = useState('');
 
-  // Sınıf filtresi, yayıncı filtresi, arama ve sıralama durumu
+  // Sınıf filtresi (Çoklu Seçim), yayıncı filtresi, arama ve sıralama durumu
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterGrade, setFilterGrade] = useState<string>('Tümü');
+  const [selectedGrades, setSelectedGrades] = useState<string[]>(['Tümü']);
   const [filterPublisher, setFilterPublisher] = useState<string>('Tümü');
   const [sortBy, setSortBy] = useState<'date-asc' | 'date-desc' | 'no-asc' | 'no-desc' | 'name-asc'>('date-asc');
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   
-  // Takvim yazdırma başlıkları (elle düzenlenebilir)
+  // Takvim yazdırma başlıkları (elle düzenlenebilir ve kaydedilebilir)
   const [printMainTitle, setPrintMainTitle] = useState('KIRKLARELİ ATATÜRK ORTAOKULU');
   const [printSubTitle, setPrintSubTitle] = useState('2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ');
 
@@ -74,14 +75,77 @@ export const ExamsView = () => {
   
   const [publisherColors, setPublisherColors] = useState<Record<string, string>>({});
 
-  // Sınıf filtresi değiştiğinde alt başlığı da akıllı güncelle
-  const handleFilterGradeChange = (newGrade: string) => {
-    setFilterGrade(newGrade);
-    setPrintSubTitle(
-      newGrade !== 'Tümü'
-        ? `2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ (${newGrade}. SINIFLAR)`
-        : '2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ'
-    );
+  // Uyumlu filterGrade okuma (Tekli metin beklentisi olan yerler için)
+  const filterGrade = useMemo(() => {
+    if (selectedGrades.includes('Tümü') || selectedGrades.length === 0) return 'Tümü';
+    return selectedGrades.join(', ');
+  }, [selectedGrades]);
+
+  // Yazdırma ve filtre ayarlarını ilk açılışta yerel hafızadan yükle
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('akademi_exam_calendar_print_config');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed.selectedGrades) && parsed.selectedGrades.length > 0) {
+          setSelectedGrades(parsed.selectedGrades);
+        }
+        if (parsed.printMainTitle) setPrintMainTitle(parsed.printMainTitle);
+        if (parsed.printSubTitle) setPrintSubTitle(parsed.printSubTitle);
+        if (parsed.printSettings) setPrintSettings(parsed.printSettings);
+        if (parsed.publisherColors) setPublisherColors(parsed.publisherColors);
+      }
+    } catch (e) {
+      console.warn('Yazdırma ayarları okunamadı:', e);
+    }
+  }, []);
+
+  // Yazdırma ayarlarını kalıcı olarak localStorage'a kaydetme fonksiyonu
+  const handleSavePrintSettings = () => {
+    try {
+      const config = {
+        selectedGrades,
+        printMainTitle,
+        printSubTitle,
+        printSettings,
+        publisherColors,
+      };
+      localStorage.setItem('akademi_exam_calendar_print_config', JSON.stringify(config));
+      setSaveFeedback('✓ Sınav takvimi ve yazdırma ayarları cihazınıza başarıyla kaydedildi!');
+      setTimeout(() => setSaveFeedback(null), 3500);
+    } catch (e) {
+      console.warn('Yazdırma ayarları kaydedilemedi:', e);
+    }
+  };
+
+  // Seçili sınıflara göre alt başlığı akıllı güncelle
+  const updateSubTitleForGrades = (grades: string[]) => {
+    if (grades.includes('Tümü') || grades.length === 0) {
+      setPrintSubTitle('2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ');
+    } else {
+      const sorted = [...grades].sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+      const label = sorted.map(g => g === 'Diğer' ? 'DİĞER' : `${g}`).join(', ');
+      setPrintSubTitle(`2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ (${label}. SINIFLAR)`);
+    }
+  };
+
+  // Çoklu seçim mantığı ile sınıf seviyesi ekle/çıkar
+  const handleGradeToggle = (lvl: string) => {
+    let nextGrades: string[];
+    if (lvl === 'Tümü') {
+      nextGrades = ['Tümü'];
+    } else {
+      if (selectedGrades.includes('Tümü')) {
+        nextGrades = [lvl];
+      } else if (selectedGrades.includes(lvl)) {
+        nextGrades = selectedGrades.filter(g => g !== lvl);
+        if (nextGrades.length === 0) nextGrades = ['Tümü'];
+      } else {
+        nextGrades = [...selectedGrades, lvl];
+      }
+    }
+    setSelectedGrades(nextGrades);
+    updateSubTitleForGrades(nextGrades);
   };
 
   // Sync state when modal is opened
@@ -178,19 +242,19 @@ export const ExamsView = () => {
       );
     }
 
-    // Katılan sınıf seviyesine göre filtrele (Deneme sınav kartındaki katılacak sınıf seviyeleri)
-    if (filterGrade !== 'Tümü') {
+    // Katılan sınıf seviyesine göre filtrele (Çoklu Seçim)
+    if (!selectedGrades.includes('Tümü') && selectedGrades.length > 0) {
       result = result.filter(e => {
         const grades = e.participatingClasses || [];
         if (grades.length > 0) {
-          return grades.includes(filterGrade);
+          return grades.some(g => selectedGrades.includes(g));
         }
         // Eğer sınav kartında sınıf seçimi yapılmamışsa, sınav adında geçen seviyeyi kontrol et
         if (e.name) {
           const norm = e.name.toLowerCase();
-          if (norm.includes(`${filterGrade}. sınıf`) || norm.includes(`${filterGrade}.sınıf`) || norm.includes(`${filterGrade}/`)) {
-            return true;
-          }
+          return selectedGrades.some(g => 
+            norm.includes(`${g}. sınıf`) || norm.includes(`${g}.sınıf`) || norm.includes(`${g}/`)
+          );
         }
         return false;
       });
@@ -297,7 +361,7 @@ export const ExamsView = () => {
     });
 
     return result;
-  }, [state.exams, filterGrade, filterPublisher, searchQuery, sortBy]);
+  }, [state.exams, selectedGrades, filterPublisher, searchQuery, sortBy]);
 
   const uniquePublishers = useMemo(() => {
     const pubs = new Set<string>();
@@ -1105,7 +1169,7 @@ export const ExamsView = () => {
           {filterGrade !== 'Tümü' && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-medium border border-blue-200 shrink-0">
               <span>{filterGrade}. Sınıf</span>
-              <button onClick={() => setFilterGrade('Tümü')}><X className="w-2.5 h-2.5" /></button>
+              <button onClick={() => { setSelectedGrades(['Tümü']); updateSubTitleForGrades(['Tümü']); }}><X className="w-2.5 h-2.5" /></button>
             </span>
           )}
           {filterPublisher !== 'Tümü' && (
@@ -1115,7 +1179,7 @@ export const ExamsView = () => {
             </span>
           )}
           <button 
-            onClick={() => { setSearchQuery(''); setFilterGrade('Tümü'); setFilterPublisher('Tümü'); }}
+            onClick={() => { setSearchQuery(''); setSelectedGrades(['Tümü']); updateSubTitleForGrades(['Tümü']); setFilterPublisher('Tümü'); }}
             className="text-[10px] text-rose-600 font-bold px-1 py-0.5 shrink-0 underline"
           >
             Sıfırla
@@ -1222,7 +1286,16 @@ export const ExamsView = () => {
             <div className="relative shrink-0">
               <select
                 value={filterGrade}
-                onChange={(e) => setFilterGrade(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'Tümü') {
+                    setSelectedGrades(['Tümü']);
+                    updateSubTitleForGrades(['Tümü']);
+                  } else {
+                    setSelectedGrades([val]);
+                    updateSubTitleForGrades([val]);
+                  }
+                }}
                 className="appearance-none pl-2.5 pr-6 sm:pl-3 sm:pr-7 py-1.5 sm:py-2 border border-brand-border/80 text-[11px] sm:text-xs bg-white rounded-lg sm:rounded-xl text-brand-ink focus:outline-none focus:border-brand-accent font-semibold min-w-[95px] sm:min-w-[120px] shadow-xs cursor-pointer"
               >
                 <option value="Tümü">Tüm Sınıflar</option>
@@ -1268,7 +1341,7 @@ export const ExamsView = () => {
 
             {(searchQuery || filterGrade !== 'Tümü' || filterPublisher !== 'Tümü' || sortBy !== 'date-asc') && (
               <button 
-                onClick={() => { setSearchQuery(''); setFilterGrade('Tümü'); setFilterPublisher('Tümü'); setSortBy('date-asc'); }}
+                onClick={() => { setSearchQuery(''); setSelectedGrades(['Tümü']); updateSubTitleForGrades(['Tümü']); setFilterPublisher('Tümü'); setSortBy('date-asc'); }}
                 className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg sm:rounded-xl font-bold shrink-0 transition-colors shadow-xs active:scale-95 whitespace-nowrap cursor-pointer"
               >
                 <X className="w-3 h-3" />
@@ -2089,76 +2162,103 @@ export const ExamsView = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <button
+                  onClick={handleSavePrintSettings}
+                  className="flex items-center px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                  title="Sınav takvimi filtre, başlık ve yazdırma ayarlarını hafızaya kaydet"
+                >
+                  <Check className="h-3.5 w-3.5 mr-1.5" />
+                  Ayarları Kaydet
+                </button>
+                <button
                   onClick={() => setShowPrintSettings(!showPrintSettings)}
-                  className={`flex items-center px-4 py-2 rounded-full text-sm font-bold shadow-sm transition-colors border ${
+                  className={`flex items-center px-4 py-2 rounded-full text-xs sm:text-sm font-bold shadow-sm transition-colors border cursor-pointer ${
                     showPrintSettings 
                       ? 'bg-[#e6e2d3] text-[#5a5a40] border-[#d4d19d]' 
                       : 'bg-white text-[#5a5a40] border-[#e6e2d3] hover:bg-[#fcfbf7]'
                   }`}
                 >
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 mr-1.5" />
                   Ayarlar
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="flex items-center px-4 py-2 bg-[#5a5a40] text-white rounded-full text-sm font-bold shadow-sm hover:bg-[#43423b] transition-colors"
+                  className="flex items-center px-4 py-2 bg-[#5a5a40] text-white rounded-full text-xs sm:text-sm font-bold shadow-sm hover:bg-[#43423b] transition-colors cursor-pointer"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4 mr-1.5" />
                   Yazdır
                 </button>
                 <button
                   onClick={() => setIsPrintModalOpen(false)}
-                  className="p-2 text-[#8e8d82] hover:text-[#5a5a40] hover:bg-[#f5f5f0] rounded-full transition-all border border-transparent hover:border-[#e6e2d3]"
+                  className="p-2 text-[#8e8d82] hover:text-[#5a5a40] hover:bg-[#f5f5f0] rounded-full transition-all border border-transparent hover:border-[#e6e2d3] cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
+            {/* Save Feedback Banner */}
+            {saveFeedback && (
+              <div className="bg-emerald-50 border-b border-emerald-200 px-5 py-2.5 text-xs font-bold text-emerald-800 flex items-center justify-between animate-fade-in print:hidden">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{saveFeedback}</span>
+                </div>
+                <button 
+                  onClick={() => setSaveFeedback(null)}
+                  className="text-emerald-700 hover:text-emerald-900 text-[10px] font-bold underline"
+                >
+                  Kapat
+                </button>
+              </div>
+            )}
+
             {/* Print Settings Panel (Hidden in Print) */}
             {showPrintSettings && (
               <div className="bg-[#fcfbf7] border-b border-[#e6e2d3] p-5 print:hidden max-h-[50vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                  {/* 1. Sınıf Seviyesi Filtresi (Deneme Sınav Kartı Katılacak Sınıflar Bilgisi) */}
+                  {/* 1. Sınıf Seviyesi Filtresi (Çoklu Seçim Destekli) */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-black text-[#5a5a40] uppercase tracking-wider flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-[#5a5a40]" />
                         Sınıf Seviyesi Filtresi
                       </h4>
-                      {filterGrade !== 'Tümü' && (
+                      {!selectedGrades.includes('Tümü') && (
                         <button
                           type="button"
-                          onClick={() => handleFilterGradeChange('Tümü')}
-                          className="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline"
+                          onClick={() => handleGradeToggle('Tümü')}
+                          className="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer"
                         >
-                          Tümünü Göster
+                          Tümünü Sıfırla
                         </button>
                       )}
                     </div>
                     <p className="text-[11px] text-[#8e8d82] leading-tight">
-                      Sınav kartlarında işaretlenmiş katılacak sınıf seviyelerine göre takvimi filtreleyin:
+                      Çoklu seçim yapabilirsiniz. Birden fazla sınıfa tıklayarak ortak takvim oluşturun:
                     </p>
                     <div className="flex flex-wrap gap-1.5 bg-white p-2.5 rounded-2xl border border-[#e6e2d3]">
                       <button
                         type="button"
-                        onClick={() => handleFilterGradeChange('Tümü')}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                          filterGrade === 'Tümü'
+                        onClick={() => handleGradeToggle('Tümü')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          selectedGrades.includes('Tümü')
                             ? 'bg-[#5a5a40] text-white shadow-sm'
                             : 'bg-[#fcfbf7] text-[#5a5a40] hover:bg-[#f0ede4] border border-[#e6e2d3]/80'
                         }`}
                       >
+                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-black ${
+                          selectedGrades.includes('Tümü') ? 'bg-white text-[#5a5a40] border-white' : 'border-[#8e8d82] text-transparent'
+                        }`}>✓</span>
                         <span>Tüm Sınıflar</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                          filterGrade === 'Tümü' ? 'bg-white/25 text-white' : 'bg-[#e6e2d3] text-[#5a5a40]'
+                          selectedGrades.includes('Tümü') ? 'bg-white/25 text-white' : 'bg-[#e6e2d3] text-[#5a5a40]'
                         }`}>
                           {state.exams.length}
                         </span>
                       </button>
 
                       {availableGradeLevels.map(lvl => {
-                        const isSelected = filterGrade === lvl;
+                        const isSelected = selectedGrades.includes(lvl);
                         // Count exams that include this grade level
                         const count = state.exams.filter(e => {
                           const grades = e.participatingClasses || [];
@@ -2174,14 +2274,17 @@ export const ExamsView = () => {
                           <button
                             key={lvl}
                             type="button"
-                            onClick={() => handleFilterGradeChange(lvl)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                            onClick={() => handleGradeToggle(lvl)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                               isSelected
-                                ? 'bg-indigo-600 text-white shadow-sm'
+                                ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-200'
                                 : 'bg-[#fcfbf7] text-[#5a5a40] hover:bg-[#f0ede4] border border-[#e6e2d3]/80'
                             }`}
                           >
-                            <span>{lvl === 'Diğer' ? 'Diğer Sınıflar' : `${lvl}. Sınıf`}</span>
+                            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-black ${
+                              isSelected ? 'bg-white text-indigo-600 border-white' : 'border-[#8e8d82] text-transparent'
+                            }`}>✓</span>
+                            <span>{lvl === 'Diğer' ? 'Diğer' : `${lvl}. Sınıf`}</span>
                             <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
                               isSelected ? 'bg-white/25 text-white' : 'bg-[#e6e2d3] text-[#5a5a40]'
                             }`}>
@@ -2204,10 +2307,7 @@ export const ExamsView = () => {
                         type="button"
                         onClick={() => {
                           setPrintMainTitle('KIRKLARELİ ATATÜRK ORTAOKULU');
-                          setPrintSubTitle(filterGrade !== 'Tümü' 
-                            ? `2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ (${filterGrade}. SINIFLAR)`
-                            : '2025-2026 EĞİTİM ÖĞRETİM YILI DENEME SINAVLARI TAKVİMİ'
-                          );
+                          updateSubTitleForGrades(selectedGrades);
                         }}
                         className="text-[10px] text-[#8e8d82] hover:text-[#5a5a40] font-bold underline"
                         title="Varsayılan başlıklara dön"
@@ -2450,7 +2550,9 @@ export const ExamsView = () => {
                         TARİH
                       </th>
                       <th className="border-[1.5px] border-black bg-gray-200 py-1 px-2 font-extrabold text-left text-[11px] leading-none">
-                        {filterGrade !== 'Tümü' ? `${filterGrade}. SINIF` : 'SINAV ADI'}
+                        {!selectedGrades.includes('Tümü') && selectedGrades.length > 0
+                          ? selectedGrades.sort((a,b) => a.localeCompare(b, 'tr', {numeric: true})).map(g => g === 'Diğer' ? 'DİĞER' : `${g}. SINIF`).join(', ')
+                          : 'SINAV ADI'}
                       </th>
                       {printSettings.showOrderQuantity && (
                         <th className="border-[1.5px] border-black bg-gray-200 py-1 px-1 font-extrabold w-14 text-center text-[11px] leading-none">
